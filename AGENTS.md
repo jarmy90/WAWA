@@ -124,6 +124,10 @@ explícita del propietario). Reglas permanentes:
    `docs/REVIEW_SECURITY.md` (las opiniones de modelos NUNCA son evidencia ni
    modifican puntuaciones/modos/presupuesto; el raw se conserva; el parsing es
    con allowlist; la ausencia de revisión es neutral) y añade pruebas.
+8a. Si tocas los proveedores LLM (`app/providers/`, `app/repositories/llm_calls.py`,
+   `app/models/llm_call.py`) o la revisión automática (`auto_review` en
+   `app/services/reviews.py`): respeta las reglas de coste honesto y de la
+   Opción A (punto 8-9 de las reglas permanentes) y añade pruebas offline.
 8b. Si tocas las campañas Freebuff-first (`app/services/campaign.py`,
    `app/models/campaign.py`, `app/repositories/campaigns.py`,
    `scripts/continue_campaign.py`, `scripts/finalize_session.py`): respeta
@@ -154,6 +158,19 @@ explícita del propietario). Reglas permanentes:
 7. **La calidad del Discovery Engine prevalece sobre nueva infraestructura**:
    no añadir capas (workers, schedulers, integraciones) sin justificar que
    mejoran la selección de ideas.
+8. **Costes LLM honestos (iteración 007)**: nunca presentar una estimación
+   como coste real. Cada llamada a un proveedor registra en `llm_call_log`
+   `requested_model` vs `actual_model`, tokens, `reported_cost` (solo si el
+   proveedor lo devuelve), `estimated_cost` etiquetado, `cost_source`
+   (PROVIDER_RESPONSE | LOCAL_ESTIMATE | FREE_TIER | UNKNOWN) y
+   `billing_verified=false` sin reconciliación real. Un coste desconocido
+   NUNCA se convierte en cero.
+9. **OpenRouter solo para el comité (Opción A)**: el proveedor OpenRouter
+   SOLO se usa para la revisión de contraste de finalistas, nunca para todo
+   el flujo Discovery. Guardas: máx. 1 revisión automática por oportunidad,
+   límites diario/mensual, circuit breaker, reintentos acotados. Si falla o
+   no hay clave, NO se fabrica una revisión (el mock nunca suplanta a un
+   modelo real): la ausencia es neutral.
 
 ## Qué NO hacer
 

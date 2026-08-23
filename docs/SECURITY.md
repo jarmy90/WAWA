@@ -77,6 +77,22 @@ se tratan como **datos no confiables** (ver `docs/REVIEW_SECURITY.md`):
 - **No inventar capacidades**: ver `docs/FREEBUFF_WORKFLOW.md` (qué puede y
   qué no puede garantizar Freebuff fuera de la sesión).
 
+## OpenRouter y costes de inferencia (iteración 007)
+
+- **Opción A**: OpenRouter solo para el comité de contraste de finalistas, con
+  guardas deterministas (máx. 1 revisión por oportunidad, límites diarios y
+  mensuales de peticiones/coste, circuit breaker, reintentos acotados).
+- **Coste honesto por llamada** en `llm_call_log` (append-only): `reported_cost`
+  solo si el proveedor lo devuelve; si no, `None` + `cost_source` (FREE_TIER /
+  UNKNOWN) y estimación etiquetada aparte. `billing_verified=false` hasta que
+  exista reconciliación real con facturación. Un coste desconocido nunca se
+  convierte en cero.
+- **Sin fabricación**: si la llamada falla o no hay clave, no se genera ninguna
+  revisión (el fallback a mock nunca se presenta como revisión real); la
+  ausencia de revisión es neutral.
+- **La clave vive en el gestor de secretos** (`.env.local`/Settings → Keys),
+  nunca en Git ni en `env.example`.
+
 ## Si esto se expone a internet (futuro)
 
 - Añadir autenticación/authorization (Convex Auth u OIDC) y control de acceso.

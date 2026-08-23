@@ -920,11 +920,27 @@ async function loadReviews() {
     const data = await api("/api/reviews/queue");
     reviewQueue = data.items;
     $("#rev-badge").textContent = data.count;
+    let autoLine = "";
+    try {
+      const auto = (await api("/api/reviews/auto-status")).auto_status;
+      const cb = auto.circuit_breaker || {};
+      autoLine =
+        `<div class="reviews-config-row auto-config">OpenRouter: ` +
+        `${auto.configured ? "✅ configurado" : "⚠️ sin clave (la ausencia de revisión es neutral)"} · ` +
+        `modelo ${esc(auto.review_model)}${auto.configured ? ` (fallback ${esc(auto.fallback_model)})` : ""} · ` +
+        `hoy ${auto.usage_today.requests}/${auto.usage_today.limit} llamadas · ` +
+        `coste hoy ${auto.usage_today.cost_usd.toFixed(5)}/${auto.usage_today.cost_limit_usd} USD · ` +
+        `circuit breaker ${cb.open ? "ABIERTO (pausado)" : "cerrado"} · ` +
+        `máx ${auto.max_reviews_per_opportunity} revisión(es) automática(s)/oportunidad</div>`;
+    } catch (e) {
+      autoLine = `<div class="reviews-config-row auto-config">OpenRouter: estado no disponible (${esc(e.message)})</div>`;
+    }
     $("#reviews-config").innerHTML =
       `<div class="reviews-config-row">Umbral interno: <strong>${data.threshold}</strong> · ` +
       `Máximo finalistas/semana: <strong>${data.max_per_week}</strong> · ` +
       `Ventana: <strong>${data.window_hours}h</strong> · ` +
-      `Continuar sin revisión: <strong>${data.continue_without_review ? "sí (neutral)" : "no"}</strong></div>`;
+      `Continuar sin revisión: <strong>${data.continue_without_review ? "sí (neutral)" : "no"}</strong></div>` +
+      autoLine;
     const container = $("#reviews-queue");
     $("#reviews-empty").classList.toggle("hidden", data.items.length > 0);
     container.innerHTML = "";
@@ -973,6 +989,7 @@ function renderReviewItem(item) {
       <button class="btn btn-primary btn-sm" data-packet="${item.opportunity_id}">Descargar expediente</button>
       <button class="btn btn-secondary btn-sm" data-import="${item.opportunity_id}">Importar revisión</button>
       <button class="btn btn-ghost btn-sm" data-synthesize="${item.opportunity_id}">Síntesis</button>
+      <button class="btn btn-ghost btn-sm" data-auto-review="${item.opportunity_id}" title="Opción A: una revisión de contraste vía OpenRouter (guardas deterministas; sin clave no hace nada)">Revisión automática</button>
       ${item.status === "pending" ? `<button class="btn btn-ghost btn-sm" data-continue="${item.opportunity_id}">Continuar sin revisión</button>` : ""}
       ${item.notes ? `<div class="review-notes">Notas: ${esc(item.notes)}</div>` : ""}
     </div>
@@ -1007,6 +1024,28 @@ function renderReviewItem(item) {
         await loadReviews();
       } catch (e) {
         alert(`Error: ${e.message}`);
+      }
+    });
+  });
+  card.querySelectorAll("[data-auto-review]").forEach((b) => {
+    b.addEventListener("click", async () => {
+      if (!confirm("¿Solicitar UNA revisión automática vía OpenRouter? (Opinión de modelo, nunca evidencia; coste registrado con honestidad.)")) return;
+      const btn = b;
+      btn.disabled = true;
+      try {
+        const res = await api(`/api/reviews/opportunities/${b.dataset.autoReview}/auto-review`, { method: "POST" });
+        if (res.status === "ok") {
+          alert(`Revisión automática guardada (${res.review.model}) · cost_source ${res.cost_source} · billing_verified ${res.billing_verified}`);
+        } else if (res.status === "skipped" || res.status === "blocked") {
+          alert(`Sin revisión automática (${res.reason}): ${res.detail || "la ausencia es neutral."}`);
+        } else {
+          alert(`Fallo neutral (${res.reason}): ${res.detail || ""}`);
+        }
+        await loadReviews();
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      } finally {
+        btn.disabled = false;
       }
     });
   });

@@ -19,6 +19,7 @@ from app.providers.base import BaseLLMProvider, LLMResponse
 from app.providers.gemini import GeminiProvider
 from app.providers.manual import ManualProvider
 from app.providers.mock import MockProvider
+from app.providers.openrouter import OpenRouterProvider
 
 
 @dataclass
@@ -38,6 +39,15 @@ class ProviderManager:
         self.mock = MockProvider()
         self.gemini = GeminiProvider(settings.gemini_api_key, settings.gemini_model, settings.gemini_request_timeout)
         self.manual = ManualProvider(settings.manual_research_dir)
+        self.openrouter = OpenRouterProvider(
+            settings.openrouter_api_key,
+            review_model=settings.openrouter_review_model,
+            fallback_model=settings.openrouter_fallback_model,
+            timeout=settings.openrouter_timeout_seconds,
+            max_retries=settings.openrouter_max_retries,
+            max_input_tokens=settings.openrouter_max_input_tokens,
+            max_output_tokens=settings.openrouter_max_output_tokens,
+        )
 
     # ------------------------------------------------------------------
     def resolve_primary(self) -> BaseLLMProvider:
@@ -48,7 +58,11 @@ class ProviderManager:
             return self.manual
         if mode == "gemini":
             return self.gemini
-        # auto: Gemini si está disponible; si no, mock.
+        if mode == "openrouter":
+            return self.openrouter
+        # auto: OpenRouter o Gemini si están disponibles; si no, mock.
+        if self.openrouter.available():
+            return self.openrouter
         return self.gemini if self.gemini.available() else self.mock
 
     def generate(
@@ -93,6 +107,7 @@ class ProviderManager:
         return {
             "mode": self.settings.llm_provider,
             "primary": primary.health(),
+            "openrouter": self.openrouter.health(),
             "gemini": self.gemini.health(),
             "mock": self.mock.health(),
             "manual": self.manual.health(),

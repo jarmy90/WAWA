@@ -64,7 +64,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     discovery = DiscoveryService(settings, repos, providers, opportunities)
     exports = ExportService(repos)
     imports = ImportService(settings, repos, pipeline)
-    reviews = ReviewService(settings, repos, engine=engine)
+    reviews = ReviewService(settings, repos, engine=engine, providers=providers)
     pipeline.reviews = reviews  # cola automática de finalistas en el Judge
     campaigns = CampaignService(settings, repos, discovery, reviews, engine=engine)
     return AppContainer(

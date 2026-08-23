@@ -110,14 +110,19 @@ automáticamente al arrancar. `decision_log` y `costs` son append-only.
   reversiones, métricas deterministas (runway, burn rate, coste por
   oportunidad/experimento, margen, survival status) y reconciliación
   (ver `docs/ECONOMY.md`).
-- **ReviewService** (iteración 005): comité de contraste — cola de
+- **ReviewService** (iteración 005 + 007): comité de contraste — cola de
   finalistas (umbral interno ≥ 72, máximo semanal, ventana de 48 h),
   expediente idéntico para todos los revisores (`review_packet.md` con prompt
   normalizado), importación segura de revisiones TXT/Markdown (raw + hash +
   parsing con allowlist + detección de inyección), síntesis determinista
-  (distribución, consenso opinión/evidencia, riesgos, acción recomendada) y
-  auto-continuación neutral al caducar la ventana. Los proveedores
-  automáticos son interfaces opcionales; la vía funcional es `MANUAL_IMPORT`.
+  (distribución, consenso opinión/evidencia, riesgos, acción recomendada),
+  auto-continuación neutral al caducar la ventana, y desde la iteración 007
+  **revisión automática (Opción A) vía OpenRouter**: guardas deterministas
+  (máx. 1 por oportunidad, límites diario/mensual, circuit breaker),
+  `llm_call_log` append-only con coste honesto (`reported_cost` solo si el
+  proveedor lo devuelve, `cost_source`, `billing_verified=false`) y
+  `requested_model` vs `actual_model`; sin clave o con fallo NO se fabrica
+  revisión (la ausencia es neutral).
 - **OpportunityService**: CRUD, detalle agregado, decisiones manuales.
 - **ImportService/ExportService**: importación de investigación (JSON) y
   exportación JSON/Markdown (oportunidades y misiones).

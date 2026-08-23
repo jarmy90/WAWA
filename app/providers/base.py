@@ -24,6 +24,14 @@ class LLMResponse(BaseModel):
     cost_method: str = "zero (offline)"
     verified: bool | None = None
     notes: str | None = None
+    # --- Rastro honesto de coste/uso (iteración 007) -------------------------
+    actual_model: str | None = None  # modelo realmente usado (p. ej. router :free)
+    usage: dict[str, Any] | None = None  # prompt/completion/total tokens si el proveedor los da
+    latency_ms: int | None = None
+    retry_count: int = 0
+    reported_cost: float | None = None  # coste explícito del proveedor (None si no verificable)
+    cost_source: str = "UNKNOWN"  # PROVIDER_RESPONSE | LOCAL_ESTIMATE | FREE_TIER | UNKNOWN | BILLING_RECONCILIATION
+    billing_verified: bool = False  # solo true tras reconciliación con facturación
 
 
 class BaseLLMProvider(ABC):

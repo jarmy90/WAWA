@@ -57,10 +57,26 @@ class Settings(BaseSettings):
     frontend_dir: Path = PROJECT_ROOT / "frontend"
 
     # --- Proveedores LLM ------------------------------------------------
-    llm_provider: Literal["auto", "mock", "gemini", "manual"] = "auto"
+    llm_provider: Literal["auto", "mock", "gemini", "manual", "openrouter"] = "auto"
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-1.5-flash"
     gemini_request_timeout: float = 60.0
+    openrouter_api_key: str | None = None
+    # Modelo FIJO del comité (comparabilidad entre revisiones).
+    openrouter_review_model: str = "openai/gpt-4o-mini"
+    # Router gratuito como fallback; el modelo real usado puede variar por llamada
+    # (se registra siempre `actual_model` en el log de llamadas).
+    openrouter_fallback_model: str = "openrouter/free"
+    openrouter_timeout_seconds: float = 60.0
+    openrouter_max_retries: int = 2
+    openrouter_max_input_tokens: int = 6_000
+    openrouter_max_output_tokens: int = 2_000
+    openrouter_daily_request_limit: int = 30
+    openrouter_daily_cost_limit_usd: float = 0.50
+    openrouter_monthly_cost_limit_usd: float = 5.00
+    openrouter_max_reviews_per_opportunity: int = 1
+    openrouter_circuit_breaker_failures: int = 5
+    openrouter_circuit_breaker_cooldown_seconds: int = 300
 
     # --- BudgetGuard ----------------------------------------------------
     free_mode: bool = True

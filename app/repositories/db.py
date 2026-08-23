@@ -478,6 +478,30 @@ CREATE TABLE IF NOT EXISTS ff_reasoning_log (
     reason TEXT,
     created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS llm_call_log (
+    id TEXT PRIMARY KEY,
+    provider TEXT NOT NULL,
+    action TEXT NOT NULL DEFAULT 'llm_call',
+    opportunity_id TEXT,
+    requested_model TEXT NOT NULL DEFAULT '',
+    actual_model TEXT,
+    prompt_tokens INTEGER,
+    completion_tokens INTEGER,
+    total_tokens INTEGER,
+    reported_cost REAL,
+    estimated_cost REAL,
+    cost_source TEXT NOT NULL DEFAULT 'UNKNOWN',
+    billing_verified INTEGER NOT NULL DEFAULT 0,
+    latency_ms INTEGER,
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    fallback_used INTEGER NOT NULL DEFAULT 0,
+    response_status TEXT NOT NULL DEFAULT 'ok',
+    notes TEXT,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_llm_call_created ON llm_call_log(created_at);
+CREATE INDEX IF NOT EXISTS idx_llm_call_opp ON llm_call_log(opportunity_id);
 """
 
 

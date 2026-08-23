@@ -438,6 +438,12 @@ def discovery_learning(request: Request, kind: str | None = None) -> dict:
 REVIEW_NOTICE = {"model_opinion_not_evidence": True, "real_money_moved": False}
 
 
+@router.get("/reviews/auto-status")
+def reviews_auto_status(request: Request) -> dict:
+    """Presupuesto de inferencia y circuit breaker (sin llamadas)."""
+    return {"auto_status": get_container(request).reviews.auto_status()}
+
+
 @router.get("/reviews/queue")
 def reviews_queue(request: Request, status: str | None = None) -> dict:
     container = get_container(request)
@@ -544,6 +550,30 @@ def reviews_demo(request: Request) -> dict:
     container = get_container(request)
     result = container.reviews.run_review_demo(container.pipeline)
     return {**REVIEW_NOTICE, **result}
+
+
+@router.post("/reviews/opportunities/{opportunity_id}/auto-review")
+def reviews_auto_review(request: Request, opportunity_id: str = Depends(valid_id)) -> dict:
+    """Opción A: una revisión de contraste automática vía OpenRouter.
+
+    Guardas deterministas (máx. 1 por oportunidad, circuit breaker, límites
+    diarios/mensuales). Sin clave o con fallo: NO se fabrica revisión; la
+    ausencia es neutral. Coste registrado con honestidad en llm_call_log.
+    """
+    container = get_container(request)
+    result = container.reviews.auto_review(opportunity_id)
+    return {
+        **REVIEW_NOTICE,
+        **result,
+        "auto_review": True,
+        "provider": "openrouter",
+    }
+
+
+@router.get("/llm-calls")
+def llm_calls_list(request: Request, limit: int = Query(default=30, ge=1, le=200)) -> dict:
+    """Log append-only de llamadas LLM (coste honesto por llamada)."""
+    return {"items": get_container(request).repos.llm_calls.list_recent(limit=limit), "count": None}
 
 
 # ---------------------------------------------------------------------------

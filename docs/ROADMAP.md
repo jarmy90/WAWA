@@ -39,15 +39,18 @@ y probados (207 tests). El siguiente paso es **usarlos en serio**:
 - Medir: ¿el protocolo ahorra contexto? ¿las misiones mejoran la evidencia?
 - Probar el API Readiness Gate sobre los finalistas reales.
 
-### 1. Poner a trabajar el comité de contraste con modelos reales (iteración 005)
-El **Laboratorio de oportunidades** ya funciona offline (`MANUAL_IMPORT` +
-`MOCK`): expediente idéntico, importación TXT/MD, síntesis con etiqueta de
-falso consenso y no-bloqueo. Siguiente paso natural:
-- Usar el flujo manual con GPT/Grok/Gemini sobre 2-3 finalistas reales.
+### 1. Poner a trabajar el comité de contraste con modelos reales (iteración 005 + 007)
+El **Laboratorio de oportunidades** funciona offline (`MANUAL_IMPORT` +
+`MOCK`) y desde la iteración 007 también con **revisión automática vía
+OpenRouter (Opción A)**: una revisión por finalista, guardas deterministas,
+`llm_call_log` con coste honesto y circuito. Siguiente paso natural:
+- Usar la Opción A con el modelo fijo configurado sobre 2-3 finalistas reales
+  (aprovechando la ventana gratuita de OpenRouter).
+- Complementar con el flujo manual GPT/Grok/Gemini y comparar objeciones.
 - Comprobar si las objeciones del comité mejoran la selección frente al
   Judge solo (medir con decisiones posteriores).
-- Evaluar `API_AUTOMATIC` cuando exista API estable, credencial, presupuesto
-  y condiciones de uso compatibles (sin inventar integraciones).
+- Tras la semana gratuita: evaluar si el valor justifica el coste real (gate
+  de coste por llamada; `API_REJECTED_LOW_ROI` si no).
 
 ### 2. Validar el motor de ideas con investigación real (iteración 004)
 El Business Discovery Engine (Ruta B) ya genera campañas, filtra wrappers y

@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 from app.repositories.competitors import CompetitorRepository
 from app.repositories.campaigns import CampaignRepository
+from app.repositories.llm_calls import LLMCallRepository
 from app.repositories.costs import CostRepository
 from app.repositories.db import connect, init_db
 from app.repositories.decision_log import DecisionLogRepository
@@ -41,6 +42,7 @@ class Repos:
     discovery: DiscoveryRepository
     reviews: ReviewRepository
     campaigns: CampaignRepository
+    llm_calls: LLMCallRepository
 
 
 def build_repos(conn) -> Repos:
@@ -57,6 +59,7 @@ def build_repos(conn) -> Repos:
         discovery=DiscoveryRepository(conn),
         reviews=ReviewRepository(conn),
         campaigns=CampaignRepository(conn),
+        llm_calls=LLMCallRepository(conn),
     )
 
 
@@ -76,5 +79,6 @@ __all__ = [
     "LedgerRepository",
     "DiscoveryRepository",
     "ReviewRepository",
+    "LLMCallRepository",
     "CampaignRepository",
 ]

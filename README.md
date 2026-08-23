@@ -107,7 +107,7 @@ app/
 ├── api/          # Rutas FastAPI
 ├── core/         # Config, logging, seguridad, DI container, bibliotecas de discovery
 ├── models/       # Contratos Pydantic (Opportunity, Evidence, Evaluation, discovery...)
-├── providers/    # BaseLLMProvider, Mock, Gemini (opcional), Manual/Freebuff
+├── providers/    # BaseLLMProvider, Mock, Gemini (opcional), OpenRouter (opcional), Manual/Freebuff
 ├── repositories/ # SQLite (stdlib) + repositorios tipados (incl. discovery)
 ├── scoring/      # Opportunity Score + Venture Score + General AI Substitution Test
 ├── services/     # BudgetGuard, oportunidades, economía, discovery, import/export
@@ -206,6 +206,17 @@ repetidos, evidencia ausente). **Las opiniones de modelos NO son evidencia**
 de demanda: no modifican puntuaciones ni autorizan nada; la ausencia de
 revisión es neutral y nunca bloquea el flujo. Prueba: `POST /api/reviews/demo`
 (100% sintética). Ver `docs/EXTERNAL_MODEL_REVIEW.md`.
+
+Desde la **iteración 007** existe la **Opción A**: una revisión automática por
+finalista vía **OpenRouter** (modelo fijo `OPENROUTER_REVIEW_MODEL`, router
+`openrouter/free` como fallback), con guardas deterministas (máx. 1 por
+oportunidad, límites diarios/mensuales de peticiones y coste, circuit
+breaker, reintentos acotados). Cada llamada se registra en `llm_call_log` con
+coste honesto (`reported_cost` solo si el proveedor lo devuelve,
+`billing_verified=false`; un coste desconocido nunca se convierte en cero) y
+con `requested_model` vs `actual_model`. Si falla o no hay clave, **no se
+fabrica una revisión**: la ausencia es neutral. Botón **Revisión automática**
+en el Laboratorio. Sin clave todo sigue funcionando offline.
 
 ### Business Discovery Engine (iteración 004)
 

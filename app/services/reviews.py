@@ -25,7 +25,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from app.core.config import Settings
-from app.core.errors import ConflictError, NotFoundError, PayloadTooLargeError, ValidationError
+from app.core.errors import ConflictError, NotFoundError, PayloadTooLargeError, ProviderUnavailableError, ValidationError
 from app.core.logging import get_logger
 from app.core.security import validate_extension
 from app.models.decision_log import DecisionLog
@@ -37,6 +37,8 @@ from app.models.external_review import (
     ReviewImportIn,
     ReviewSynthesis,
 )
+from app.models.llm_call import CostSource, LLMCallRecord
+from app.providers.manager import ProviderManager
 from app.repositories import Repos
 
 RECOMMENDATION_LABELS = {
@@ -133,10 +135,11 @@ def _sanitize_text(value: str, max_len: int = 5_000) -> str:
 
 
 class ReviewService:
-    def __init__(self, settings: Settings, repos: Repos, engine=None) -> None:
+    def __init__(self, settings: Settings, repos: Repos, engine=None, providers: ProviderManager | None = None) -> None:
         self.settings = settings
         self.repos = repos
         self.engine = engine
+        self.providers = providers
         self.log = get_logger("reviews")
         self._dir: Path = settings.external_reviews_dir
 
@@ -305,6 +308,279 @@ class ReviewService:
         combined = f"{item['notes']}\n[{_now()}] {note.strip()}".strip()
         self.repos.reviews.update_queue(opportunity_id, notes=combined)
         return self.repos.reviews.queue_item(opportunity_id)  # type: ignore[return-value]
+
+    # ==================================================================
+    # Revisión automática (OPCIÓN A: OpenRouter SOLO para el comité)
+    # ==================================================================
+    def _circuit_breaker(self) -> dict:
+        """Estado del circuit breaker (determinista, desde llm_call_log)."""
+        since = (_now_dt() - timedelta(seconds=self.settings.openrouter_circuit_breaker_cooldown_seconds)).isoformat()
+        failures = self.repos.llm_calls.failures_since(since, provider="openrouter")
+        open_ = failures >= self.settings.openrouter_circuit_breaker_failures
+        return {
+            "open": open_,
+            "failures_recent": failures,
+            "threshold": self.settings.openrouter_circuit_breaker_failures,
+            "cooldown_seconds": self.settings.openrouter_circuit_breaker_cooldown_seconds,
+        }
+
+    def auto_status(self) -> dict:
+        """Estado del presupuesto de inferencia y del circuito (sin llamadas)."""
+        today = _now_dt().date().isoformat()
+        month_ago = (_now_dt() - timedelta(days=30)).isoformat()
+        provider = self.providers.openrouter if self.providers is not None else None
+        return {
+            "configured": bool(provider and provider.available()),
+            "review_model": provider.review_model if provider else self.settings.openrouter_review_model,
+            "fallback_model": provider.fallback_model if provider else self.settings.openrouter_fallback_model,
+            "circuit_breaker": self._circuit_breaker(),
+            "usage_today": {
+                "requests": self.repos.llm_calls.count_since(today, provider="openrouter"),
+                "limit": self.settings.openrouter_daily_request_limit,
+                "cost_usd": self.repos.llm_calls.cost_since(today, provider="openrouter"),
+                "cost_limit_usd": self.settings.openrouter_daily_cost_limit_usd,
+            },
+            "usage_month": {
+                "cost_usd": self.repos.llm_calls.cost_since(month_ago, provider="openrouter"),
+                "cost_limit_usd": self.settings.openrouter_monthly_cost_limit_usd,
+            },
+            "max_reviews_per_opportunity": self.settings.openrouter_max_reviews_per_opportunity,
+            "max_finalists_per_week": self.settings.review_max_finalists_per_week,
+        }
+
+    def _record_call(
+        self,
+        *,
+        opportunity_id: str | None,
+        requested_model: str,
+        actual_model: str | None,
+        usage: dict | None,
+        reported_cost: float | None,
+        estimated_cost: float | None,
+        cost_source: str,
+        latency_ms: int | None,
+        retry_count: int,
+        fallback_used: bool,
+        response_status: str,
+        notes: str | None,
+    ) -> dict:
+        record = LLMCallRecord(
+            provider="openrouter",
+            action="external_review",
+            opportunity_id=opportunity_id,
+            requested_model=requested_model,
+            actual_model=actual_model,
+            prompt_tokens=usage.get("prompt_tokens") if usage else None,
+            completion_tokens=usage.get("completion_tokens") if usage else None,
+            total_tokens=usage.get("total_tokens") if usage else None,
+            reported_cost=reported_cost,
+            estimated_cost=estimated_cost,
+            cost_source=cost_source,
+            billing_verified=False,  # sin reconciliación con facturación en esta fase
+            latency_ms=latency_ms,
+            retry_count=retry_count,
+            fallback_used=fallback_used,
+            response_status=response_status,
+            notes=notes,
+        )
+        return self.repos.llm_calls.create(record)
+
+    def auto_review(self, opportunity_id: str) -> dict:
+        """Una revisión de contraste automática vía OpenRouter (Opción A).
+
+        Guardas deterministas en orden: límite por oportunidad, circuit breaker,
+        límite diario de peticiones, límite diario/mensual de coste, clave
+        configurada. Si algo falla o no hay clave: NUNCA se fabrica una revisión;
+        se registra la llamada en ``llm_call_log`` y la ausencia es neutral.
+        """
+        if self.repos.opportunities.get(opportunity_id) is None:
+            raise NotFoundError("Oportunidad no encontrada.")
+
+        def _blocked(reason: str, detail: str = "") -> dict:
+            self._log(
+                agent="auto_review",
+                opportunity_id=opportunity_id,
+                summary=f"Revisión automática BLOQUEADA: {reason}. {detail}",
+                decision="blocked",
+                model_or_method="deterministic guard",
+            )
+            return {"status": "blocked", "reason": reason, "detail": detail, "review_created": False}
+
+        # 1) Máximo de revisiones automáticas por oportunidad (fase actual: 1).
+        already = self.repos.llm_calls.count_auto_reviews_for(opportunity_id)
+        if already >= self.settings.openrouter_max_reviews_per_opportunity:
+            return _blocked("max_reviews_per_opportunity", f"ya hay {already} revisión(es) automática(s).")
+
+        # 2) Circuit breaker ante errores repetidos.
+        breaker = self._circuit_breaker()
+        if breaker["open"]:
+            return _blocked(
+                "circuit_breaker_open",
+                f"{breaker['failures_recent']} fallos recientes en {breaker['cooldown_seconds']}s.",
+            )
+
+        # 3) Límite diario de peticiones.
+        today = _now_dt().date().isoformat()
+        requests_today = self.repos.llm_calls.count_since(today, provider="openrouter")
+        if requests_today >= self.settings.openrouter_daily_request_limit:
+            return _blocked("daily_request_limit", f"{requests_today}/{self.settings.openrouter_daily_request_limit}")
+
+        # 4) Límites de coste diario y mensual (suma honesta reported/estimated).
+        cost_today = self.repos.llm_calls.cost_since(today, provider="openrouter")
+        if cost_today >= self.settings.openrouter_daily_cost_limit_usd:
+            return _blocked("daily_cost_limit", f"{cost_today:.4f} >= {self.settings.openrouter_daily_cost_limit_usd} USD")
+        month_ago = (_now_dt() - timedelta(days=30)).isoformat()
+        cost_month = self.repos.llm_calls.cost_since(month_ago, provider="openrouter")
+        if cost_month >= self.settings.openrouter_monthly_cost_limit_usd:
+            return _blocked("monthly_cost_limit", f"{cost_month:.4f} >= {self.settings.openrouter_monthly_cost_limit_usd} USD")
+
+        # 5) Proveedor configurado (sin clave => sin revisión, nunca mock fingido).
+        if self.providers is None or not self.providers.openrouter.available():
+            return {
+                "status": "skipped",
+                "reason": "provider_not_configured",
+                "detail": "OPENROUTER_API_KEY no configurado: la ausencia de revisión es neutral.",
+                "review_created": False,
+            }
+
+        # 6) Expediente IDÉNTICO al de los revisores manuales (comparabilidad).
+        packet = self.generate_review_packet(opportunity_id)
+        prompt = packet["content"]
+
+        # 7) Llamada REAL directa al proveedor OpenRouter (NUNCA al manager:
+        #    el manager podría resolver a mock según LLM_PROVIDER y fabricar
+        #    una revisión falsa. Aquí el fallback a mock está prohibido).
+        try:
+            resp = self.providers.openrouter.generate(
+                prompt,
+                task="external_review",
+                temperature=0.2,
+            )
+        except ProviderUnavailableError as exc:
+            self._record_call(
+                opportunity_id=opportunity_id,
+                requested_model=self.settings.openrouter_review_model,
+                actual_model=None,
+                usage=None,
+                reported_cost=None,
+                estimated_cost=None,
+                cost_source=CostSource.unknown.value,
+                latency_ms=None,
+                retry_count=0,
+                fallback_used=False,
+                response_status="error",
+                notes=f"Llamada fallida antes de respuesta: {str(exc)[:400]}",
+            )
+            self._log(
+                agent="auto_review",
+                opportunity_id=opportunity_id,
+                summary=f"Revisión automática FALLIDA (sin fabricar revisión): {str(exc)[:200]}",
+                decision="failed_neutral",
+                model_or_method="openrouter",
+            )
+            return {
+                "status": "failed",
+                "reason": "provider_error",
+                "detail": str(exc)[:400],
+                "review_created": False,
+                "neutral": True,
+            }
+        except Exception as exc:  # cualquier otro fallo: sin fabricación
+            self._record_call(
+                opportunity_id=opportunity_id,
+                requested_model=self.settings.openrouter_review_model,
+                actual_model=None,
+                usage=None,
+                reported_cost=None,
+                estimated_cost=None,
+                cost_source=CostSource.unknown.value,
+                latency_ms=None,
+                retry_count=0,
+                fallback_used=False,
+                response_status="error",
+                notes=f"Llamada fallida: {str(exc)[:400]}",
+            )
+            self._log(
+                agent="auto_review",
+                opportunity_id=opportunity_id,
+                summary=f"Revisión automática FALLIDA (sin fabricar revisión): {str(exc)[:200]}",
+                decision="failed_neutral",
+                model_or_method="openrouter",
+            )
+            return {
+                "status": "failed",
+                "reason": "provider_error",
+                "detail": str(exc)[:400],
+                "review_created": False,
+                "neutral": True,
+            }
+
+        # 8) NUNCA hay fallback a mock: si la respuesta no viene de OpenRouter,
+        #    no se guarda ninguna revisión (regla de no fabricación).
+        # 9) Parseo con allowlist (misma vía que las revisiones manuales).
+        parsed, errors, status = self.parse_review_response(resp.text)
+        actual_model = resp.actual_model or resp.model
+        review = ExternalReview(
+            opportunity_id=opportunity_id,
+            provider="openrouter",
+            model=_sanitize_text(actual_model, 200),
+            model_version=_sanitize_text(resp.model, 100),  # solicitado (fijo)
+            execution_mode="API_AUTOMATIC",
+            raw_response=resp.text,
+            parsed_response=parsed,
+            recommendation=parsed.get("recommendation"),
+            confidence=parsed.get("confidence"),
+            strongest_evidence=parsed.get("strongest_evidence"),
+            weakest_assumption=parsed.get("weakest_assumption"),
+            missing_evidence=parsed.get("missing_evidence"),
+            primary_risk=parsed.get("primary_risk"),
+            suggested_improvement=parsed.get("suggested_improvement"),
+            cheaper_experiment=parsed.get("cheaper_experiment"),
+            kill_condition=parsed.get("kill_condition"),
+            cost=resp.reported_cost if resp.reported_cost is not None else (resp.cost_estimate_usd or 0.0),
+            status=status,
+            parse_errors=errors,
+            imported_by="auto-review",
+            file_hash=_sha256(resp.text),
+        )
+        saved = self.repos.reviews.create_review(review)
+
+        # 10) Registro de llamada con rastro completo y honesto de coste.
+        call_record = self._record_call(
+            opportunity_id=opportunity_id,
+            requested_model=resp.model,
+            actual_model=actual_model,
+            usage=resp.usage,
+            reported_cost=resp.reported_cost,
+            estimated_cost=resp.cost_estimate_usd or None,
+            cost_source=resp.cost_source,
+            latency_ms=resp.latency_ms,
+            retry_count=resp.retry_count,
+            fallback_used=False,
+            response_status="ok",
+            notes=resp.notes,
+        )
+        self._log(
+            agent="auto_review",
+            opportunity_id=opportunity_id,
+            summary=(
+                f"Revisión automática OpenRouter ({actual_model}) guardada (estado {status}). "
+                f"Coste: reported={resp.reported_cost} estimado={resp.cost_estimate_usd} "
+                f"fuente={resp.cost_source} billing_verified=False."
+            ),
+            decision=review.recommendation or "no_recommendation",
+            model_or_method=f"openrouter:{actual_model}",
+            evidence_used=[str(review.file_hash)],
+        )
+        return {
+            "status": "ok",
+            "review_created": True,
+            "review": saved,
+            "call": call_record,
+            "warnings": errors,
+            "cost_source": resp.cost_source,
+            "billing_verified": False,
+        }
 
     # ==================================================================
     # Expediente de revisión (idéntico para todos los revisores)

@@ -56,13 +56,36 @@ o una puntuación subjetiva.
 
 ## Modos de ejecución
 
-- `API_AUTOMATIC`: solo cuando exista API estable, credencial, presupuesto y
-  condiciones de uso compatibles. **No implementado en esta iteración** (no se
-  inventan APIs ni se asume acceso programático de cuentas web).
-- `MANUAL_IMPORT`: expediente → consulta manual → importación TXT/MD. Es la vía
-  funcional principal.
+- `API_AUTOMATIC` (**implementado desde la iteración 007 para OpenRouter**):
+  una revisión automática por finalista vía el proveedor OpenRouter, con
+  guardas deterministas. Se activa solo con credencial y presupuesto
+  (límites diarios/mensuales de peticiones y coste, circuit breaker). Si
+  falla o no hay clave, **no se fabrica ninguna revisión**: la ausencia es
+  neutral y se registra en `llm_call_log`. No se asume acceso programático de
+  ninguna otra cuenta web.
+- `MANUAL_IMPORT`: expediente → consulta manual → importación TXT/MD. Vía
+  funcional principal para GPT/Grok/Gemini/Claude/humano.
 - `INTERNAL` / `HUMAN`: revisión del modelo operativo o del supervisor humano.
 - `MOCK`: revisiones de demostración claramente etiquetadas.
+
+### Opción A — OpenRouter solo para el comité (iteración 007)
+
+- Modelo fijo (`OPENROUTER_REVIEW_MODEL`) para comparabilidad; router gratuito
+  (`OPENROUTER_FALLBACK_MODEL=openrouter/free`) como fallback. Se registra
+  siempre `requested_model` y `actual_model` (el router gratuito puede
+  devolver modelos distintos en cada llamada).
+- Costes honestos por llamada en `llm_call_log`: `reported_cost` (solo si el
+  proveedor lo devuelve), `estimated_cost` etiquetado, `cost_source`
+  (`PROVIDER_RESPONSE | LOCAL_ESTIMATE | FREE_TIER | UNKNOWN |
+  BILLING_RECONCILIATION`) y `billing_verified=false` (no hay reconciliación
+  con facturación en esta fase). Un coste desconocido nunca se convierte en
+  cero.
+- Presupuesto de inferencia separado: máx. 3 finalistas/semana (regla
+  existente), 1 revisión automática por oportunidad, límites diario/mensual
+  de peticiones y coste, circuit breaker ante errores repetidos y bloqueo por
+  cuota. Reintentos acotados (`OPENROUTER_MAX_RETRIES`), nunca infinitos.
+- Fallback sin coste permitido = **no generar revisión** (el mock nunca se
+  hace pasar por revisión real).
 
 ## Reglas de decisión
 
@@ -97,6 +120,9 @@ GET  /api/reviews/{review_id}                 Revisión con raw original
 POST /api/reviews/{review_id}/invalidate      Marcar inválida
 POST /api/reviews/opportunities/{id}/synthesize  (Re)generar síntesis
 POST /api/reviews/opportunities/{id}/continue Continuar sin revisión (neutral)
+POST /api/reviews/opportunities/{id}/auto-review  Revisión automática OpenRouter (Opción A)
+GET  /api/reviews/auto-status               Presupuesto de inferencia + circuit breaker
+GET  /api/llm-calls                         Log append-only de llamadas LLM (coste honesto)
 POST /api/reviews/opportunities/{id}/note     Nota humana en la cola
 POST /api/reviews/demo                        Demostración SINTÉTICA del flujo
 ```
