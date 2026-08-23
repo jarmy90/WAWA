@@ -260,6 +260,10 @@ CREATE TABLE IF NOT EXISTS venture_evaluations (
     concept_id TEXT NOT NULL REFERENCES discovery_concepts(id) ON DELETE CASCADE,
     scores TEXT NOT NULL DEFAULT '{}',
     final_score REAL NOT NULL DEFAULT 0,
+    -- Iteración 013: puntuación estructural vs puntuación con evidencia.
+    structural_concept_score REAL NOT NULL DEFAULT 0,
+    evidence_backed_venture_score REAL NOT NULL DEFAULT 0,
+    has_verified_evidence INTEGER NOT NULL DEFAULT 0,
     novelty_score REAL NOT NULL DEFAULT 0,
     utility_score REAL NOT NULL DEFAULT 0,
     blockers TEXT NOT NULL DEFAULT '[]',
@@ -611,6 +615,32 @@ def _ensure_llm_call_columns(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def _ensure_venture_columns(conn: sqlite3.Connection) -> None:
+    """Migración idempotente (iteración 013): columnas de puntuación estructural
+    vs puntuación con evidencia en venture_evaluations."""
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(venture_evaluations)").fetchall()}
+    if "structural_concept_score" not in existing:
+        conn.execute("ALTER TABLE venture_evaluations ADD COLUMN structural_concept_score REAL NOT NULL DEFAULT 0")
+    if "evidence_backed_venture_score" not in existing:
+        conn.execute("ALTER TABLE venture_evaluations ADD COLUMN evidence_backed_venture_score REAL NOT NULL DEFAULT 0")
+    if "has_verified_evidence" not in existing:
+        conn.execute("ALTER TABLE venture_evaluations ADD COLUMN has_verified_evidence INTEGER NOT NULL DEFAULT 0")
+    conn.commit()
+
+
+def _ensure_concept_columns(conn: sqlite3.Connection) -> None:
+    """Migración idempotente (iteración 013): Opportunity Brief + coherencia
+    en discovery_concepts."""
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(discovery_concepts)").fetchall()}
+    if "brief" not in existing:
+        conn.execute("ALTER TABLE discovery_concepts ADD COLUMN brief TEXT NOT NULL DEFAULT '{}'")
+    if "coherence_ok" not in existing:
+        conn.execute("ALTER TABLE discovery_concepts ADD COLUMN coherence_ok INTEGER NOT NULL DEFAULT 1")
+    if "coherence_reason" not in existing:
+        conn.execute("ALTER TABLE discovery_concepts ADD COLUMN coherence_reason TEXT NOT NULL DEFAULT ''")
+    conn.commit()
+
+
 def _migrate_cycle_state_nullable(conn: sqlite3.Connection) -> None:
     """Migración idempotente (iteración 010): cycle_state.started_at pasa a
     aceptar NULL para que el estado PRE_CYCLE no cree el reloj al consultar.
@@ -658,6 +688,8 @@ def init_db(settings: Settings) -> None:
         conn.executescript(SCHEMA)
         conn.commit()
         _ensure_llm_call_columns(conn)
+        _ensure_venture_columns(conn)
+        _ensure_concept_columns(conn)
         _migrate_cycle_state_nullable(conn)
     finally:
         conn.close()

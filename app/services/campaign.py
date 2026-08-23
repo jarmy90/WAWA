@@ -195,7 +195,7 @@ class CampaignService:
                 if campaign.get("concepts_count", 0) < 5:
                     missing.append("WIDE_IDEATION: generar al menos 5 conceptos.")
             elif stage == CampaignStage.commodity_filter.value:
-                if not has_concepts_with(lambda c: c.get("status") in ("passed", "blocked")):
+                if not has_concepts_with(lambda c: c.get("status") in ("AI_FILTER_PASSED", "COMMODITY_BLOCKED", "NEEDS_REFORMULATION")):
                     missing.append("COMMODITY_FILTER: ejecutar el filtro de comoditización (marcar conceptos).")
             elif stage == CampaignStage.recombination.value:
                 if not has_concepts_with(lambda c: c.get("source") == "recombined"):
@@ -205,9 +205,9 @@ class CampaignService:
                 if len(analyzed) < 3:
                     missing.append("STRUCTURAL_ANALYSIS: analizar al menos 3 conceptos (substitution + venture).")
             elif stage == CampaignStage.shortlist.value:
-                shortlisted = [c for c in concepts if c.get("status") in ("shortlisted", "finalist")]
+                shortlisted = [c for c in concepts if c.get("status") in ("RESEARCH_CANDIDATE", "FINALIST")]
                 if len(shortlisted) < 3:
-                    missing.append("SHORTLIST: seleccionar al menos 3 conceptos al shortlist.")
+                    missing.append("SHORTLIST: seleccionar al menos 3 candidatas concretas al shortlist.")
             elif stage == CampaignStage.internal_tournament.value:
                 if not comparisons and campaign.get("finalists_count", 0) == 0:
                     missing.append("INTERNAL_TOURNAMENT: ejecutar el torneo por pares (o seleccionar finalistas).")
@@ -1085,15 +1085,31 @@ class CampaignService:
         self.discovery.run_commodity_filter(discovery_id)
         final1 = self.finalize_session(session1["session_id"])
 
-        # --- Sesión 2: recombinación + shortlist + torneo + finalistas -----------
+        # --- Sesión 2: recombinación + briefs + shortlist + torneo + finalistas ---
         session2 = self.prepare_session(campaign_id, 5, actor="demo")
-        # Recombinar deterministamente y seleccionar shortlist/torneo.
+        # Recombinar deterministamente.
         self.discovery.run_recombine(discovery_id)
+        # Iteración 013: el demo completa Opportunity Briefs de HIPÓTESIS para
+        # los conceptos que pasaron el filtro (sin brief concreto no hay
+        # candidata). Nunca añade evidencia ni demanda verificada.
+        detail_mid = self.discovery.campaign_detail(discovery_id)
+        cap = int((detail_mid.get("campaign") or {}).get("shortlist_target", 6))
+        completed = 0
+        for c in detail_mid.get("concepts") or []:
+            if completed >= cap:
+                break
+            if c.get("status") not in ("AI_FILTER_PASSED", "STRUCTURAL_FILTER_PASSED"):
+                continue
+            try:
+                self.discovery.complete_opportunity_brief(c["id"], self.discovery.demo_brief_for(c))
+                completed += 1
+            except ValidationError:
+                pass
         self.discovery.run_shortlist(discovery_id)
         self.discovery.run_tournament(discovery_id)
 
         detail = self.discovery.campaign_detail(discovery_id)
-        finalist_concepts = [c for c in detail["concepts"] if c["status"] == "finalist"][: 3]
+        finalist_concepts = [c for c in detail["concepts"] if c["status"] == "FINALIST"][: 3]
         promoted: list[Any] = []
         for concept in finalist_concepts:
             promoted.append(self.discovery.promote(concept["id"]))

@@ -960,9 +960,9 @@ function renderCampaign(detail) {
     return `<span class="phase-step ${cls}">${PHASE_LABEL[p] || p}</span>`;
   }).join("");
   const concepts = detail.concepts || [];
-  const shortlist = concepts.filter((c) => c.status === "shortlisted" || c.status === "finalist");
-  const finalists = concepts.filter((c) => c.status === "finalist");
-  const blocked = concepts.filter((c) => c.status === "blocked");
+  const shortlist = concepts.filter((c) => ["RESEARCH_CANDIDATE", "RESEARCH_PENDING", "SHORTLISTED_WITH_EVIDENCE", "FINALIST", "EXPERIMENT_READY"].includes(c.status));
+  const finalists = concepts.filter((c) => ["FINALIST", "EXPERIMENT_READY"].includes(c.status));
+  const blocked = concepts.filter((c) => ["COMMODITY_BLOCKED", "RECOMBINATION_INCOHERENT", "CONCEPTUAL_CLONE", "DIVERSITY_ELIMINATED"].includes(c.status));
   const shown = finalists.length ? finalists : shortlist;
   card.innerHTML = `
     <div class="campaign-head">
@@ -981,7 +981,7 @@ function renderCampaign(detail) {
       ${phaseBtn("tournament", "Torneo", camp.id, phaseIdx < 4)}
     </div>
     ${shown.length ? renderConcepts(shown, camp.id) : ""}
-    ${blocked.length ? `<div class="mission-block">${blocked.length} conceptos bloqueados (wrappers de IA / sin comprador / sin resultado).</div>` : ""}
+    ${blocked.length ? `<div class="mission-block">${blocked.length} conceptos descartados (commodity / incoherentes / clones / por diversidad) con motivo conservado.</div>` : ""}
     <div class="mission-block">
       <span>Misión de investigación Freebuff:</span>
       <select class="mission-kind" data-campaign="${camp.id}">
@@ -1056,24 +1056,29 @@ function renderConcepts(list, campaignId) {
   return `<div class="concept-list">${list.map((c) => {
     const v = c.venture || {};
     const s = c.substitution || {};
-    const blockedCls = s.verdict === "blocked" ? " blocked" : "";
-    const labels = (v.labels || []).slice(0, 2).map((l) => `<span class="tag">${esc(l)}</span>`).join("");
-    const classification = s.classification ? `<span class="tag ${s.verdict === "blocked" ? "tag-commodity" : ""}">${esc(s.classification)}</span>` : "";
-    const statusTag = c.status === "finalist" ? `<span class="tag tag-verified">finalista</span>` : "";
+    const status = c.status || "GENERATED_HYPOTHESIS";
+    const label = STATUS_LABELS[status] || status;
+    const meaning = c.status_meaning || "";
+    const classification = c.ai_substitution_label || s.classification || "";
+    const canPromote = ["RESEARCH_CANDIDATE", "FINALIST", "SHORTLISTED_WITH_EVIDENCE"].includes(status);
+    const structural = c.structural_concept_score != null ? Number(c.structural_concept_score).toFixed(1) : "—";
+    const evidence = c.evidence_backed_venture_score != null ? Number(c.evidence_backed_venture_score).toFixed(1) : "—";
+    const tagClass = STATUS_BAD.has(status) ? "tag-bad" : STATUS_OK.has(status) ? "tag-ok" : "tag-neutral";
     return `
-      <div class="concept-row${c.status === "finalist" ? " finalist" : ""}">
+      <div class="concept-row${status === "FINALIST" ? " finalist" : ""}">
         <div class="concept-top">
           <h4>${esc(c.title)}</h4>
           <div class="concept-tags">
-            <span class="vscore${blockedCls}">${v.final_score != null ? v.final_score.toFixed(1) : "—"}</span>
-            ${classification}
-            ${labels}
-            ${statusTag}
+            <span class="vscore">${esc(structural)}</span>
+            ${classification ? `<span class="tag tag-unverified" title="${esc(c.ai_substitution_meaning || "")}">${esc(classification)}</span>` : ""}
+            <span class="tag ${tagClass}" title="${esc(meaning)}">${esc(label)}</span>
+            <span class="tag tag-neutral">con evidencia: ${esc(evidence)}</span>
           </div>
         </div>
         <div class="concept-body">${esc((c.mechanism || "").slice(0, 220))}</div>
+        ${c.rejection_reason ? `<div class="concept-body small muted">Motivo: ${esc(c.rejection_reason.slice(0, 200))}</div>` : ""}
         <div class="concept-actions">
-          ${c.status === "shortlisted" || c.status === "finalist" ? `<button class="btn btn-primary btn-sm" data-promote="${c.id}">Promover a oportunidad</button>` : ""}
+          ${canPromote ? `<button class="btn btn-primary btn-sm" data-promote="${c.id}">Promover a oportunidad</button>` : ""}
           <button class="btn btn-ghost btn-sm" data-mission-concept="${c.id}">Misión de investigación</button>
         </div>
       </div>`;
@@ -1450,14 +1455,15 @@ function renderOrchestrator(data) {
   const disc = data.discovery || {};
   const concepts = disc.concepts || [];
   const byStatus = (s) => concepts.filter((c) => c.status === s).length;
+  const countAny = (ss) => concepts.filter((c) => ss.includes(c.status)).length;
   const funnel = `
     <div class="eco-kpis">
       <div class="eco-kpi"><div class="k">Estado</div><div class="v">${esc(run.state)}</div></div>
       <div class="eco-kpi"><div class="k">Iniciales</div><div class="v">${concepts.length}</div></div>
-      <div class="eco-kpi"><div class="k">Descartadas</div><div class="v">${byStatus("blocked") + byStatus("eliminated")}</div></div>
-      <div class="eco-kpi"><div class="k">Shortlist</div><div class="v">${byStatus("shortlisted")}</div></div>
-      <div class="eco-kpi"><div class="k">Finalistas</div><div class="v">${byStatus("finalist")}</div></div>
-      <div class="eco-kpi"><div class="k">En investigación</div><div class="v">${byStatus("promoted")}</div></div>
+      <div class="eco-kpi"><div class="k">Necesitan reformulación</div><div class="v">${byStatus("NEEDS_REFORMULATION")}</div></div>
+      <div class="eco-kpi"><div class="k">Descartadas</div><div class="v">${countAny(["COMMODITY_BLOCKED", "RECOMBINATION_INCOHERENT", "CONCEPTUAL_CLONE", "DIVERSITY_ELIMINATED"])}</div></div>
+      <div class="eco-kpi"><div class="k">Candidatas</div><div class="v">${countAny(["RESEARCH_CANDIDATE", "RESEARCH_PENDING"])}</div></div>
+      <div class="eco-kpi"><div class="k">Finalistas</div><div class="v">${countAny(["FINALIST", "EXPERIMENT_READY"])}</div></div>
     </div>`;
 
   const nextAction = data.next_action ? `<p class="hint"><strong>Próxima acción:</strong> ${esc(data.next_action)}</p>` : "";
@@ -1603,6 +1609,40 @@ document.addEventListener("click", (ev) => {
 /* ------------------------------------------------------------------ */
 /* Ideas (vista filtrable de la campaña real)                          */
 /* ------------------------------------------------------------------ */
+/* Iteración 013: estados inequívocos y tarjetas honestas. Nunca se muestran
+   "passed", "promoted", "shortlisted" o "finalist" sueltos; cada tarjeta
+   explica el estado, qué significa, qué filtro superó, la puntuación
+   estructural vs la de evidencia, el motivo y la siguiente acción. */
+const STATUS_LABELS = {
+  GENERATED_HYPOTHESIS: "GENERADA (hipótesis)",
+  DEDUP_PASSED: "SUPERÓ DEDUPLICACIÓN",
+  AI_FILTER_PASSED: "NO ES COMMODITY",
+  STRUCTURAL_FILTER_PASSED: "ESTRUCTURA MÍNIMA",
+  RECOMBINATION_INCOHERENT: "RECOMBINACIÓN INCOHERENTE",
+  DIVERSITY_ELIMINATED: "DESCARTADA POR DIVERSIDAD",
+  CONCEPTUAL_CLONE: "CLON CONCEPTUAL",
+  COMMODITY_BLOCKED: "BLOQUEADA (COMMODITY)",
+  NEEDS_REFORMULATION: "NECESITA REFORMULACIÓN",
+  RESEARCH_CANDIDATE: "CANDIDATA A INVESTIGAR",
+  RESEARCH_PENDING: "INVESTIGACIÓN PENDIENTE",
+  EVIDENCE_INSUFFICIENT: "EVIDENCIA INSUFICIENTE",
+  SHORTLISTED_WITH_EVIDENCE: "SHORTLIST CON EVIDENCIA",
+  FINALIST: "FINALISTA",
+  EXPERIMENT_READY: "PREPARADA PARA EXPERIMENTO",
+};
+const STATUS_BAD = new Set([
+  "RECOMBINATION_INCOHERENT", "DIVERSITY_ELIMINATED", "CONCEPTUAL_CLONE",
+  "COMMODITY_BLOCKED", "EVIDENCE_INSUFFICIENT",
+]);
+const STATUS_OK = new Set([
+  "AI_FILTER_PASSED", "STRUCTURAL_FILTER_PASSED", "RESEARCH_CANDIDATE",
+  "RESEARCH_PENDING", "SHORTLISTED_WITH_EVIDENCE", "FINALIST", "EXPERIMENT_READY",
+]);
+const STRUCTURAL_OK = new Set([
+  "STRUCTURAL_FILTER_PASSED", "RESEARCH_CANDIDATE", "RESEARCH_PENDING",
+  "EVIDENCE_INSUFFICIENT", "SHORTLISTED_WITH_EVIDENCE", "FINALIST", "EXPERIMENT_READY",
+]);
+
 async function loadIdeas() {
   let run = currentRun;
   if (!run) {
@@ -1627,27 +1667,54 @@ async function loadIdeas() {
   const filter = $("#ideas-filter")?.value || "all";
   const filtered = concepts.filter((c) => {
     if (filter === "all") return true;
-    if (filter === "active") return ["draft", "shortlisted", "finalist", "promoted"].includes(c.status);
-    if (filter === "blocked") return ["blocked", "eliminated"].includes(c.status);
-    if (filter === "commodity") return c.status === "blocked" && (c.substitution?.classification === "COMMODITY_WRAPPER");
-    if (filter === "shortlist") return c.status === "shortlisted";
-    if (filter === "finalist") return c.status === "finalist";
-    if (filter === "promoted") return c.status === "promoted";
+    if (filter === "active") return STATUS_OK.has(c.status);
+    if (filter === "discarded") return STATUS_BAD.has(c.status);
+    if (filter === "reform") return c.status === "NEEDS_REFORMULATION";
+    if (filter === "commodity") return c.status === "COMMODITY_BLOCKED";
+    if (filter === "shortlist") return ["RESEARCH_CANDIDATE", "RESEARCH_PENDING", "SHORTLISTED_WITH_EVIDENCE"].includes(c.status);
+    if (filter === "research") return ["RESEARCH_CANDIDATE", "RESEARCH_PENDING"].includes(c.status);
+    if (filter === "finalist") return ["FINALIST", "EXPERIMENT_READY"].includes(c.status);
     return true;
   });
   empty.classList.toggle("hidden", filtered.length > 0);
   grid.innerHTML = filtered.map((c) => {
-    const sub = c.substitution?.classification || "sin test";
-    const v = c.venture?.final_score;
-    const vq = v != null ? `<div class="v">Venture: ${v.toFixed(1)}</div>` : "";
-    const why = c.rejection_reason || c.venture?.blockers?.[0] || "";
+    const status = c.status || "GENERATED_HYPOTHESIS";
+    const label = STATUS_LABELS[status] || status;
+    const meaning = c.status_meaning || "";
+    const sub = c.ai_substitution_label || c.substitution?.classification || "sin test";
+    const subMeaning = c.ai_substitution_meaning || "";
+    const structural = c.structural_concept_score != null ? Number(c.structural_concept_score).toFixed(1) : "—";
+    const evidence = c.evidence_backed_venture_score != null ? Number(c.evidence_backed_venture_score).toFixed(1) : "—";
+    const groups = c.evidence_groups || 0;
+    const verified = c.verified_evidence_count || 0;
+    const brief = c.brief || {};
+    const why = c.rejection_reason || "";
+    const missing = c.missing_evidence || "";
+    const next = c.next_action || "";
+    const tagClass = STATUS_BAD.has(status) ? "tag-bad" : STATUS_OK.has(status) ? "tag-ok" : "tag-neutral";
+    const filtersPassed = [];
+    if (status !== "CONCEPTUAL_CLONE") filtersPassed.push("dedup");
+    if (STATUS_OK.has(status)) filtersPassed.push("filtro IA");
+    if (STRUCTURAL_OK.has(status)) filtersPassed.push("estructura");
+    const briefChannel = brief.first_distribution_channel || "";
     return `
       <div class="card idea-card">
-        <div class="card-head"><strong>${esc(c.title)}</strong> <span class="tag ${c.status === "blocked" || c.status === "eliminated" ? "tag-bad" : "tag-ok"}">${esc(c.status)}</span></div>
-        <p class="small">${esc((c.problem_hypothesis || "").slice(0, 140))}</p>
-        <p class="small muted">Comprador: ${esc((c.buyer_hypothesis || "—").slice(0, 90))}</p>
-        <div class="row small"><span class="tag tag-unverified">${esc(sub)}</span>${vq}</div>
-        ${why ? `<p class="small muted">Motivo: ${esc(why.slice(0, 160))}</p>` : ""}
+        <div class="card-head"><strong>${esc(c.title)}</strong> <span class="tag ${tagClass}">${esc(label)}</span></div>
+        <p class="small muted">Estado: ${esc(meaning)}</p>
+        <p class="small">${esc((c.problem_hypothesis || "").slice(0, 150))}</p>
+        <p class="small muted">Comprador: ${esc((c.buyer_hypothesis || brief.buyer || "—").slice(0, 110))}</p>
+        <p class="small muted">Entrega: ${esc((c.outcome_hypothesis || brief.concrete_deliverable || "—").slice(0, 110))}</p>
+        ${briefChannel ? `<p class="small muted">Canal: ${esc(briefChannel.slice(0, 110))}</p>` : ""}
+        <div class="row small">
+          <span class="tag tag-unverified" title="${esc(subMeaning)}">${esc(sub)}</span>
+          <span class="tag tag-neutral">Estructura: ${esc(structural)}</span>
+          <span class="tag tag-neutral">Con evidencia: ${esc(evidence)}</span>
+          <span class="tag tag-neutral">Evidencia: ${groups} grupos / ${verified} verificadas</span>
+        </div>
+        ${filtersPassed.length ? `<p class="small muted">Filtros superados: ${esc(filtersPassed.join(" · "))}</p>` : ""}
+        ${why ? `<p class="small muted">Motivo: ${esc(why.slice(0, 180))}</p>` : ""}
+        ${missing ? `<p class="small muted">Qué falta: ${esc(missing.slice(0, 180))}</p>` : ""}
+        ${next ? `<p class="small">Próxima acción: ${esc(next.slice(0, 180))}</p>` : ""}
       </div>`;
   }).join("");
 }

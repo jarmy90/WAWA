@@ -191,6 +191,19 @@ explícita del propietario). Reglas permanentes:
     ciclo económico inicial es 30 días / 50 USD (vías A/B, prórroga única de
     14 días); sin pago real confirmado el estado es NOT_PASSED y la prórroga
     se rechaza (un intento rechazado no consume el cupo).
+12. **Calidad semántica y estados honestos (iteración 013)**: nunca mostrar
+    `passed`/`promoted`/`blocked`/`eliminated`/`shortlisted`/`finalist`
+    sueltos; los estados son inequívocos (GENERATED_HYPOTHESIS …
+    EXPERIMENT_READY) y cada tarjeta explica estado, significado, filtro
+    superado y próxima acción. Las ventajas sin evidencia se muestran como
+    HIPÓTESIS (HYPOTHESIS_*). La puntuación previa se llama
+    `structural_concept_score` y la viabilidad con evidencia
+    (`evidence_backed_venture_score`) empieza en 0 (tope 40 con <3 grupos
+    independientes). Ninguna idea NEEDS_REFORMULATION o
+    RECOMBINATION_INCOHERENT se investiga ni genera misiones. Misiones
+    PROGRESIVAS: solo 6 de Fase 1 por candidata (nunca las 10 de golpe).
+    Reprocesar campañas mapea estados, supersede misiones antiguas
+    (SUPERSEDED_BY_SEMANTIC_QUALITY_GATE) y conserva TODAS las ideas.
 
 ## Qué NO hacer
 

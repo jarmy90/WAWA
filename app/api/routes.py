@@ -529,6 +529,40 @@ def discovery_tournament(request: Request, campaign_id: str = Depends(valid_camp
     return get_container(request).discovery.run_tournament(campaign_id)
 
 
+class OpportunityBriefIn(BaseModel):
+    """Opportunity Brief (iteración 013): hipótesis concreta, no evidencia."""
+
+    model_config = ConfigDict(extra="forbid")
+    brief: dict
+
+
+@router.post("/discovery/campaigns/{campaign_id}/reprocess")
+def discovery_reprocess(request: Request, campaign_id: str = Depends(valid_campaign_id)) -> dict:
+    """Iteración 013: reprocesa la campaña con la puerta de calidad semántica
+    (estados honestos, coherencia, marcadores genéricos, misiones superseded).
+    No borra ideas ni evidencia: conserva trazabilidad."""
+    return get_container(request).discovery.reprocess_semantic_gate(campaign_id)
+
+
+@router.post("/discovery/campaigns/{campaign_id}/reformulations/{concept_id}")
+def discovery_generate_reformulations(
+    request: Request,
+    campaign_id: str = Depends(valid_campaign_id),
+    concept_id: str = Depends(valid_concept_id),
+) -> dict:
+    """Iteración 013: genera 3-5 reformulaciones concretas (hipótesis) para un
+    concepto abstracto. Ninguna se investiga hasta completar su brief."""
+    return get_container(request).discovery.generate_reformulations(campaign_id, concept_id)
+
+
+@router.post("/discovery/concepts/{concept_id}/brief")
+def discovery_complete_brief(payload: OpportunityBriefIn, request: Request, concept_id: str = Depends(valid_concept_id)) -> dict:
+    """Iteración 013: completa el Opportunity Brief. Solo si es concreto el
+    concepto pasa a RESEARCH_CANDIDATE. El brief es hipótesis: no añade
+    evidencia ni demanda verificada."""
+    return get_container(request).discovery.complete_opportunity_brief(concept_id, payload.brief)
+
+
 @router.get("/discovery/concepts/{concept_id}")
 def discovery_get_concept(request: Request, concept_id: str = Depends(valid_concept_id)) -> dict:
     container = get_container(request)

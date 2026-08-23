@@ -150,3 +150,36 @@ señal, lente, canal, comprador, propuesta y ventaja confirmada.
   demuestra que bloquea prompt-wrappers.
 - El Judge de oportunidades (iteración 001) sigue siendo el único que decide
   aprobar/rechazar con evidencias reales.
+
+## Calidad semántica y estados honestos (iteración 013)
+
+La inspección humana de la PRIMERA CAMPAÑA REAL 001 detectó que etiquetas como
+`passed`/`promoted`/`eliminated` y puntuaciones Venture 60-71 no reflejaban
+conceptos sin comprador, demanda, precio ni canal. Correcciones permanentes:
+
+- **Estados inequívocos en español** (`app/scoring/semantic_gate.py`):
+  GENERATED_HYPOTHESIS → DEDUP_PASSED → AI_FILTER_PASSED →
+  STRUCTURAL_FILTER_PASSED → (RECOMBINATION_INCOHERENT | CONCEPTUAL_CLONE |
+  DIVERSITY_ELIMINATED | COMMODITY_BLOCKED | NEEDS_REFORMULATION |
+  RESEARCH_CANDIDATE) → RESEARCH_PENDING → EVIDENCE_INSUFFICIENT →
+  SHORTLISTED_WITH_EVIDENCE → FINALIST → EXPERIMENT_READY. Cada concepto se
+  sirve con `status_meaning`, filtros superados, motivo, qué falta y próxima
+  acción.
+- **Ventajas como hipótesis**: sin evidencia verificable, las clasificaciones
+  estructurales se etiquetan HYPOTHESIS_*.
+- **Dos puntuaciones**: `structural_concept_score` (formulación) y
+  `evidence_backed_venture_score` (0 sin evidencia; tope 40 con <3 grupos;
+  real con ≥3 grupos independientes). Sin evidencia, `proven_demand` y
+  `distribution` valen 0.
+- **Quality Gate del Opportunity Brief**: 19 campos concretos; los marcadores
+  genéricos bloquean la promoción a candidata (NEEDS_REFORMULATION). Un
+  concepto NEEDS_REFORMULATION o RECOMBINATION_INCOHERENT nunca se investiga
+  ni genera misiones.
+- **Misiones progresivas**: Fase 1 (6 de descarte) por candidata; la Fase 2
+  solo para supervivientes. Nunca las 10 de golpe.
+- **Reformulaciones**: `generate_reformulations` + torneo de reformulaciones
+  (máx. 3 candidatas; 0 es válido). Las reformulaciones son HIPÓTESIS con
+  brief pre-rellenado, nunca evidencia.
+- **Reproceso**: `POST /api/discovery/campaigns/{id}/reprocess` mapea estados
+  antiguos, invalida misiones obsoletas (`SUPERSEDED_BY_SEMANTIC_QUALITY_GATE`)
+  y conserva TODAS las ideas (trazabilidad completa).

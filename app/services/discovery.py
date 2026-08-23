@@ -54,6 +54,26 @@ MISSION_KINDS = (
     "TOS_AND_LEGAL_CHECK", "EXPERIMENT_FEASIBILITY_CHECK",
 )
 
+# Iteración 013: misiones PROGRESIVAS. Fase 1 (descarte) primero; la fase 2
+# solo para supervivientes. NUNCA se generan las 10 de golpe.
+RESEARCH_PHASE1_KINDS = (
+    "DEMAND_REALITY_CHECK",
+    "BUYER_BUDGET_CHECK",
+    "CURRENT_ALTERNATIVE_CHECK",
+    "DISTRIBUTION_ACCESS_CHECK",
+    "COMPETITOR_EQUIVALENT_SEARCH",
+    "GENERAL_AI_SUBSTITUTION_CHECK",
+)
+RESEARCH_PHASE2_KINDS = (
+    "MOAT_REALITY_CHECK",
+    "DATA_AVAILABILITY_CHECK",
+    "TOS_AND_LEGAL_CHECK",
+    "EXPERIMENT_FEASIBILITY_CHECK",
+)
+
+# Etiqueta que invalida misiones obsoletas al reprocesar con el gate semántico.
+SUPERSEDED_BY_SEMANTIC_GATE = "SUPERSEDED_BY_SEMANTIC_QUALITY_GATE"
+
 # Campos que una evidencia DEBE traer para poder marcarse verified (regla de
 # no auto-verificación: Freebuff u otra fuente no basta por sí misma).
 VERIFIED_REQUIRED_FIELDS = ("source_url", "captured_at", "summary")
@@ -117,12 +137,103 @@ class DiscoveryService:
             evals = self.repos.discovery.venture_evaluations_by_concept(concept["id"])
             concept["substitution"] = tests[0] if tests else None
             concept["venture"] = evals[0] if evals else None
+            self._enrich_concept(concept)
         return {
             "campaign": campaign,
             "concepts": concepts,
             "comparisons": self.repos.discovery.comparisons_by_campaign(campaign_id),
             "diversity": campaign.get("diversity", 0.0),
         }
+
+    def _enrich_concept(self, concept: dict[str, Any]) -> dict[str, Any]:
+        """Iteración 013: campos honestos por concepto — estado, qué significa,
+        qué falta, siguiente acción y puntuación estructural vs con evidencia.
+        Nunca muestra 'passed' sin fase ni 'promoted'."""
+        from app.scoring.semantic_gate import STATUS_MEANINGS, hypothesis_classification, validate_opportunity_brief
+
+        status = concept.get("status") or "GENERATED_HYPOTHESIS"
+        concept["status_meaning"] = STATUS_MEANINGS.get(status, "Estado sin significado asignado.")
+        ven = concept.get("venture") or {}
+        concept["structural_concept_score"] = round(float(ven.get("structural_concept_score") or 0.0), 2)
+        concept["evidence_backed_venture_score"] = round(float(ven.get("evidence_backed_venture_score") or 0.0), 2)
+        concept["has_verified_evidence"] = bool(ven.get("has_verified_evidence"))
+
+        # Clasificación de ventaja como HIPÓTESIS mientras no haya evidencia.
+        sub = concept.get("substitution") or {}
+        cls = sub.get("classification") or "UNKNOWN"
+        label, meaning = hypothesis_classification(cls, concept["has_verified_evidence"])
+        concept["ai_substitution_label"] = label
+        concept["ai_substitution_meaning"] = meaning
+
+        # Evidencia asociada (vía oportunidad promovida).
+        groups, verified_count = self._evidence_counts(concept["id"])
+        concept["evidence_groups"] = groups
+        concept["verified_evidence_count"] = verified_count
+
+        # Motivo de descarte / qué falta / próxima acción, por estado.
+        brief = validate_opportunity_brief(concept.get("brief") or {})
+        if status == "NEEDS_REFORMULATION":
+            concept["rejection_reason"] = (
+                "patrón interesante pero todavía no es una oportunidad concreta"
+                + (f": {', '.join(brief['reasons'][:4])}" if brief["reasons"] else "")
+            )
+            concept["missing_evidence"] = ", ".join(brief["missing"][:8]) or "brief sin completar"
+            concept["next_action"] = "generar reformulaciones específicas y completar el Opportunity Brief"
+        elif status == "RECOMBINATION_INCOHERENT":
+            concept["rejection_reason"] = concept.get("coherence_reason") or "recombinación incoherente"
+            concept["missing_evidence"] = "reformulación con conexión causal"
+            concept["next_action"] = "reformular con contexto y comprador conectados"
+        elif status == "COMMODITY_BLOCKED":
+            concept["rejection_reason"] = "una IA generalista puede resolver la mayor parte del problema"
+            concept["missing_evidence"] = "limitación específica de una IA generalista"
+            concept["next_action"] = "descartada (no invertir más)"
+        elif status == "CONCEPTUAL_CLONE":
+            concept["rejection_reason"] = "clon conceptual de otra idea de la campaña"
+            concept["missing_evidence"] = "—"
+            concept["next_action"] = "descartada (redundante)"
+        elif status == "DIVERSITY_ELIMINATED":
+            concept["rejection_reason"] = "eliminada para conservar diversidad de la shortlist"
+            concept["missing_evidence"] = "—"
+            concept["next_action"] = "descartada por diversidad"
+        elif status == "RESEARCH_PENDING":
+            concept["rejection_reason"] = ""
+            concept["missing_evidence"] = "investigación externa pendiente (demanda, comprador, canal)"
+            concept["next_action"] = "COPIAR MISIÓN PARA FREEBUFF y pegar la respuesta"
+        elif status == "RESEARCH_CANDIDATE":
+            concept["rejection_reason"] = ""
+            concept["missing_evidence"] = "evidencia externa verificable (URL + fecha + fragmento)"
+            concept["next_action"] = "generar misiones de Fase 1 (6) e investigar"
+        elif status == "FINALIST":
+            concept["rejection_reason"] = ""
+            concept["missing_evidence"] = "revisiones del comité y síntesis"
+            concept["next_action"] = "entrar al comité de contraste"
+        elif status == "SHORTLISTED_WITH_EVIDENCE":
+            concept["rejection_reason"] = ""
+            concept["missing_evidence"] = "reevaluación final con evidencia"
+            concept["next_action"] = "reevaluar y decidir finalistas"
+        elif status == "EXPERIMENT_READY":
+            concept["rejection_reason"] = ""
+            concept["missing_evidence"] = "—"
+            concept["next_action"] = "crear el plan de experimento"
+        else:
+            concept["rejection_reason"] = ""
+            concept["missing_evidence"] = "—"
+            concept["next_action"] = "continuar en el embudo"
+        return concept
+
+    def _evidence_counts(self, concept_id: str) -> tuple[int, int]:
+        """Grupos independientes y evidencias verificadas de la oportunidad
+        promovida (si existe). Sin oportunidad → 0."""
+        try:
+            opp = self.repos.opportunities.get_by_concept(concept_id) if hasattr(self.repos.opportunities, "get_by_concept") else None
+        except Exception:
+            opp = None
+        if opp is None:
+            return 0, 0
+        rows = self.repos.evidence.list_for(opp.id)
+        verified = [e for e in rows if getattr(e, "verified", False)]
+        groups = {getattr(e, "independence_group", None) or "x" for e in verified}
+        return len(groups), len(verified)
 
     # ------------------------------------------------------------------
     # FASE 1: exploración amplia (50-100 conceptos breves)
@@ -169,7 +280,7 @@ class DiscoveryService:
             "general_ai_risk": (item.get("general_ai_risk") or "").strip() or None,
             "asset_potential": (item.get("asset_potential") or "").strip() or None,
             "phase": phase,
-            "status": "draft",
+            "status": "GENERATED_HYPOTHESIS",
             "source": source,
         }
         if not concept["title"] or not concept["problem_hypothesis"] or not concept["mechanism"]:
@@ -192,7 +303,7 @@ class DiscoveryService:
             concept["id"], test.model_dump(mode="json")
         )
         if test.verdict == "blocked":
-            self.repos.discovery.update_concept(concept["id"], status="blocked")
+            self.repos.discovery.update_concept(concept["id"], status="COMMODITY_BLOCKED")
             self.repos.discovery.add_learning_record(
                 kind="rejection",
                 pattern="COMMODITY_WRAPPER: IA generalista resuelve el problema sin workflow, integración ni memoria.",
@@ -222,22 +333,28 @@ class DiscoveryService:
     def run_commodity_filter(self, campaign_id: str) -> dict[str, Any]:
         campaign = self.get_campaign(campaign_id)
         concepts = self.repos.discovery.concepts_by_campaign(campaign_id)
-        blocked, passed = 0, 0
+        blocked, passed, reform = 0, 0, 0
         for concept in concepts:
-            if concept["status"] == "blocked":
+            if concept["status"] in ("COMMODITY_BLOCKED", "RECOMBINATION_INCOHERENT"):
                 blocked += 1
+                continue
+            if concept["status"] in ("NEEDS_REFORMULATION",):
+                reform += 1
                 continue
             blockers = self._filter_blockers(concept)
             if blockers:
-                self.repos.discovery.update_concept(concept["id"], status="blocked")
+                self.repos.discovery.update_concept(concept["id"], status="COMMODITY_BLOCKED")
                 for b in blockers:
                     self.repos.discovery.add_learning_record(
                         kind="rejection", pattern=b, source=f"filter:{concept['id']}", notes=concept["title"]
                     )
                 blocked += 1
-            else:
-                self.repos.discovery.update_concept(concept["id"], status="passed")
-                passed += 1
+                continue
+            # Iteración 013: este filtro SOLO decide commodity o no. La puerta
+            # de marcadores genéricos (NEEDS_REFORMULATION) se aplica en la
+            # promoción a candidata (run_shortlist / Opportunity Brief).
+            self.repos.discovery.update_concept(concept["id"], status="AI_FILTER_PASSED")
+            passed += 1
         self.repos.discovery.update_campaign(campaign_id, phase="phase2")
         self._log("discovery.phase2", f"Filtro de comoditización: {passed} pasan, {blocked} bloqueados (campaña {campaign_id}).", model="rules")
         return self.campaign_detail(campaign_id)
@@ -247,9 +364,17 @@ class DiscoveryService:
     # ------------------------------------------------------------------
     def run_recombine(self, campaign_id: str) -> dict[str, Any]:
         campaign = self.get_campaign(campaign_id)
-        passed = [c for c in self.repos.discovery.concepts_by_campaign(campaign_id) if c["status"] == "passed"]
+        passed = [
+            c for c in self.repos.discovery.concepts_by_campaign(campaign_id)
+            if c["status"] in ("AI_FILTER_PASSED", "STRUCTURAL_FILTER_PASSED")
+        ]
         if len(passed) < 4:
-            raise ValidationError("Se necesitan al menos 4 conceptos que pasen el filtro para recombinar.")
+            # Iteración 013: la recombinación es OPTATIVA. Con menos de 4
+            # conceptos pasados se omite honestamente y el flujo continúa.
+            detail = self.campaign_detail(campaign_id)
+            detail["recombination_skipped"] = True
+            detail["recombination_reason"] = f"menos de 4 conceptos pasaron el filtro ({len(passed)})."
+            return detail
         call = self.providers.generate(
             "Recombina los mecanismos de los mejores conceptos en conceptos superiores.",
             system=json.dumps([{"id": c["id"], "title": c["title"], "territory_key": c["territory_key"], "mechanism": c["mechanism"]} for c in passed], ensure_ascii=False),
@@ -259,10 +384,19 @@ class DiscoveryService:
         )
         raw = (call.response.structured or {}).get("concepts", [])
         created = []
+        from app.scoring.semantic_gate import semantic_coherence
+
         for item in raw:
             concept = self._save_concept(campaign_id, item, phase="phase3", source="recombined")
+            coherent, reason = semantic_coherence(concept)
+            self.repos.discovery.update_concept(concept["id"], coherence_ok=coherent, coherence_reason=reason)
             blockers = self._filter_blockers(concept)
-            status = "blocked" if blockers else "passed"
+            if not coherent:
+                status = "RECOMBINATION_INCOHERENT"
+            elif blockers:
+                status = "COMMODITY_BLOCKED"
+            else:
+                status = "STRUCTURAL_FILTER_PASSED"
             self.repos.discovery.update_concept(concept["id"], status=status)
             created.append(concept)
         self._update_campaign_diversity(campaign_id)
@@ -310,13 +444,20 @@ class DiscoveryService:
 
         eval_scores = dict(scores)
         eval_scores["economic_pain"] = scores.get("economic_pain", 0.0)
-        eval_scores["proven_demand"] = 0.0  # offline: sin evidencia de demanda (nunca se inventa)
-        result = venture_score(scores=eval_scores, novelty_score=novelty, utility_score=utility, blockers=blockers)
+        # Sin investigación: demand/distribution no puntúan (lo fuerza venture_score).
+        verified, groups = self._verified_evidence_for(concept["id"])
+        result = venture_score(
+            scores=eval_scores, novelty_score=novelty, utility_score=utility, blockers=blockers,
+            has_verified_evidence=verified, verified_evidence_groups=groups,
+        )
         saved = self.repos.discovery.save_venture_evaluation(
             concept["id"],
             {
                 "scores": result.model_dump(mode="json", exclude={"final_score", "novelty_score", "utility_score", "blockers", "labels", "rationale"}),
                 "final_score": result.final_score,
+                "structural_concept_score": result.structural_concept_score,
+                "evidence_backed_venture_score": result.evidence_backed_venture_score,
+                "has_verified_evidence": result.has_verified_evidence,
                 "novelty_score": result.novelty_score,
                 "utility_score": result.utility_score,
                 "blockers": result.blockers,
@@ -326,6 +467,19 @@ class DiscoveryService:
         )
         return {**concept, "venture": saved}
 
+    def _verified_evidence_for(self, concept_id: str) -> tuple[bool, int]:
+        """Evidencia verificable asociada a un concepto (vía opportunity si existe)."""
+        try:
+            opp = self.repos.opportunities.get_by_concept(concept_id) if hasattr(self.repos.opportunities, "get_by_concept") else None
+        except Exception:
+            opp = None
+        if opp is None:
+            return False, 0
+        rows = self.repos.evidence.list_for(opp.id)
+        verified = [e for e in rows if getattr(e, "verified", False)]
+        groups = {getattr(e, "independence_group", None) or "x" for e in verified}
+        return bool(verified), len(groups)
+
     def evaluate_structural(self, campaign_id: str) -> dict[str, Any]:
         """Análisis estructural (iteración 010): Venture Quality Score
         determinista para los conceptos que pasaron el filtro. Sin LLM.
@@ -334,7 +488,7 @@ class DiscoveryService:
         concepts = self.repos.discovery.concepts_by_campaign(campaign_id)
         evaluated = 0
         for concept in concepts:
-            if concept["status"] not in ("passed", "recombined"):
+            if concept["status"] not in ("AI_FILTER_PASSED", "STRUCTURAL_FILTER_PASSED"):
                 continue
             self._evaluate_venture(concept, campaign_id)
             evaluated += 1
@@ -348,22 +502,40 @@ class DiscoveryService:
 
     def run_shortlist(self, campaign_id: str) -> dict[str, Any]:
         campaign = self.get_campaign(campaign_id)
-        candidates = [c for c in self.repos.discovery.concepts_by_campaign(campaign_id) if c["status"] == "passed"]
+        candidates = [
+            c for c in self.repos.discovery.concepts_by_campaign(campaign_id)
+            if c["status"] in ("AI_FILTER_PASSED", "STRUCTURAL_FILTER_PASSED")
+        ]
         if not candidates:
-            raise ValidationError("No hay conceptos que hayan pasado el filtro de comoditización.")
+            # Iteración 013: 0 candidatas es un resultado VÁLIDO (no se fuerzan).
+            detail = self.campaign_detail(campaign_id)
+            detail["shortlist_skipped"] = True
+            detail["shortlist_reason"] = "ningún concepto superó el filtro de comoditización."
+            return detail
         evaluated = [self._evaluate_venture(c, campaign_id) for c in candidates]
         evaluated.sort(key=lambda c: c["venture"]["final_score"], reverse=True)
 
         target = campaign["shortlist_target"]
         shortlisted: list[dict[str, Any]] = []
+        from app.scoring.semantic_gate import validate_opportunity_brief
+
         for candidate in evaluated:
             if len(shortlisted) >= target:
-                break
+                self.repos.discovery.update_concept(candidate["id"], status="DIVERSITY_ELIMINATED")
+                continue
             fp = concept_fingerprint(candidate)
             if any(is_conceptual_clone(fp, concept_fingerprint(s))[0] for s in shortlisted):
-                self.repos.discovery.update_concept(candidate["id"], status="clone")
+                self.repos.discovery.update_concept(candidate["id"], status="CONCEPTUAL_CLONE")
                 continue
-            self.repos.discovery.update_concept(candidate["id"], status="shortlisted")
+            # Iteración 013: sin evidencia no existe shortlist validado. El
+            # pre-shortlist solo puede ser NEEDS_REFORMULATION o RESEARCH_CANDIDATE
+            # (si el Opportunity Brief es concreto).
+            brief = validate_opportunity_brief(candidate.get("brief") or {})
+            if brief["ok"] and candidate.get("buyer_hypothesis") and candidate.get("outcome_hypothesis"):
+                status = "RESEARCH_CANDIDATE"
+            else:
+                status = "NEEDS_REFORMULATION"
+            self.repos.discovery.update_concept(candidate["id"], status=status)
             shortlisted.append(candidate)
 
         self.repos.discovery.update_campaign(campaign_id, phase="shortlist")
@@ -392,14 +564,19 @@ class DiscoveryService:
         campaign = self.get_campaign(campaign_id)
         shortlisted: list[dict[str, Any]] = []
         for c in self.repos.discovery.concepts_by_campaign(campaign_id):
-            if c["status"] != "shortlisted":
+            if c["status"] not in ("RESEARCH_CANDIDATE", "FINALIST"):
                 continue
             evals = self.repos.discovery.venture_evaluations_by_concept(c["id"])
             if evals:
                 c["venture"] = evals[0]
                 shortlisted.append(c)
         if len(shortlisted) < 2:
-            raise ValidationError("El torneo necesita al menos 2 finalistas del shortlist.")
+            # Iteración 013: con menos de 2 candidatas concretas el torneo se
+            # omite honestamente (0 finalistas es un resultado válido).
+            detail = self.campaign_detail(campaign_id)
+            detail["tournament_skipped"] = True
+            detail["tournament_reason"] = f"solo {len(shortlisted)} candidata(s) concreta(s) (mínimo 2)."
+            return detail
         wins: dict[str, int] = {c["id"]: 0 for c in shortlisted}
         for i in range(len(shortlisted)):
             for j in range(i + 1, len(shortlisted)):
@@ -419,8 +596,12 @@ class DiscoveryService:
         ranked = sorted(shortlisted, key=lambda c: (wins[c["id"]], c["venture"]["final_score"]), reverse=True)
         finalists = ranked[: campaign["finalists_target"]]
         for c in ranked:
-            status = "finalist" if c["id"] in {f["id"] for f in finalists} else "eliminated"
-            self.repos.discovery.update_concept(c["id"], status=status)
+            if c["id"] in {f["id"] for f in finalists}:
+                self.repos.discovery.update_concept(c["id"], status="FINALIST")
+            else:
+                # Los no finalistas siguen siendo candidatas concretas (no
+                # "eliminadas"): simplemente no ganaron el torneo.
+                self.repos.discovery.update_concept(c["id"], status="RESEARCH_CANDIDATE")
         self.repos.discovery.update_campaign(campaign_id, phase="finalists")
         self._log(
             "discovery.tournament",
@@ -464,8 +645,10 @@ class DiscoveryService:
         concept = self.repos.discovery.get_concept(concept_id)
         if concept is None:
             raise NotFoundError("Concepto no encontrado.")
-        if concept["status"] not in ("shortlisted", "finalist"):
-            raise ValidationError("Solo se promueven conceptos del shortlist o finalistas.")
+        if concept["status"] not in ("RESEARCH_CANDIDATE", "FINALIST", "SHORTLISTED_WITH_EVIDENCE"):
+            raise ValidationError(
+                "Solo se promueven candidatas concretas (RESEARCH_CANDIDATE/FINALIST) o shortlist con evidencia."
+            )
         territory = get_territory(concept["territory_key"] or "") if concept.get("territory_key") else None
         archetype = get_archetype(concept["archetype_key"] or "") if concept.get("archetype_key") else None
         sector = f"discovery: {territory.name if territory else 'sin territorio'} / {archetype.name if archetype else 'sin arquetipo'}"
@@ -489,7 +672,7 @@ class DiscoveryService:
                 model_or_method="discovery.rules",
             )
         )
-        self.repos.discovery.update_concept(concept_id, status="promoted")
+        self.repos.discovery.update_concept(concept_id, status="RESEARCH_PENDING")
         return opportunity
 
     # ------------------------------------------------------------------
@@ -808,6 +991,433 @@ class DiscoveryService:
 
     def list_learning_records(self, kind: str | None = None) -> list[dict[str, Any]]:
         return self.repos.discovery.list_learning_records(kind=kind)
+
+    # ------------------------------------------------------------------
+    # ITERACIÓN 013: reprocesamiento semántico + reformulaciones
+    # ------------------------------------------------------------------
+    _OLD_STATUS_MAP = {
+        "draft": "GENERATED_HYPOTHESIS",
+        "passed": "AI_FILTER_PASSED",
+        "recombined": "STRUCTURAL_FILTER_PASSED",
+        "clone": "CONCEPTUAL_CLONE",
+        "blocked": "COMMODITY_BLOCKED",
+        "eliminated": "DIVERSITY_ELIMINATED",
+        "shortlisted": "RESEARCH_CANDIDATE",
+        "promoted": "RESEARCH_PENDING",
+        "finalist": "FINALIST",
+    }
+
+    def reprocess_semantic_gate(self, campaign_id: str) -> dict[str, Any]:
+        """Iteración 013: aplica los estados honestos y la puerta de calidad
+        semántica a una campaña existente SIN borrar nada.
+
+        - Mapea estados antiguos (passed/promoted/clone/...) a los nuevos.
+        - Re-evalúa coherencia semántica y marcadores genéricos; degrada a
+          RECOMBINATION_INCOHERENT / NEEDS_REFORMULATION cuando corresponde.
+        - Invalida misiones obsoletas con SUPERSEDED_BY_SEMANTIC_QUALITY_GATE
+          (no cuentan como investigación pendiente activa).
+        - Recalcula la puntuación estructural / con evidencia.
+        - No borra ideas ni evidencia: conserva trazabilidad.
+        """
+        from app.scoring.semantic_gate import has_generic_markers, semantic_coherence
+
+        concepts = self.repos.discovery.concepts_by_campaign(campaign_id)
+        counts = {
+            "mapped": 0, "needs_reformulation": 0, "incoherent": 0,
+            "generic_markers": 0, "research_candidates": 0, "re_evaluated": 0,
+        }
+        for concept in concepts:
+            old = concept.get("status") or "draft"
+            mapped = self._OLD_STATUS_MAP.get(old, old)
+            counts["mapped"] += 1 if mapped != old else 0
+
+            coherent, reason = semantic_coherence(concept)
+            self.repos.discovery.update_concept(
+                concept["id"], coherence_ok=coherent, coherence_reason=reason
+            )
+            hits = has_generic_markers(
+                concept.get("problem_hypothesis"), concept.get("buyer_hypothesis"), concept.get("title")
+            )
+
+            if not coherent:
+                mapped = "RECOMBINATION_INCOHERENT"
+                counts["incoherent"] += 1
+            elif hits:
+                mapped = "NEEDS_REFORMULATION"
+                counts["generic_markers"] += 1
+
+            if mapped in ("NEEDS_REFORMULATION",):
+                counts["needs_reformulation"] += 1
+            elif mapped in ("RESEARCH_CANDIDATE", "RESEARCH_PENDING", "FINALIST", "SHORTLISTED_WITH_EVIDENCE", "EXPERIMENT_READY"):
+                # Una candidata debe seguir siendo CONCRETA tras el gate: sin
+                # Opportunity Brief concreto, una promovida abstracta vuelve a
+                # NEEDS_REFORMULATION (nunca se investiga una idea abstracta).
+                brief_ok = self._brief_ok(concept)
+                if not brief_ok and mapped != "EXPERIMENT_READY":
+                    mapped = "NEEDS_REFORMULATION"
+                    counts["needs_reformulation"] += 1
+                else:
+                    counts["research_candidates"] += 1
+
+            self.repos.discovery.update_concept(concept["id"], status=mapped)
+            # Re-evaluación estructural honesta (sin evidencia, demanda/distribución a 0).
+            self._evaluate_venture(concept, campaign_id)
+            counts["re_evaluated"] += 1
+
+        # Invalida misiones obsoletas (no se borran: se marcan y se conservan).
+        superseded = 0
+        for mission in self.repos.discovery.missions_by_campaign(campaign_id):
+            if mission.get("status") != SUPERSEDED_BY_SEMANTIC_GATE:
+                self.repos.discovery.update_mission_status(mission["mission_id"], SUPERSEDED_BY_SEMANTIC_GATE)
+                superseded += 1
+        counts["missions_superseded"] = superseded
+
+        # Reformula las candidatas previas (promovidas/finalistas) que ahora
+        # necesitan reformulación, ejecuta el torneo de reformulaciones y crea
+        # misiones de Fase 1 SOLO para candidatas realmente concretas.
+        reform_counts = self._reformulate_and_select(campaign_id, counts)
+        counts.update(reform_counts)
+
+        self._log(
+            "discovery.semantic_gate",
+            f"Reproceso semántico (campaña {campaign_id}): {counts['mapped']} estados mapeados, "
+            f"{counts['needs_reformulation']} necesitan reformulación, {superseded} misiones superseded, "
+            f"{counts.get('selected_candidates', 0)} candidatas seleccionadas, "
+            f"{counts.get('phase1_missions', 0)} misiones de Fase 1 creadas.",
+            model="rules",
+        )
+        return {**self.campaign_detail(campaign_id), "reprocess": counts}
+
+    def _reformulate_and_select(self, campaign_id: str, counts: dict[str, int]) -> dict[str, int]:
+        """Paso 2 del reproceso (iteración 013):
+        1. Genera 3-5 reformulaciones concretas para las candidatas previas
+           (las que fueron promovidas/finalistas y ahora son abstractas).
+        2. Completa sus briefs (hipótesis) y ejecuta el torneo de
+           reformulaciones (máx. 3 candidatas; puede ser 0).
+        3. Promueve las seleccionadas y crea misiones de Fase 1 (6 por
+           candidata). Ninguna idea con NEEDS_REFORMULATION se investiga.
+        """
+        reformulated = 0
+        selected_candidates = 0
+        phase1_missions = 0
+        reform_candidates = []
+        for concept in self.repos.discovery.concepts_by_campaign(campaign_id):
+            if (concept.get("source") or "").startswith("reformulation_of:"):
+                continue  # no reformular reformulaciones
+            if concept.get("status") != "NEEDS_REFORMULATION":
+                continue
+            if concept.get("brief"):
+                continue
+            was_promoted = False
+            try:
+                opp = (
+                    self.repos.opportunities.get_by_concept(concept["id"])
+                    if hasattr(self.repos.opportunities, "get_by_concept") else None
+                )
+                was_promoted = opp is not None
+            except Exception:
+                was_promoted = False
+            reform_candidates.append((concept, was_promoted))
+        # Las candidatas previamente promovidas se reformulan primero.
+        reform_candidates.sort(key=lambda t: (not t[1]))
+        for concept, _ in reform_candidates[:3]:
+            self.generate_reformulations(campaign_id, concept["id"])
+            reformulated += 1
+        counts["reformulations_generated"] = reformulated
+
+        # Completa los briefs ya rellenos de las reformulaciones (hipótesis).
+        for concept in self.repos.discovery.concepts_by_campaign(campaign_id):
+            if (concept.get("source") or "").startswith("reformulation_of:") and concept.get("brief"):
+                try:
+                    self.complete_opportunity_brief(concept["id"], concept.get("brief") or {})
+                except ValidationError:
+                    pass  # si el brief no pasa el gate, queda NEEDS_REFORMULATION
+
+        tournament = self.run_reformulation_tournament(campaign_id)
+        counts["selected_candidates"] = tournament["count"]
+        selected_candidates = tournament["count"]
+
+        for concept in self.repos.discovery.concepts_by_campaign(campaign_id):
+            if concept.get("status") not in ("RESEARCH_CANDIDATE",):
+                continue
+            if concept["id"] not in tournament["selected"]:
+                continue
+            self.promote(concept["id"])  # crea la oportunidad; estado RESEARCH_PENDING
+            for kind in RESEARCH_PHASE1_KINDS:
+                self.create_mission(kind=kind, campaign_id=campaign_id, concept_id=concept["id"])
+                phase1_missions += 1
+        counts["phase1_missions"] = phase1_missions
+        counts["promoted_candidates"] = tournament["count"]
+        return counts
+
+    def _brief_ok(self, concept: dict[str, Any]) -> bool:
+        from app.scoring.semantic_gate import validate_opportunity_brief
+
+        return bool(validate_opportunity_brief(concept.get("brief") or {})["ok"])
+
+    # Reformulaciones deterministas por familia (HIPÓTESIS concretas, sin
+    # inventar demanda: los sectores/normas/roles son anclas reales conocidas).
+    REFORMULATION_TEMPLATES: dict[str, list[dict[str, str]]] = {
+        "regulatorio": [
+            {
+                "title": "Checklist y expediente documental RGPD para despachos de abogados pequeños",
+                "problem_hypothesis": "Los despachos de abogados con menos de 10 empleados no tienen un registro de actividades de tratamiento completo y arriesgan sanciones RGPD que no pueden afrontar.",
+                "mechanism": "Plantilla guiada que genera el registro de actividades, la política de privacidad y el checklist de cumplimiento adaptados al despacho, con revisión humana final.",
+                "buyer_hypothesis": "Socio titular de despachos de abogados de 2-10 empleados en España.",
+                "outcome_hypothesis": "Expediente documental listo para entregar a un asesor externo en menos de una tarde, sin contratar consultoría.",
+            },
+            {
+                "title": "Preparación del modelo 232 de operaciones vinculadas para asesorías contables",
+                "problem_hypothesis": "Las asesorías contables pequeñas preparan el modelo 232 (operaciones vinculadas) con datos dispersos en Excel y pierden horas cada ejercicio.",
+                "mechanism": "Checklist por cliente con plantilla de recogida de datos, cruce contra el padrón de socios y generación del borrador del modelo 232.",
+                "buyer_hypothesis": "Asesorías contables de 1-5 personas que llevan clientes con operaciones vinculadas.",
+                "outcome_hypothesis": "Borradero del modelo 232 por cliente en menos de 2 horas, con la lista de datos que faltan.",
+            },
+            {
+                "title": "Expediente de subvención Next Generation para talleres de reparación de vehículos",
+                "problem_hypothesis": "Los talleres de reparación de vehículos no se presentan a subvenciones de digitalización porque el expediente es largo y desconocen los requisitos.",
+                "mechanism": "Guía de elegibilidad + checklist de documentación + plantilla de memoria técnica específica de la convocatoria.",
+                "buyer_hypothesis": "Titulares de talleres de reparación de vehículos de 5-15 empleados.",
+                "outcome_hypothesis": "Expediente de solicitud completo y revisado contra los requisitos de la convocatoria antes de la fecha límite.",
+            },
+            {
+                "title": "Checklist de facturación electrónica (Ley Crea y Crece) para pequeños comercios",
+                "problem_hypothesis": "Los pequeños comercios desconocen qué debe emitir su software de facturación para cumplir la facturación electrónica y no tienen quién lo verifique.",
+                "mechanism": "Checklist de requisitos por programa de facturación + plantilla de verificación y plan de migración en 30 días.",
+                "buyer_hypothesis": "Titulares de comercios minoristas de 1-5 empleados con software de facturación básico.",
+                "outcome_hypothesis": "Plan de cumplimiento concreto con fechas y responsables para el software que ya usan.",
+            },
+        ],
+        "intermediarios": [
+            {
+                "title": "Historial verificable de comisiones para propietarios que contratan agencias inmobiliarias",
+                "problem_hypothesis": "Los propietarios que encargan la venta a una agencia no conservan un registro verificable de comisiones, condiciones y entregables pactados.",
+                "mechanism": "Plantilla de registro por operación (comisión pactada, condiciones, entregables, fechas) exportable a PDF y compartible con un asesor.",
+                "buyer_hypothesis": "Propietarios de vivienda que contratan una agencia inmobiliaria de barrio.",
+                "outcome_hypothesis": "Historial completo de la operación listo para reclamar o comparar servicios.",
+            },
+            {
+                "title": "Dossier de presupuestos y entregables para autónomos que contratan plataformas de intermediación",
+                "problem_hypothesis": "Los autónomos que trabajan a través de plataformas de intermediación no conservan comparables de comisiones, plazos de pago y entregables entre plataformas.",
+                "mechanism": "Registro estandarizado por plataforma (comisión, plazo de pago, entregables) con alerta cuando un plazo de pago se incumple.",
+                "buyer_hypothesis": "Autónomos de servicios digitales que venden a través de 2-3 plataformas.",
+                "outcome_hypothesis": "Comparativa actualizada de condiciones por plataforma para decidir dónde publicar.",
+            },
+            {
+                "title": "Registro de cuotas y servicios para comunidades que contratan administradores de fincas",
+                "problem_hypothesis": "Las comunidades de propietarios no pueden contrastar lo que cobra y entrega su administrador de fincas porque no existe un registro común.",
+                "mechanism": "Cuaderno de servicios por comunidad: cuota, servicios incluidos, facturas y entregables, rellenado a partir de las actas.",
+                "buyer_hypothesis": "Juntas de comunidades de propietarios de 10-40 viviendas.",
+                "outcome_hypothesis": "Dossier anual por comunidad que permite comparar la cuota con los servicios realmente prestados.",
+            },
+        ],
+        "incertidumbre": [
+            {
+                "title": "Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+                "problem_hypothesis": "Las clínicas dentales pequeñas fijan el precio de ortodoncia sin un comparativo de tarifas de su zona y pierden margen o pacientes.",
+                "mechanism": "Encuesta de tarifas anónima entre clínicas de la misma provincia con informe comparativo trimestral.",
+                "buyer_hypothesis": "Gerentes de clínicas dentales de 2-5 dentistas.",
+                "outcome_hypothesis": "Informe de tarifas por provincia con percentiles para decidir el precio.",
+            },
+            {
+                "title": "Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+                "problem_hypothesis": "Los instaladores de placas solares pequeños presupuestan sin un comparativo de costes por tipo de tejado y tipo de instalación.",
+                "mechanism": "Registro colaborativo anónimo de costes reales por tipo de instalación con informe comparativo.",
+                "buyer_hypothesis": "Instaladores de energía solar de 3-10 empleados.",
+                "outcome_hypothesis": "Rango de costes por tipo de instalación para ajustar presupuestos.",
+            },
+            {
+                "title": "Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+                "problem_hypothesis": "Las gestorías pequeñas fijan la cuota mensual de clientes sin saber el rango de honorarios de su provincia.",
+                "mechanism": "Encuesta anónima de honorarios por tipo de cliente (autónomo, pyme) con informe comparativo.",
+                "buyer_hypothesis": "Titulares de gestorías administrativas de 1-5 empleados.",
+                "outcome_hypothesis": "Rango de honorarios por provincia y tipo de cliente para posicionar la cuota.",
+            },
+        ],
+    }
+
+    def generate_reformulations(self, campaign_id: str, concept_id: str) -> dict[str, Any]:
+        """Genera 3-5 reformulaciones CONCRETAS (hipótesis) para un concepto
+        abstracto. Se guardan como conceptos nuevos con estado
+        NEEDS_REFORMULATION y un brief pendiente de completar. Nunca inventa
+        demanda: los ejemplos son hipótesis de formulación, no afirmaciones de
+        mercado."""
+        concept = self.repos.discovery.get_concept(concept_id)
+        if concept is None:
+            raise NotFoundError("Concepto no encontrado.")
+        title = (concept.get("title") or "").lower()
+        if "regul" in title or "norma" in title or "cumplimiento" in title:
+            family = "regulatorio"
+        elif "intermediar" in title or "opac" in title or "comision" in title:
+            family = "intermediarios"
+        else:
+            family = "incertidumbre"
+        templates = self.REFORMULATION_TEMPLATES.get(family, self.REFORMULATION_TEMPLATES["incertidumbre"])
+        created = []
+        for tpl in templates:
+            brief = {
+                "specific_name": tpl["title"],
+                "user": tpl["buyer_hypothesis"],
+                "buyer": tpl["buyer_hypothesis"],
+                "situation": tpl["problem_hypothesis"],
+                "observable_problem": tpl["problem_hypothesis"],
+                "current_alternative": "La gestión se hace hoy con plantillas genéricas de internet y tiempo manual del propio negocio.",
+                "economic_or_time_cost": "Horas de preparación no facturables y riesgo de incumplimiento o de fijar precios sin datos.",
+                "concrete_deliverable": tpl["outcome_hypothesis"],
+                "measurable_outcome": tpl["outcome_hypothesis"],
+                "revenue_model": "Pago único por entrega del expediente o informe (30-90 EUR) con revisión incluida.",
+                "expected_price_hypothesis": "Precio hipótesis de 30-90 EUR por entrega; por confirmar con compradores reales.",
+                "first_distribution_channel": "Mensaje directo a 20 negocios concretos del sector identificados por zona (sin spam).",
+                "first_20_buyers_location": "Lista de 20 negocios locales del sector objetivo, a verificar con directorios públicos.",
+                "test_in_48_hours": "Ofrecer la entrega a 3 negocios reales y confirmar si pagarían (no es demanda verificada).",
+                "generic_ai_limitation": "Una IA generalista no conoce los requisitos exactos de cada convocatoria ni entrega un expediente revisado por alguien responsable.",
+                "compounding_asset": "Banco de plantillas y expedientes propios que mejora cada entrega.",
+                "primary_risk": "Que el comprador no perciba urgencia o resuelva con la plantilla gratuita del organismo.",
+                "assumptions": "Hipótesis de comprador, dolor y precio; ninguna verificada todavía.",
+                "prohibited_claims": "No afirmar demanda, no prometer resultados, no citar clientes reales sin su permiso.",
+            }
+            item = {
+                "title": tpl["title"],
+                "problem_hypothesis": tpl["problem_hypothesis"],
+                "mechanism": tpl["mechanism"],
+                "buyer_hypothesis": tpl["buyer_hypothesis"],
+                "outcome_hypothesis": tpl["outcome_hypothesis"],
+                "why_now": "Reformulación de candidata abstracta (iteración 013).",
+                "general_ai_risk": "Requiere datos específicos del sector y entregable revisable.",
+                "asset_potential": "Plantillas y expedientes acumulados.",
+                "territory_key": concept.get("territory_key"),
+                "lens_keys": concept.get("lens_keys") or [],
+                "archetype_key": concept.get("archetype_key"),
+            }
+            new_concept = self._save_concept(
+                campaign_id, item, phase="reformulation", source=f"reformulation_of:{concept_id}"
+            )
+            self.repos.discovery.update_concept(
+                new_concept["id"], status="NEEDS_REFORMULATION", brief=brief
+            )
+            created.append(new_concept)
+        self._log(
+            "discovery.reformulation",
+            f"{len(created)} reformulaciones generadas para {concept_id} (familia {family}).",
+            model="rules",
+        )
+        return {"family": family, "source_concept_id": concept_id, "created": created}
+
+    def demo_brief_for(self, concept: dict[str, Any]) -> dict[str, Any]:
+        """Brief de HIPÓTESIS derivado del propio concepto. SOLO para demos y
+        tests sintéticos: cada valor es una hipótesis de formulación, NUNCA
+        evidencia de demanda ni afirmación de mercado. Los campos genéricos se
+        sustituyen por frases concretas de hipótesis (el gate semántico nunca
+        acepta 'profesional o pequeña organización' como comprador válido)."""
+        from app.scoring.semantic_gate import has_generic_markers
+
+        def concrete(text: str | None, fallback: str) -> str:
+            value = str(text or "").strip()
+            if len(value) < 12 or has_generic_markers(value):
+                return fallback
+            return value
+
+        title = str(concept.get("title") or "Servicio concreto")[:300]
+        problem = concrete(
+            concept.get("problem_hypothesis"),
+            "Hipótesis de problema: un negocio concreto del sector pierde tiempo o dinero cada semana por un proceso manual.",
+        )
+        buyer = concrete(
+            concept.get("buyer_hypothesis"),
+            "Comprador hipotético concreto: titular de un negocio local de un sector específico (a identificar por zona).",
+        )
+        deliverable = concrete(
+            concept.get("outcome_hypothesis") or concept.get("mechanism"),
+            "Entrega hipotética concreta: documento o informe revisable que el comprador puede guardar y reutilizar.",
+        )
+        return {
+            "specific_name": title,
+            "user": buyer,
+            "buyer": buyer,
+            "situation": problem,
+            "observable_problem": problem,
+            "current_alternative": "Alternativa actual: se hace hoy de forma manual con tiempo propio y sin verificación.",
+            "economic_or_time_cost": "Coste hipotético: horas no facturables y riesgo de error o incumplimiento.",
+            "concrete_deliverable": deliverable,
+            "measurable_outcome": deliverable,
+            "revenue_model": "Modelo hipotético: pago único por entrega (30-90 EUR) con revisión incluida.",
+            "expected_price_hypothesis": "Precio hipótesis: 30-90 EUR; por confirmar con compradores reales.",
+            "first_distribution_channel": "Canal hipotético: contacto directo con 20 negocios concretos de la zona (sin spam).",
+            "first_20_buyers_location": "Ubicación hipotética: 20 negocios locales del sector objetivo, a verificar.",
+            "test_in_48_hours": "Test hipotético: ofrecer la entrega a 3 negocios reales y confirmar intención de pago.",
+            "generic_ai_limitation": "Limitación: una IA generalista no entrega un expediente responsable con los datos específicos del sector.",
+            "compounding_asset": "Activo acumulativo: plantillas, expedientes y casos propios.",
+            "primary_risk": "Riesgo principal: que el comprador no perciba urgencia o lo resuelva gratis.",
+            "assumptions": "Suposiciones: comprador, dolor y precio sin verificar (hipótesis).",
+            "prohibited_claims": "Prohibido: afirmar demanda, prometer resultados o citar clientes sin su permiso.",
+        }
+
+    def complete_opportunity_brief(self, concept_id: str, brief: dict[str, Any]) -> dict[str, Any]:
+        """Completa el Opportunity Brief de un concepto. Solo si el brief es
+        concreto (sin marcadores genéricos y con todos los campos) el concepto
+        pasa a RESEARCH_CANDIDATE. El brief es HIPÓTESIS: no añade evidencia."""
+        from app.scoring.semantic_gate import validate_opportunity_brief
+
+        concept = self.repos.discovery.get_concept(concept_id)
+        if concept is None:
+            raise NotFoundError("Concepto no encontrado.")
+        clean = {k: str(v).strip() for k, v in (brief or {}).items() if str(v).strip()}
+        verdict = validate_opportunity_brief(clean)
+        if not verdict["ok"]:
+            raise ValidationError(
+                "El Opportunity Brief no es concreto: " + "; ".join(verdict["reasons"][:5])
+            )
+        self.repos.discovery.update_concept(concept_id, brief=clean, status="RESEARCH_CANDIDATE")
+        # Puntuación estructural determinista (sin evidencia: con evidencia 0).
+        evals = self.repos.discovery.venture_evaluations_by_concept(concept_id)
+        if not evals:
+            self._evaluate_venture(concept, (concept or {}).get("campaign_id") or "")
+        self._log(
+            "discovery.brief",
+            f"Opportunity Brief completado para {concept_id} -> RESEARCH_CANDIDATE.",
+            model="rules",
+        )
+        updated = self.repos.discovery.get_concept(concept_id)
+        evals = self.repos.discovery.venture_evaluations_by_concept(concept_id)
+        if evals:
+            updated["venture"] = evals[0]
+        return {**updated, "brief_verdict": verdict}
+
+    def run_reformulation_tournament(self, campaign_id: str) -> dict[str, Any]:
+        """Torneo de reformulaciones: selecciona como MÁXIMO 3 candidatas
+        concretas (RESEARCH_CANDIDATE) entre las reformulaciones con brief
+        validado. Puede seleccionar 0: no existe obligación de conservar una
+        idea de cada familia original."""
+        campaign = self.get_campaign(campaign_id)
+        max_candidates = int(campaign.get("finalists_target", 3))
+        candidates = []
+        for c in self.repos.discovery.concepts_by_campaign(campaign_id):
+            if c.get("status") != "RESEARCH_CANDIDATE":
+                continue
+            evals = self.repos.discovery.venture_evaluations_by_concept(c["id"])
+            if evals:
+                c["venture"] = evals[0]
+            else:
+                # Las reformulaciones recién creadas aún no tienen evaluación
+                # estructural: se calcula (determinista, sin evidencia).
+                c = self._evaluate_venture(c, campaign_id)
+            candidates.append(c)
+        candidates.sort(key=lambda c: (c.get("venture") or {}).get("final_score", 0.0), reverse=True)
+        selected = candidates[:max_candidates]
+        for c in candidates[max_candidates:]:
+            self.repos.discovery.update_concept(c["id"], status="NEEDS_REFORMULATION")
+        self._log(
+            "discovery.reformulation_tournament",
+            f"{len(selected)} candidatas concretas seleccionadas de {len(candidates)} (máx. {max_candidates}; puede ser 0).",
+            model="rules",
+        )
+        return {
+            "campaign_id": campaign_id,
+            "selected": [c["id"] for c in selected],
+            "count": len(selected),
+            "maximum": max_candidates,
+            "titles": [c.get("title") for c in selected],
+        }
 
     # ------------------------------------------------------------------
     def _log(self, agent: str, summary: str, *, model: str) -> None:

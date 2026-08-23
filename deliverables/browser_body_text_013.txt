@@ -1,0 +1,40 @@
+WAWA
+WAWA
+
+Descubrimiento y validación de oportunidades
+
+v0.12.0
+Presupuesto: $0.0000 / $0.5 · modo gratuito · simulación · evaluaciones 0/5
+Backend:
+v0.12.0
+· Frontend:
+v0.12.0
+· Iteración:
+013
+· JavaScript:
+cargado
+· Paquete:
+013-semantic-gate
+Inicio
+Campaña real
+Ideas
+0
+Investigación
+Comité
+0
+Experimento
+Economía
+Actividad
+Configuración
+6
+DESCUBRIMIENTO Y VALIDACIÓN DE OPORTUNIDADES
+PRIMERA CAMPAÑA REAL 001
+PRE_CYCLE · reloj detenido · 30 días
+Campaña: RESEARCH_PENDING · PRIMERA CAMPAÑA REAL 001
+INICIAR CAMPAÑA REAL
+
+“Genera ideas, aplica filtros, prepara investigación y conserva todos los motivos de descarte sin inventar evidencia.”
+
+Ir a Campaña real
+Descargar CSV
+Descargar Markdown

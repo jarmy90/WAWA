@@ -198,16 +198,27 @@ def venture_score(
     novelty_score: float = 0.0,
     utility_score: float = 0.0,
     blockers: list[str] | None = None,
+    has_verified_evidence: bool = False,
+    verified_evidence_groups: int = 0,
 ) -> VentureEvaluation:
-    """Calcula el Venture Quality Score (0-100) con bloqueadores duros.
+    """Calcula el Venture Quality Score (0-100) con bloqueadores duros y la
+    separación honesta de la iteración 013:
 
-    ``scores`` debe contener los 11 criterios (0-100). La originalidad se
-    recalcula con la fórmula de utilidad-tope.
+    - ``structural_concept_score``: calidad interna de la formulación ANTES de
+      investigación (proven_demand/distribution a 0 sin evidencia).
+    - ``evidence_backed_venture_score``: viabilidad empresarial SOLO con
+      evidencia verificable; sin evidencia = 0; con evidencia insuficiente
+      (<3 grupos independientes) tope 40; con ≥3 grupos, score real.
     """
     blockers = list(blockers or [])
     scored: dict[str, float] = {}
     for key in SCORE_KEYS:
         scored[key] = round(max(0.0, min(100.0, float(scores.get(key, 0.0)))), 2)
+
+    # Sin evidencia verificable, la demanda y la distribución NO pueden puntuar.
+    if not has_verified_evidence:
+        scored["proven_demand"] = 0.0
+        scored["distribution"] = 0.0
 
     scored["originality"] = originality_score(novelty_score, utility_score)
 
@@ -217,6 +228,13 @@ def venture_score(
     blocked = any(b.startswith(prefix) for prefix in _BLOCKER_PREFIXES for b in blockers)
     if blocked:
         final = min(final, 39.0)  # ningún bloqueado puede parecer aprobable
+
+    structural = final
+    from app.scoring.semantic_gate import split_scores
+
+    _, evidence_backed_score = split_scores(
+        structural, has_verified_evidence=has_verified_evidence, verified_groups=verified_evidence_groups
+    )
 
     labels = apply_labels(scored, blockers)
     return VentureEvaluation(
@@ -232,6 +250,9 @@ def venture_score(
         demonstrability=scored["demonstrability"],
         operational_simplicity=scored["operational_simplicity"],
         final_score=final,
+        structural_concept_score=structural,
+        evidence_backed_venture_score=evidence_backed_score,
+        has_verified_evidence=has_verified_evidence,
         novelty_score=round(max(0.0, min(100.0, novelty_score)), 2),
         utility_score=round(max(0.0, min(100.0, utility_score)), 2),
         blockers=blockers,
@@ -240,7 +261,10 @@ def venture_score(
             "final_score": (
                 f"Media ponderada de {len(SCORE_KEYS)} criterios (pesos {VENTURE_WEIGHTS}); "
                 f"{'BLOQUEADA: ' + ' | '.join(blockers[:3]) if blocked else 'sin bloqueadores duros.'}"
-            )
+            ),
+            "evidence_backed_venture_score": (
+                "0 sin evidencia verificable; tope 40 con evidencia insuficiente; score real solo con ≥3 grupos independientes."
+            ),
         },
     )
 

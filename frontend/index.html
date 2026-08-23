@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="es" data-wawa-version="0.11.1" data-iteration="012" data-build="012-patch-1">
+<html lang="es" data-wawa-version="0.12.0" data-iteration="013" data-build="013-semantic-gate">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="data:," />
     <title>WAWA — Descubrimiento y validación de oportunidades</title>
-    <link rel="stylesheet" href="/styles.css?v=0111" />
+    <link rel="stylesheet" href="/styles.css?v=0120" />
   </head>
   <body>
     <!-- Franja roja base: visible si app.js no termina de cargar (CSS puro). -->
@@ -20,7 +20,7 @@
         </div>
       </div>
       <div class="topbar-right">
-        <span id="wawa-version" class="chip chip-neutral" title="Versión de esta interfaz">v0.11.1</span>
+        <span id="wawa-version" class="chip chip-neutral" title="Versión de esta interfaz">v0.12.0</span>
         <div id="budget-chip" class="chip chip-neutral" title="Estado del BudgetGuard">—</div>
       </div>
     </header>
@@ -28,7 +28,7 @@
     <!-- Diagnóstico visible (iteración 012): versiones y estado de JS. -->
     <div class="diag" id="diag">
       Backend: <span id="diag-backend">—</span>
-      · Frontend: <span id="diag-frontend">v0.11.1</span>
+      · Frontend: <span id="diag-frontend">v0.12.0</span>
       · Iteración: <span id="diag-iter">012</span>
       · JavaScript: <span id="diag-js">cargando…</span>
       · Paquete: <span id="diag-package">012-patch-1</span>
@@ -93,11 +93,12 @@
             <select id="ideas-filter" class="input">
               <option value="all">Todas</option>
               <option value="active">Activas</option>
-              <option value="blocked">Descartadas</option>
+              <option value="discarded">Descartadas</option>
+              <option value="reform">Necesitan reformulación</option>
               <option value="commodity">Commodity wrapper</option>
-              <option value="shortlist">Shortlist</option>
+              <option value="shortlist">Shortlist / candidatas</option>
+              <option value="research">En investigación</option>
               <option value="finalist">Finalistas</option>
-              <option value="promoted">En investigación</option>
             </select>
             <button id="btn-ideas-export" class="btn btn-secondary btn-sm">Descargar CSV</button>
             <button id="btn-ideas-export-md" class="btn btn-ghost btn-sm">Markdown</button>
@@ -334,6 +335,6 @@
       </div>
     </noscript>
 
-    <script src="/app.js?v=0111"></script>
+    <script src="/app.js?v=0120"></script>
   </body>
 </html>

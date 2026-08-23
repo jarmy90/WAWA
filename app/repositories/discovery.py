@@ -85,8 +85,8 @@ class DiscoveryRepository:
                (id, campaign_id, title, territory_key, lens_keys, archetype_key,
                 problem_hypothesis, mechanism, buyer_hypothesis, outcome_hypothesis,
                 why_now, general_ai_risk, asset_potential, fingerprint, phase, status,
-                source, created_at, updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                source, brief, coherence_ok, coherence_reason, created_at, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 cid,
                 data["campaign_id"],
@@ -103,8 +103,11 @@ class DiscoveryRepository:
                 data.get("asset_potential"),
                 json.dumps(data.get("fingerprint", {}), ensure_ascii=False),
                 data.get("phase", "phase1"),
-                data.get("status", "draft"),
+                data.get("status", "GENERATED_HYPOTHESIS"),
                 data.get("source", "generated"),
+                json.dumps(data.get("brief", {}), ensure_ascii=False),
+                1 if data.get("coherence_ok", True) else 0,
+                data.get("coherence_reason", ""),
                 data.get("created_at", now),
                 data.get("updated_at", now),
             ),
@@ -126,10 +129,14 @@ class DiscoveryRepository:
         return [self._concept_row(r) for r in rows]
 
     def update_concept(self, concept_id: str, **fields: Any) -> dict[str, Any] | None:
-        allowed = {"phase", "status", "fingerprint", "title", "problem_hypothesis", "mechanism"}
+        allowed = {"phase", "status", "fingerprint", "title", "problem_hypothesis", "mechanism",
+                   "brief", "coherence_ok", "coherence_reason"}
         sets = {k: v for k, v in fields.items() if k in allowed}
         if not sets:
             return self.get_concept(concept_id)
+        # El brief se guarda como JSON (columna TEXT).
+        if "brief" in sets and not isinstance(sets["brief"], str):
+            sets["brief"] = json.dumps(sets["brief"], ensure_ascii=False)
         sets["updated_at"] = _now()
         cols = ", ".join(f"{k} = ?" for k in sets)
         self.conn.execute(
@@ -183,13 +190,18 @@ class DiscoveryRepository:
         now = _now()
         self.conn.execute(
             """INSERT INTO venture_evaluations
-               (id, concept_id, scores, final_score, novelty_score, utility_score, blockers, labels, rationale, created_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+               (id, concept_id, scores, final_score, structural_concept_score,
+                evidence_backed_venture_score, has_verified_evidence,
+                novelty_score, utility_score, blockers, labels, rationale, created_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 vid,
                 concept_id,
                 json.dumps(data.get("scores", {}), ensure_ascii=False),
                 data.get("final_score", 0.0),
+                data.get("structural_concept_score", data.get("final_score", 0.0)),
+                data.get("evidence_backed_venture_score", 0.0),
+                1 if data.get("has_verified_evidence") else 0,
                 data.get("novelty_score", 0.0),
                 data.get("utility_score", 0.0),
                 json.dumps(data.get("blockers", []), ensure_ascii=False),
@@ -304,6 +316,24 @@ class DiscoveryRepository:
         )
         self.conn.commit()
 
+    def update_mission_status(self, mission_id: str, status: str) -> None:
+        self.conn.execute(
+            "UPDATE research_missions SET status = ? WHERE mission_id = ?", (status, mission_id)
+        )
+        self.conn.commit()
+
+    def missions_by_campaign(self, campaign_id: str) -> list[dict[str, Any]]:
+        """Misiones cuyo target referencia esta campaña (iteración 013)."""
+        rows = self.conn.execute(
+            "SELECT * FROM research_missions ORDER BY created_at DESC"
+        ).fetchall()
+        out = []
+        for r in rows:
+            d = self._mission_row(r)
+            if (d.get("target") or {}).get("campaign_id") == campaign_id:
+                out.append(d)
+        return out
+
     def save_mission_result(self, mission_id: str, result: dict[str, Any]) -> dict[str, Any]:
         rid = new_id()
         self.conn.execute(
@@ -350,6 +380,7 @@ class DiscoveryRepository:
         d = dict(row)
         d["lens_keys"] = json.loads(d.get("lens_keys") or "[]")
         d["fingerprint"] = json.loads(d.get("fingerprint") or "{}")
+        d["brief"] = json.loads(d.get("brief") or "{}")
         return d
 
     @staticmethod
@@ -366,6 +397,9 @@ class DiscoveryRepository:
         d["blockers"] = json.loads(d.get("blockers") or "[]")
         d["labels"] = json.loads(d.get("labels") or "[]")
         d["rationale"] = json.loads(d.get("rationale") or "{}")
+        d["structural_concept_score"] = float(d.get("structural_concept_score") or 0.0)
+        d["evidence_backed_venture_score"] = float(d.get("evidence_backed_venture_score") or 0.0)
+        d["has_verified_evidence"] = bool(d.get("has_verified_evidence"))
         return d
 
     @staticmethod

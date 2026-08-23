@@ -56,6 +56,26 @@ RESEARCH_MISSION_KINDS = (
     "EXPERIMENT_FEASIBILITY_CHECK",
 )
 
+# Iteración 013 (calidad semántica): misiones PROGRESIVAS. Fase 1 = misiones de
+# descarte (demanda, comprador, alternativa, distribución, competencia,
+# sustitución por IA). Si falla demanda/comprador/distribución ->
+# EVIDENCE_INSUFFICIENT o REJECTED_AFTER_RESEARCH y NO se ejecuta la fase 2.
+# Fase 2 (solo supervivientes): MOAT, DATA, TOS_LEGAL, EXPERIMENT_FEASIBILITY.
+RESEARCH_PHASE1_KINDS = (
+    "DEMAND_REALITY_CHECK",
+    "BUYER_BUDGET_CHECK",
+    "CURRENT_ALTERNATIVE_CHECK",
+    "DISTRIBUTION_ACCESS_CHECK",
+    "COMPETITOR_EQUIVALENT_SEARCH",
+    "GENERAL_AI_SUBSTITUTION_CHECK",
+)
+RESEARCH_PHASE2_KINDS = (
+    "MOAT_REALITY_CHECK",
+    "DATA_AVAILABILITY_CHECK",
+    "TOS_AND_LEGAL_CHECK",
+    "EXPERIMENT_FEASIBILITY_CHECK",
+)
+
 # Configuración de la PRIMERA CAMPAÑA REAL (diversa; sin ventaja MQL5/trading).
 FIRST_REAL_CAMPAIGN_CONFIG = {
     "title": "PRIMERA CAMPAÑA REAL 001",

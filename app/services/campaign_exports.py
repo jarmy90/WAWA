@@ -23,19 +23,33 @@ from app.models.orchestrator import RESEARCH_MISSION_KINDS
 CSV_COLUMNS = (
     "campaign_id", "concept_id", "title", "territory", "lens", "archetype",
     "problem_hypothesis", "buyer_hypothesis", "proposed_mechanism", "why_now",
-    "ai_substitution_class", "ai_resistance_score", "venture_score", "demand_score",
-    "distribution_score", "validation_speed_score", "margin_score", "defensibility_score",
-    "originality_score", "evidence_groups", "verified_evidence_count", "status",
-    "current_stage", "passed_dedup", "passed_ai_filter", "passed_structural_filter",
-    "entered_shortlist", "tournament_position", "finalist", "rejection_stage",
-    "rejection_reason", "blockers", "missing_evidence", "next_action", "synthetic_or_real",
+    "ai_substitution_class", "ai_substitution_label", "ai_resistance_score",
+    "structural_concept_score", "evidence_backed_venture_score", "venture_score",
+    "demand_score", "distribution_score", "validation_speed_score", "margin_score",
+    "defensibility_score", "originality_score", "evidence_groups", "verified_evidence_count",
+    "status", "status_meaning", "current_stage", "passed_dedup", "passed_ai_filter",
+    "passed_structural_filter", "entered_shortlist", "tournament_position", "finalist",
+    "rejection_stage", "rejection_reason", "blockers", "missing_evidence", "next_action",
+    "synthetic_or_real",
 )
+
+# Estados que significan que la idea superó un filtro (para las columnas
+# passed_* del CSV, sin ambigüedad).
+_STRUCTURAL_OK = (
+    "STRUCTURAL_FILTER_PASSED", "RESEARCH_CANDIDATE", "RESEARCH_PENDING",
+    "EVIDENCE_INSUFFICIENT", "SHORTLISTED_WITH_EVIDENCE", "FINALIST", "EXPERIMENT_READY",
+)
+_AI_OK = ("AI_FILTER_PASSED",) + _STRUCTURAL_OK
+_SHORTLIST_OK = ("RESEARCH_CANDIDATE", "RESEARCH_PENDING", "EVIDENCE_INSUFFICIENT",
+                 "SHORTLISTED_WITH_EVIDENCE", "FINALIST", "EXPERIMENT_READY")
+_FINALIST_OK = ("FINALIST", "EXPERIMENT_READY")
 
 
 def _concept_row(campaign_id: str, concept: dict, *, synthetic: bool) -> dict:
     sub = concept.get("substitution") or {}
     ven = concept.get("venture") or {}
     ven_scores = ven.get("scores") or {}
+    status = concept.get("status") or "GENERATED_HYPOTHESIS"
     return {
         "campaign_id": campaign_id,
         "concept_id": concept.get("id"),
@@ -48,7 +62,10 @@ def _concept_row(campaign_id: str, concept: dict, *, synthetic: bool) -> dict:
         "proposed_mechanism": concept.get("mechanism"),
         "why_now": concept.get("why_now"),
         "ai_substitution_class": sub.get("classification"),
+        "ai_substitution_label": concept.get("ai_substitution_label") or sub.get("classification"),
         "ai_resistance_score": sub.get("ai_resistance_score"),
+        "structural_concept_score": concept.get("structural_concept_score"),
+        "evidence_backed_venture_score": concept.get("evidence_backed_venture_score"),
         "venture_score": ven.get("final_score"),
         "demand_score": ven_scores.get("proven_demand"),
         "distribution_score": ven_scores.get("distribution"),
@@ -58,14 +75,15 @@ def _concept_row(campaign_id: str, concept: dict, *, synthetic: bool) -> dict:
         "originality_score": ven_scores.get("originality"),
         "evidence_groups": concept.get("evidence_groups"),
         "verified_evidence_count": concept.get("verified_evidence_count"),
-        "status": concept.get("status"),
+        "status": status,
+        "status_meaning": concept.get("status_meaning"),
         "current_stage": concept.get("phase"),
-        "passed_dedup": "yes" if concept.get("status") != "clone" else "no",
-        "passed_ai_filter": "yes" if concept.get("status") not in ("blocked",) else "no",
-        "passed_structural_filter": "yes" if concept.get("status") in ("shortlisted", "finalist", "promoted") else "no",
-        "entered_shortlist": "yes" if concept.get("status") in ("shortlisted", "finalist", "promoted") else "no",
+        "passed_dedup": "yes" if status != "CONCEPTUAL_CLONE" else "no",
+        "passed_ai_filter": "yes" if status in _AI_OK else "no",
+        "passed_structural_filter": "yes" if status in _STRUCTURAL_OK else "no",
+        "entered_shortlist": "yes" if status in _SHORTLIST_OK else "no",
         "tournament_position": concept.get("tournament_rank"),
-        "finalist": "yes" if concept.get("status") == "finalist" else "no",
+        "finalist": "yes" if status in _FINALIST_OK else "no",
         "rejection_stage": concept.get("rejection_stage"),
         "rejection_reason": concept.get("rejection_reason"),
         "blockers": "; ".join(concept.get("blockers") or []),
@@ -98,9 +116,10 @@ def build_json(detail: dict, *, synthetic: bool, run: dict | None = None) -> str
         "synthetic_or_real": "synthetic" if synthetic else "real",
         "summary": {
             "total": len(_concepts(detail)),
-            "blocked": sum(1 for c in _concepts(detail) if c.get("status") == "blocked"),
-            "shortlisted": sum(1 for c in _concepts(detail) if c.get("status") in ("shortlisted", "finalist", "promoted")),
-            "finalists": sum(1 for c in _concepts(detail) if c.get("status") == "finalist"),
+            "blocked": sum(1 for c in _concepts(detail) if c.get("status") in ("COMMODITY_BLOCKED", "RECOMBINATION_INCOHERENT")),
+            "needs_reformulation": sum(1 for c in _concepts(detail) if c.get("status") == "NEEDS_REFORMULATION"),
+            "shortlisted": sum(1 for c in _concepts(detail) if c.get("status") in _SHORTLIST_OK),
+            "finalists": sum(1 for c in _concepts(detail) if c.get("status") in _FINALIST_OK),
         },
         "concepts": _concepts(detail),
         "comparisons": detail.get("comparisons") or [],
@@ -111,9 +130,10 @@ def build_json(detail: dict, *, synthetic: bool, run: dict | None = None) -> str
 def build_markdown(detail: dict, *, synthetic: bool) -> str:
     campaign = detail.get("campaign") or {}
     concepts = _concepts(detail)
-    blocked = [c for c in concepts if c.get("status") == "blocked"]
-    shortlisted = [c for c in concepts if c.get("status") in ("shortlisted", "finalist", "promoted")]
-    finalists = [c for c in concepts if c.get("status") == "finalist"]
+    blocked = [c for c in concepts if c.get("status") in ("COMMODITY_BLOCKED", "RECOMBINATION_INCOHERENT", "CONCEPTUAL_CLONE", "DIVERSITY_ELIMINATED")]
+    reform = [c for c in concepts if c.get("status") == "NEEDS_REFORMULATION"]
+    shortlisted = [c for c in concepts if c.get("status") in _SHORTLIST_OK]
+    finalists = [c for c in concepts if c.get("status") in _FINALIST_OK]
     lines: list[str] = []
     lines.append(f"# Ideas de campaña — {campaign.get('title', 'Sin título')}")
     lines.append("")
@@ -124,7 +144,8 @@ def build_markdown(detail: dict, *, synthetic: bool) -> str:
     lines.append("## 2. Embudo")
     lines.append(f"- Conceptos iniciales: {len(concepts)}")
     lines.append(f"- Bloqueados/descartados: {len(blocked)}")
-    lines.append(f"- Shortlist: {len(shortlisted)}")
+    lines.append(f"- Necesitan reformulación: {len(reform)}")
+    lines.append(f"- Candidatas concretas / shortlist: {len(shortlisted)}")
     lines.append(f"- Finalistas: {len(finalists)}")
     lines.append("")
     lines.append("## 3. Todas las ideas")
@@ -136,22 +157,40 @@ def build_markdown(detail: dict, *, synthetic: bool) -> str:
         lines.append(f"   - Comprador (hipótesis): {c.get('buyer_hypothesis')}")
         lines.append(f"   - Mecanismo: {c.get('mechanism')}")
         lines.append(f"   - Territorio: {c.get('territory_key')} · lente(s): {', '.join(c.get('lens_keys') or [])} · arquetipo: {c.get('archetype_key')}")
-        lines.append(f"   - Sustitución IA: {sub.get('classification')} (resistencia {sub.get('ai_resistance_score')}) · Venture: {ven.get('final_score')}")
+        lines.append(f"   - Sustitución IA: {c.get('ai_substitution_label') or sub.get('classification')} (resistencia {sub.get('ai_resistance_score')})")
+        lines.append(f"   - Puntuación estructural: {c.get('structural_concept_score')} · Puntuación con evidencia: {c.get('evidence_backed_venture_score')}")
+        lines.append(f"   - Qué significa: {c.get('status_meaning')}")
+        if c.get('rejection_reason'):
+            lines.append(f"   - Motivo: {c.get('rejection_reason')}")
+        if c.get('missing_evidence') and c.get('missing_evidence') != '—':
+            lines.append(f"   - Qué falta: {c.get('missing_evidence')}")
+        if c.get('next_action'):
+            lines.append(f"   - Próxima acción: {c.get('next_action')}")
     lines.append("")
     lines.append("## 4. Ideas descartadas y motivo")
     if blocked:
         for c in blocked:
-            lines.append(f"- **{c.get('title')}** — motivo: {c.get('rejection_reason') or 'bloqueador interno'}")
+            lines.append(f"- **{c.get('title')}** `[{c.get('status')}]` — motivo: {c.get('rejection_reason') or 'bloqueador interno'}")
     else:
         lines.append("- Ninguna descartada.")
+    lines.append("")
+    lines.append("## 4b. Ideas que necesitan reformulación")
+    if reform:
+        for c in reform:
+            lines.append(f"- **{c.get('title')}** — falta: {c.get('missing_evidence') or 'brief concreto'}")
+    else:
+        lines.append("- Ninguna.")
     lines.append("")
     lines.append("## 5. Shortlist")
     for c in shortlisted:
         lines.append(f"- {c.get('title')} (estado {c.get('status')})")
     lines.append("")
     lines.append("## 6. Finalistas")
-    for c in finalists:
-        lines.append(f"- **{c.get('title')}** — Venture { (c.get('venture') or {}).get('final_score') }")
+    if finalists:
+        for c in finalists:
+            lines.append(f"- **{c.get('title')}** — estructural {c.get('structural_concept_score')} · con evidencia {c.get('evidence_backed_venture_score')}")
+    else:
+        lines.append("- Ninguno (0 finalistas es un resultado válido: no se fuerzan).")
     lines.append("")
     lines.append("## 7. Comparación (torneo)")
     for cmp_ in (detail.get("comparisons") or [])[:20]:
@@ -164,7 +203,7 @@ def build_markdown(detail: dict, *, synthetic: bool) -> str:
 
 
 def build_finalists_markdown(detail: dict, *, synthetic: bool, committee: list[dict] | None = None) -> str:
-    concepts = [c for c in _concepts(detail) if c.get("status") == "finalist"]
+    concepts = [c for c in _concepts(detail) if c.get("status") in _FINALIST_OK]
     lines: list[str] = []
     lines.append("# Finalistas — resumen")
     lines.append("")

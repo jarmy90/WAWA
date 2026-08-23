@@ -124,9 +124,25 @@ class TestVentureScore:
         # novelty/utility altos para que originality no se anule en el recálculo
         result = venture_score(scores=self._scores(), novelty_score=75, utility_score=75)
         assert 0 <= result.final_score <= 100
-        # todos 60 + margin 70 -> media > 60
-        assert result.final_score > 60
-        assert result.final_score < 62
+        # Iteración 013: sin evidencia, la puntuación con evidencia es 0 y la
+        # demanda/distribución no puntúan (no se inventa demanda).
+        assert result.evidence_backed_venture_score == 0.0
+        assert result.structural_concept_score == result.final_score
+        assert result.proven_demand == 0.0
+        assert result.distribution == 0.0
+        # Con evidencia verificable suficiente (>=3 grupos independientes) la
+        # puntuación con evidencia refleja la viabilidad real.
+        ev = venture_score(
+            scores=self._scores(), novelty_score=75, utility_score=75,
+            has_verified_evidence=True, verified_evidence_groups=3,
+        )
+        assert ev.evidence_backed_venture_score > 60
+        # Con evidencia insuficiente (<3 grupos) el tope honesto es 40.
+        low = venture_score(
+            scores=self._scores(), novelty_score=75, utility_score=75,
+            has_verified_evidence=True, verified_evidence_groups=1,
+        )
+        assert low.evidence_backed_venture_score <= 40
 
     def test_ai_resistance_weights_higher(self):
         low = venture_score(scores=self._scores(general_ai_resistance=10))
@@ -224,20 +240,37 @@ class TestCampaignOffline:
 
             detail = c.discovery.run_commodity_filter(campaign["id"])
             statuses = {x["status"] for x in detail["concepts"]}
-            assert statuses <= {"passed", "blocked"}
+            # Iteración 013: estados inequívocos; nunca "passed"/"blocked".
+            assert statuses <= {"AI_FILTER_PASSED", "COMMODITY_BLOCKED"}
+            assert not (statuses & {"passed", "blocked", "promoted", "shortlisted", "finalist"})
 
             detail = c.discovery.run_recombine(campaign["id"])
-            assert len(detail["concepts"]) > len(concepts)
+            assert len(detail["concepts"]) >= len(concepts)  # puede omitirse honestamente
 
+            # Sin Opportunity Brief concreto -> 0 candidatas (resultado válido).
+            detail = c.discovery.campaign_detail(campaign["id"])
+            assert all(x["status"] not in ("shortlisted", "finalist", "promoted") for x in detail["concepts"])
+            assert sum(1 for x in detail["concepts"] if x["status"] == "RESEARCH_CANDIDATE") == 0
+
+            # Completar briefs de HIPÓTESIS solo hasta el target del shortlist.
+            done = 0
+            for x in detail["concepts"]:
+                if done >= 6:
+                    break
+                if x["status"] != "AI_FILTER_PASSED":
+                    continue
+                c.discovery.complete_opportunity_brief(x["id"], c.discovery.demo_brief_for(x))
+                done += 1
             detail = c.discovery.run_shortlist(campaign["id"])
-            shortlisted = [x for x in detail["concepts"] if x["status"] == "shortlisted"]
+            shortlisted = [x for x in detail["concepts"] if x["status"] == "RESEARCH_CANDIDATE"]
             assert 2 <= len(shortlisted) <= 6
             for x in shortlisted:
                 assert x["venture"]["final_score"] > 0
                 assert x["venture"]["scores"]["proven_demand"] == 0  # offline: no se inventa demanda
+                assert x["evidence_backed_venture_score"] == 0.0  # sin evidencia: 0
 
             detail = c.discovery.run_tournament(campaign["id"])
-            finalists = [x for x in detail["concepts"] if x["status"] == "finalist"]
+            finalists = [x for x in detail["concepts"] if x["status"] == "FINALIST"]
             assert 1 <= len(finalists) <= 2
             assert detail["ranking"]
             assert detail["comparisons"]
@@ -327,10 +360,20 @@ class TestMissions:
             c.discovery.run_phase1(campaign["id"])
             c.discovery.run_commodity_filter(campaign["id"])
             c.discovery.run_recombine(campaign["id"])
+            # Briefs de hipótesis para que existan candidatas concretas.
+            detail0 = c.discovery.campaign_detail(campaign["id"])
+            done = 0
+            for x in detail0["concepts"]:
+                if done >= 6:
+                    break
+                if x["status"] != "AI_FILTER_PASSED":
+                    continue
+                c.discovery.complete_opportunity_brief(x["id"], c.discovery.demo_brief_for(x))
+                done += 1
             c.discovery.run_shortlist(campaign["id"])
             c.discovery.run_tournament(campaign["id"])
             detail = c.discovery.campaign_detail(campaign["id"])
-            finalist = next(x for x in detail["concepts"] if x["status"] == "finalist")
+            finalist = next(x for x in detail["concepts"] if x["status"] == "FINALIST")
             opp = c.discovery.promote(finalist["id"])
             mission = c.discovery.create_mission(kind="candidate", concept_id=finalist["id"])
             c.discovery.import_mission_result(
@@ -397,6 +440,9 @@ class TestDiscoveryAPI:
 
             res = client.post(f"/api/discovery/campaigns/{campaign_id}/filter")
             assert res.status_code == 200
+            statuses = {c["status"] for c in res.json()["concepts"]}
+            # Iteración 013: estados inequívocos, nunca passed/promoted.
+            assert not (statuses & {"passed", "blocked", "promoted", "shortlisted", "finalist"})
 
             res = client.post(f"/api/discovery/campaigns/{campaign_id}/recombine")
             assert res.status_code == 200
@@ -404,10 +450,31 @@ class TestDiscoveryAPI:
             res = client.post(f"/api/discovery/campaigns/{campaign_id}/shortlist")
             assert res.status_code == 200
 
+            # Completa briefs de hipótesis (vía API) para las que pasaron el filtro.
+            concepts = res.json()["concepts"]
+            for c in concepts:
+                if c["status"] != "AI_FILTER_PASSED":
+                    continue
+                brief = client.post(
+                    f"/api/discovery/concepts/{c['id']}/brief",
+                    json={"brief": container.discovery.demo_brief_for(c)},
+                )
+                assert brief.status_code == 200
+                assert brief.json()["status"] == "RESEARCH_CANDIDATE"
+            # Un brief genérico NO puede promocionar a candidata.
+            bad = client.post(
+                f"/api/discovery/concepts/{concepts[0]['id']}/brief",
+                json={"brief": {"buyer": "profesional o pequeña organización"}},
+            )
+            assert bad.status_code == 422
+
+            res = client.post(f"/api/discovery/campaigns/{campaign_id}/shortlist")
+            assert res.status_code == 200
+
             res = client.post(f"/api/discovery/campaigns/{campaign_id}/tournament")
             assert res.status_code == 200
             body = res.json()
-            assert body["ranking"]
+            assert body.get("ranking") or body.get("tournament_skipped")
 
             # inválido: id mal formado
             res = client.post("/api/discovery/campaigns/abc/phase1")

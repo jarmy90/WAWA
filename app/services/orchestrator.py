@@ -23,6 +23,7 @@ from app.models.orchestrator import (
     FIRST_REAL_CAMPAIGN_CONFIG,
     ORCHESTRATOR_STATES,
     RESEARCH_MISSION_KINDS,
+    RESEARCH_PHASE1_KINDS,
     ExperimentPlan,
     new_id,
 )
@@ -181,7 +182,7 @@ class CampaignOrchestrator:
             if op == "commodity_filter":
                 detail = self.discovery.run_commodity_filter(dcid)
                 concepts = detail.get("concepts") or []
-                blocked = sum(1 for c in concepts if c.get("status") == "blocked")
+                blocked = sum(1 for c in concepts if c.get("status") in ("COMMODITY_BLOCKED", "RECOMBINATION_INCOHERENT"))
                 return self._transition(run_id, to, f"Filtro de comoditización: {blocked} bloqueados.",
                                         concepts_considered=len(concepts), concepts_rejected=blocked, synthetic=False,
                                         next_action="Recombinación.")
@@ -203,14 +204,17 @@ class CampaignOrchestrator:
                                         next_action="Shortlist diversa.")
             if op == "shortlist":
                 detail = self.discovery.run_shortlist(dcid)
-                shortlisted = sum(1 for c in detail.get("concepts") or [] if c.get("status") == "shortlisted")
-                return self._transition(run_id, to, f"Shortlist: {shortlisted} candidatas.",
-                                        concepts_considered=len(detail.get("concepts") or []), synthetic=False,
-                                        next_action="Torneo por pares.")
+                candidates = sum(1 for c in detail.get("concepts") or [] if c.get("status") == "RESEARCH_CANDIDATE")
+                reform = sum(1 for c in detail.get("concepts") or [] if c.get("status") == "NEEDS_REFORMULATION")
+                return self._transition(
+                    run_id, to,
+                    f"Shortlist: {candidates} candidatas concretas; {reform} necesitan reformulación.",
+                    concepts_considered=len(detail.get("concepts") or []), synthetic=False,
+                    next_action="Torneo por pares.")
             if op == "tournament":
                 detail = self.discovery.run_tournament(dcid)
-                finalists = sum(1 for c in detail.get("concepts") or [] if c.get("status") == "finalist")
-                return self._transition(run_id, to, f"Torneo por pares: {finalists} finalistas.",
+                finalists = sum(1 for c in detail.get("concepts") or [] if c.get("status") == "FINALIST")
+                return self._transition(run_id, to, f"Torneo por pares: {finalists} finalistas (0 es válido).",
                                         concepts_considered=len(detail.get("concepts") or []), synthetic=False,
                                         next_action="Preparar investigación de candidatas.")
             if op == "promote_and_plan_research":
@@ -257,23 +261,33 @@ class CampaignOrchestrator:
         dcid = run.get("discovery_campaign_id")
         detail = self.discovery.campaign_detail(dcid)
         cfg = run.get("config") or {}
-        # Finalistas del torneo primero; si no hay suficientes, shortlist.
-        finalists = [c for c in detail.get("concepts") or [] if c.get("status") == "finalist"]
-        shortlisted = [c for c in detail.get("concepts") or [] if c.get("status") == "shortlisted"]
-        candidates = (finalists + shortlisted)[: int(cfg.get("research_candidates", 6))]
+        # Iteración 013: SOLO candidatas concretas (RESEARCH_CANDIDATE/FINALIST).
+        # Las NEEDS_REFORMULATION / RECOMBINATION_INCOHERENT nunca se investigan.
+        candidates = [
+            c for c in (detail.get("concepts") or [])
+            if c.get("status") in ("RESEARCH_CANDIDATE", "FINALIST", "SHORTLISTED_WITH_EVIDENCE")
+        ][: int(cfg.get("research_candidates", 6))]
+
+        # Invalida misiones previas no superseded (nunca se borran).
+        for mission in self.repos.discovery.missions_by_campaign(dcid):
+            self.repos.discovery.update_mission_status(
+                mission["mission_id"], "SUPERSEDED_BY_SEMANTIC_QUALITY_GATE"
+            )
 
         promoted: list[str] = []
         missions: list[dict] = []
         for concept in candidates:
             opp = self.discovery.promote(concept["id"])
             promoted.append(opp.id)
-            for kind in RESEARCH_MISSION_KINDS:
+            # Iteración 013: misiones PROGRESIVAS — solo Fase 1 (6 de descarte).
+            for kind in RESEARCH_PHASE1_KINDS:
                 mission = self.discovery.create_mission(kind=kind, campaign_id=dcid, concept_id=concept["id"])
                 missions.append({"mission_id": mission.mission_id, "kind": kind, "concept_id": concept["id"], "opportunity_id": opp.id})
         self.orr.update_run(run_id, selected_opportunity_id=promoted[0] if promoted else None)
         outputs = {"promoted": promoted, "missions": missions}
         return self._transition(
-            run_id, "RESEARCH_PLANNED", f"{len(promoted)} candidatas promovidas; {len(missions)} misiones de investigación creadas.",
+            run_id, "RESEARCH_PLANNED",
+            f"{len(promoted)} candidatas concretas promovidas; {len(missions)} misiones de Fase 1 creadas (6 por candidata, progresivas).",
             inputs={"config": cfg}, outputs=outputs, concepts_considered=len(candidates), synthetic=False,
             next_action="COPIAR MISIÓN PARA FREEBUFF (investigación externa real).",
         )

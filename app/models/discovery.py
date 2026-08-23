@@ -143,6 +143,10 @@ class VentureEvaluation(BaseModel):
     demonstrability: float = Field(ge=0, le=100)
     operational_simplicity: float = Field(ge=0, le=100)
     final_score: float = Field(ge=0, le=100)
+    # Iteración 013: dos puntuaciones separadas.
+    structural_concept_score: float = Field(default=0.0, ge=0, le=100)
+    evidence_backed_venture_score: float = Field(default=0.0, ge=0, le=100)
+    has_verified_evidence: bool = False
     novelty_score: float = Field(ge=0, le=100)
     utility_score: float = Field(ge=0, le=100)
     blockers: list[str] = Field(default_factory=list)
