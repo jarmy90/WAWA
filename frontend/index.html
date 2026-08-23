@@ -1,159 +1,95 @@
 <!doctype html>
-<html lang="es" data-wawa-version="0.11.0">
+<html lang="es" data-wawa-version="0.11.1" data-iteration="012" data-build="012-patch-1">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Autonomous Business Lab — Dashboard</title>
-    <link rel="stylesheet" href="/styles.css?v=011" />
+    <link rel="icon" href="data:," />
+    <title>WAWA — Descubrimiento y validación de oportunidades</title>
+    <link rel="stylesheet" href="/styles.css?v=0111" />
   </head>
   <body>
+    <!-- Franja roja base: visible si app.js no termina de cargar (CSS puro). -->
+    <div id="js-fail" class="js-fail">LA INTERFAZ NO HA TERMINADO DE CARGAR. Revisa la consola o abre /api/health para diagnosticar.</div>
+
     <header class="topbar">
       <div class="brand">
-        <span class="brand-mark">ABL</span>
+        <span class="brand-mark">WAWA</span>
         <div>
-          <h1>Autonomous Business Lab</h1>
-          <p class="brand-sub">Motor de investigación y selección de oportunidades</p>
+          <h1>WAWA</h1>
+          <p class="brand-sub">Descubrimiento y validación de oportunidades</p>
         </div>
       </div>
       <div class="topbar-right">
-        <div class="egg-wrap" id="egg-wrap" title="Estado del motor">
-          <div class="egg" id="egg"><span class="egg-core"></span><span class="egg-orbit o1"></span><span class="egg-orbit o2"></span><span class="egg-glow"></span></div>
-          <span class="egg-label" id="egg-label">motor</span>
-        </div>
-        <span id="wawa-version" class="chip chip-neutral" title="Versión de esta interfaz. Si aparece un banner rojo de versión, recarga con Ctrl+F5.">v0.11</span>
+        <span id="wawa-version" class="chip chip-neutral" title="Versión de esta interfaz">v0.11.1</span>
         <div id="budget-chip" class="chip chip-neutral" title="Estado del BudgetGuard">—</div>
       </div>
     </header>
 
-    <main class="layout">
-      <aside class="sidebar">
-        <div class="filters card">
-          <h3>Filtros</h3>
-          <label class="field">
-            <span>Estado</span>
-            <select id="filter-status">
-              <option value="">Todos</option>
-              <option value="draft">Borrador</option>
-              <option value="researching">En investigación</option>
-              <option value="evaluated">Evaluada</option>
-              <option value="approved">Aprobada</option>
-              <option value="needs_more_research">Necesita investigación</option>
-              <option value="deferred">Aplazada</option>
-              <option value="rejected">Rechazada</option>
-              <option value="blocked">Bloqueada</option>
-            </select>
-          </label>
-          <label class="field">
-            <span>Puntuación mínima</span>
-            <input id="filter-min-score" type="number" min="0" max="100" placeholder="0" />
-          </label>
-          <button id="btn-new" class="btn btn-primary btn-block">Nueva oportunidad</button>
-          <button id="btn-import" class="btn btn-secondary btn-block">Importar investigación (JSON)</button>
-        </div>
-        <div class="card legend">
-          <h3>Leyenda</h3>
-          <div class="legend-row"><span class="dot dot-evidence"></span> Basado en evidencia</div>
-          <div class="legend-row"><span class="dot dot-estimate"></span> Estimación</div>
-          <div class="legend-row"><span class="dot dot-unknown"></span> Desconocido</div>
-        </div>
-        <div class="card" id="engine-card">
-          <h3>Motor <span id="engine-mode-chip" class="chip chip-neutral">—</span></h3>
-          <div id="engine-info">—</div>
-          <div class="engine-actions">
-            <button id="btn-safe-pause" class="btn btn-ghost btn-sm">Pausa segura</button>
-            <button id="btn-resume-dev" class="btn btn-ghost btn-sm">Reanudar (dev)</button>
-          </div>
-        </div>
-        <div class="card" id="economy-card">
-          <h3>Economía <span class="tag tag-unverified">SIMULADA</span></h3>
-          <div id="economy-warning" class="eco-banner hidden">SIMULACIÓN — NO REPRESENTA DINERO REAL</div>
-          <div id="economy-info">—</div>
-          <div class="engine-actions">
-            <button id="btn-sim-start" class="btn btn-secondary btn-sm">Iniciar simulación</button>
-            <button id="btn-sim-income" class="btn btn-ghost btn-sm">Ingreso simulado</button>
-            <button id="btn-sim-expense" class="btn btn-ghost btn-sm">Gasto simulado</button>
-            <button id="btn-reconcile" class="btn btn-ghost btn-sm">Reconciliar</button>
-          </div>
-          <div id="economy-ledger" class="feed" style="margin-top:10px"></div>
-        </div>
-        <div class="card">
-          <h3>Actividad en vivo</h3>
-          <div id="engine-feed" class="feed">—</div>
-        </div>
-        <div class="card" id="providers-card">
-          <h3>Proveedor de IA</h3>
-          <div id="providers-info">—</div>
-        </div>
-      </aside>
+    <!-- Diagnóstico visible (iteración 012): versiones y estado de JS. -->
+    <div class="diag" id="diag">
+      Backend: <span id="diag-backend">—</span>
+      · Frontend: <span id="diag-frontend">v0.11.1</span>
+      · Iteración: <span id="diag-iter">012</span>
+      · JavaScript: <span id="diag-js">cargando…</span>
+      · Paquete: <span id="diag-package">012-patch-1</span>
+    </div>
 
-      <section class="content">
-        <div id="version-warning" class="version-warning hidden">
-          ⚠ Frontend desactualizado (HTML v0.11 pero servidor v0.0.0). Recarga con <strong>Ctrl+F5</strong> o reinicia WAWA con <code>sh start_wawa.sh</code>.
-        </div>
-        <div id="status-strip" class="status-strip">
-          <span class="status-item" id="st-cycle">Ciclo: —</span>
-          <span class="status-item" id="st-campaign">Campaña: —</span>
-          <span class="status-item" id="st-action">Próxima acción: —</span>
-          <span class="status-actions">
+    <!-- Navegación principal: HTML estático, visible sin JavaScript. -->
+    <nav class="main-nav" id="main-nav">
+      <a href="#home" data-view="home" class="nav-link active">Inicio</a>
+      <a href="#campaign" data-view="campaign" class="nav-link">Campaña real</a>
+      <a href="#ideas" data-view="ideas" class="nav-link">Ideas <span id="ideas-badge" class="badge">0</span></a>
+      <a href="#research" data-view="research" class="nav-link">Investigación</a>
+      <a href="#committee" data-view="committee" class="nav-link">Comité <span id="rev-badge" class="badge">0</span></a>
+      <a href="#experiment" data-view="experiment" class="nav-link">Experimento</a>
+      <a href="#economy" data-view="economy" class="nav-link">Economía</a>
+      <a href="#activity" data-view="activity" class="nav-link">Actividad</a>
+      <a href="#config" data-view="config" class="nav-link">Configuración <span id="count-badge" class="badge">0</span></a>
+    </nav>
+
+    <main class="app">
+      <!-- ======================= INICIO (portada) ======================= -->
+      <section id="view-home" class="view active">
+        <div class="hero">
+          <div class="hero-eyebrow">Descubrimiento y validación de oportunidades</div>
+          <h2 class="hero-title">PRIMERA CAMPAÑA REAL 001</h2>
+          <div class="hero-status">
+            <span id="st-cycle" class="chip chip-ok">PRE_CYCLE · reloj detenido · 30 días</span>
+            <span id="st-campaign" class="chip chip-neutral">Campaña: sin iniciar</span>
+          </div>
+          <button id="btn-hero-start" class="btn btn-primary btn-hero">INICIAR CAMPAÑA REAL</button>
+          <p class="hero-sub">“Genera ideas, aplica filtros, prepara investigación y conserva todos los motivos de descarte sin inventar evidencia.”</p>
+          <div class="hero-actions">
             <button id="btn-st-campaign" class="btn btn-ghost btn-sm">Ir a Campaña real</button>
             <button id="btn-st-csv" class="btn btn-ghost btn-sm">Descargar CSV</button>
-          </span>
-        </div>
-        <div id="list-header" class="list-header">
-          <div class="view-tabs">
-            <button id="tab-opps" class="tab-btn active">Oportunidades <span id="count-badge" class="badge">0</span></button>
-            <button id="tab-discovery" class="tab-btn">Descubrimiento <span id="disc-badge" class="badge">0</span></button>
-            <button id="tab-reviews" class="tab-btn">Laboratorio <span id="rev-badge" class="badge">0</span></button>
-            <button id="tab-orchestrator" class="tab-btn">Campaña real</button>
-            <button id="tab-ideas" class="tab-btn">Ideas <span id="ideas-badge" class="badge">0</span></button>
-            <button id="tab-campaigns" class="tab-btn">Campañas <span id="camp-badge" class="badge">0</span></button>
+            <button id="btn-st-md" class="btn btn-ghost btn-sm">Descargar Markdown</button>
           </div>
         </div>
-        <div id="view-opportunities">
-          <div id="opportunities" class="grid"></div>
-          <div id="empty-state" class="empty hidden">
-            <p>No hay oportunidades todavía. Crea una nueva, importa investigación o carga la demo.</p>
-          </div>
-        </div>
-        <div id="view-discovery" class="hidden">
-          <div class="list-header sub">
-            <h2>Campañas de descubrimiento</h2>
-            <button id="btn-campaign-new" class="btn btn-primary btn-sm">Nueva campaña</button>
-          </div>
-          <div id="discovery" class="stack"></div>
-          <div id="discovery-empty" class="empty hidden">
-            <p>Sin campañas. Lanza una campaña abierta (Ruta B): el sistema genera territorios, lentes y arquetipos, filtra wrappers de IA y selecciona finalistas sin que tengas que proponer un negocio.</p>
-          </div>
-        </div>
-        <div id="view-reviews" class="hidden">
-          <div class="list-header sub">
-            <h2>Laboratorio de oportunidades <span class="tag tag-unverified">opinión de modelos ≠ evidencia</span></h2>
-            <button id="btn-reviews-demo" class="btn btn-ghost btn-sm" title="Crea una finalista SINTÉTICA y demuestra el comité de contraste">Demo del comité</button>
-          </div>
-          <div id="reviews-config" class="reviews-config"></div>
-          <div id="reviews-queue" class="stack"></div>
-          <div id="reviews-empty" class="empty hidden">
-            <p>Sin finalistas en revisión. Las oportunidades aprobadas con puntuación ≥ umbral entran aquí automáticamente; también puedes generarlas con la demo o promover conceptos desde Descubrimiento.</p>
-          </div>
-        </div>
-        <div id="view-orchestrator" class="hidden">
-          <div class="list-header sub">
-            <h2>Campaña real <span id="orc-tag" class="tag tag-unverified">PRIMERA CAMPAÑA REAL 001</span></h2>
-            <button id="btn-orc-start" class="btn btn-primary btn-sm">INICIAR CAMPAÑA REAL</button>
+      </section>
+
+      <!-- ======================= CAMPAÑA REAL ======================= -->
+      <section id="view-campaign" class="view hidden">
+        <div class="view-head">
+          <h2>Campaña real <span id="orc-tag" class="tag tag-unverified">PRIMERA CAMPAÑA REAL 001</span></h2>
+          <div class="view-actions">
             <button id="btn-orc-advance" class="btn btn-secondary btn-sm hidden">Continuar hasta el próximo bloqueo</button>
             <button id="btn-orc-pause" class="btn btn-ghost btn-sm hidden">Pausar</button>
             <button id="btn-orc-resume" class="btn btn-ghost btn-sm hidden">Reanudar</button>
             <button id="btn-orc-cancel" class="btn btn-ghost btn-sm hidden">Cancelar</button>
           </div>
-          <p class="hint">Un solo flujo: descubrimiento → ideas → filtros → torneo → investigación → evidencias → reevaluación → finalistas → comité → decisión → plan de experimento → PRE_CYCLE. El orquestador avanza automáticamente y se detiene <strong>honestamente</strong> donde hace falta investigación externa o una intervención legítima. <span class="tag tag-unverified">NO 24/7 · sin investigación web automática · los conceptos offline son SINTÉTICOS hasta tener evidencias con fuente</span></p>
-          <div id="orchestrator-panel" class="stack"></div>
-          <div id="orchestrator-empty" class="empty hidden">
-            <p>No hay campaña real en curso. Pulsa <strong>INICIAR CAMPAÑA REAL</strong> para crear la PRIMERA CAMPAÑA REAL 001 (60 conceptos iniciales, territorios diversos, sin ventaja de sector).</p>
-          </div>
         </div>
-        <div id="view-ideas" class="hidden">
-          <div class="list-header sub">
-            <h2>Ideas de la campaña</h2>
+        <p class="hint">Un solo flujo: descubrimiento → ideas → filtros → torneo → investigación → evidencias → reevaluación → finalistas → comité → decisión → plan de experimento → PRE_CYCLE. El orquestador avanza automáticamente y se detiene <strong>honestamente</strong> donde hace falta investigación externa o una intervención legítima. <span class="tag tag-unverified">NO 24/7 · sin investigación web automática · los conceptos offline son SINTÉTICOS hasta tener evidencias con fuente</span></p>
+        <div id="orchestrator-panel" class="stack"></div>
+        <div id="orchestrator-empty" class="empty hidden">
+          <p>No hay campaña real en curso. Pulsa <strong>INICIAR CAMPAÑA REAL</strong> (portada) para crear la PRIMERA CAMPAÑA REAL 001 (60 conceptos iniciales, territorios diversos, sin ventaja de sector).</p>
+        </div>
+      </section>
+
+      <!-- ======================= IDEAS ======================= -->
+      <section id="view-ideas" class="view hidden">
+        <div class="view-head">
+          <h2>Ideas de la campaña</h2>
+          <div class="view-actions">
             <select id="ideas-filter" class="input">
               <option value="all">Todas</option>
               <option value="active">Activas</option>
@@ -169,29 +105,142 @@
             <button id="btn-ideas-export-finalists" class="btn btn-ghost btn-sm">Finalistas .md</button>
             <button id="btn-ideas-export-research" class="btn btn-ghost btn-sm">Paquetes investigación (.zip)</button>
           </div>
-          <p class="hint">Todas las ideas de la campaña, incluidas las descartadas (los motivos son aprendizaje, no se ocultan). Filtra por estado, territorio o puntuación.</p>
-          <div id="ideas-grid" class="grid"></div>
-          <div id="ideas-empty" class="empty hidden"><p>Sin ideas. Inicia la campaña real en la pestaña <strong>Campaña real</strong>.</p></div>
         </div>
-        <div id="view-campaigns" class="hidden">
-          <div class="list-header sub">
-            <h2>Sesiones Freebuff <span class="tag tag-unverified">FREEBUFF SESSION · NO 24/7 GUARANTEED · API COST 0</span></h2>
-            <button id="btn-campaigns-demo" class="btn btn-ghost btn-sm" title="Crea el piloto SINTÉTICO FREEBUFF-FIRST PILOT 001: campaña, 2 sesiones, comité y readiness">Piloto sintético</button>
+        <p class="hint">Todas las ideas de la campaña, incluidas las descartadas (los motivos son aprendizaje, no se ocultan).</p>
+        <div id="ideas-grid" class="grid"></div>
+        <div id="ideas-empty" class="empty hidden"><p>Sin ideas. Inicia la campaña real en la portada.</p></div>
+
+        <div class="sub-block">
+          <div class="view-head">
+            <h3>Campañas de descubrimiento (Ruta B)</h3>
+            <button id="btn-campaign-new" class="btn btn-primary btn-sm">Nueva campaña</button>
           </div>
-          <p class="hint">Campañas reanudables ejecutadas por sesiones de Freebuff (2-6 h). Sin API LLM en descubrimiento: 0 llamadas, 0 coste. Cada sesión deja SESSION_PLAN.md, SESSION_STATE.json, SESSION_REPORT.md y NEXT_SESSION.md para reanudar sin repetir trabajo.</p>
-          <div id="campaigns" class="stack"></div>
-          <div id="campaigns-empty" class="empty hidden">
-            <p>Sin campañas Freebuff-first. Lanza el piloto sintético o crea una campaña desde <code>scripts/continue_campaign.py</code>.</p>
+          <div id="discovery" class="stack"></div>
+          <div id="discovery-empty" class="empty hidden">
+            <p>Sin campañas. Lanza una campaña abierta: el sistema genera territorios, lentes y arquetipos, filtra wrappers de IA y selecciona finalistas sin que tengas que proponer un negocio.</p>
           </div>
         </div>
       </section>
 
-      <section id="detail" class="detail hidden">
-        <div id="detail-content"></div>
+      <!-- ======================= INVESTIGACIÓN ======================= -->
+      <section id="view-research" class="view hidden">
+        <div class="view-head"><h2>Investigación</h2></div>
+        <p class="hint">Misiones exportables para Freebuff. Copia una misión, pégala en Freebuff (o en el modelo que prefieras), copia la respuesta y pégala abajo. Solo cuenta como evidencia lo que tenga URL + fecha + fragmento; el texto libre se guarda como nota sin inventar evidencia.</p>
+        <div id="research-missions" class="stack"><p class="hint">Cargando misiones…</p></div>
+        <div class="row" style="margin-top:10px">
+          <textarea id="research-paste" class="input" rows="6" placeholder="Pega aquí la respuesta completa de la misión…"></textarea>
+        </div>
+        <div class="row"><button id="btn-research-import" class="btn btn-primary btn-sm">Pegar investigación</button></div>
+      </section>
+
+      <!-- ======================= COMITÉ ======================= -->
+      <section id="view-committee" class="view hidden">
+        <div class="view-head">
+          <h2>Comité externo <span class="tag tag-unverified">opinión de modelos ≠ evidencia</span></h2>
+          <button id="btn-reviews-demo" class="btn btn-ghost btn-sm" title="Crea una finalista SINTÉTICA y demuestra el comité de contraste">Demo del comité</button>
+        </div>
+        <div id="reviews-config" class="reviews-config"></div>
+        <div id="reviews-queue" class="stack"></div>
+        <div id="reviews-empty" class="empty hidden">
+          <p>Sin finalistas en revisión. Las oportunidades aprobadas con puntuación ≥ umbral entran aquí automáticamente; también puedes generarlas con la demo o promover conceptos desde Ideas.</p>
+        </div>
+      </section>
+
+      <!-- ======================= EXPERIMENTO ======================= -->
+      <section id="view-experiment" class="view hidden">
+        <div class="view-head"><h2>Experimento</h2></div>
+        <p class="hint">El plan de experimento se crea automáticamente cuando la decisión del comité es SMALL_EXPERIMENT o PRIORITY_EXPERIMENT. Prioridad: concierge, piloto pagado, entrega manual asistida por software, demostración real, preventa honesta.</p>
+        <div id="experiment-plan" class="stack"><p class="hint">Sin plan de experimento todavía.</p></div>
+      </section>
+
+      <!-- ======================= ECONOMÍA ======================= -->
+      <section id="view-economy" class="view hidden">
+        <div class="view-head"><h2>Economía <span class="tag tag-unverified">SIMULADA</span></h2></div>
+        <div id="economy-warning" class="eco-banner hidden">SIMULACIÓN — NO REPRESENTA DINERO REAL</div>
+        <div id="economy-info" class="card">—</div>
+        <div class="card engine-actions" style="margin-top:10px">
+          <button id="btn-sim-start" class="btn btn-secondary btn-sm">Iniciar simulación</button>
+          <button id="btn-sim-income" class="btn btn-ghost btn-sm">Ingreso simulado</button>
+          <button id="btn-sim-expense" class="btn btn-ghost btn-sm">Gasto simulado</button>
+          <button id="btn-reconcile" class="btn btn-ghost btn-sm">Reconciliar</button>
+        </div>
+        <div id="economy-ledger" class="feed card" style="margin-top:10px"></div>
+      </section>
+
+      <!-- ======================= ACTIVIDAD ======================= -->
+      <section id="view-activity" class="view hidden">
+        <div class="view-head"><h2>Actividad en vivo</h2></div>
+        <div class="card">
+          <h3>Motor <span id="engine-mode-chip" class="chip chip-neutral">—</span></h3>
+          <div id="engine-info">—</div>
+          <div class="engine-actions">
+            <button id="btn-safe-pause" class="btn btn-ghost btn-sm">Pausa segura</button>
+            <button id="btn-resume-dev" class="btn btn-ghost btn-sm">Reanudar (dev)</button>
+          </div>
+        </div>
+        <div id="engine-feed" class="feed card" style="margin-top:10px">—</div>
+      </section>
+
+      <!-- ======================= CONFIGURACIÓN ======================= -->
+      <section id="view-config" class="view hidden">
+        <div class="view-head">
+          <h2>Configuración y oportunidades avanzadas</h2>
+        </div>
+        <div class="config-grid">
+          <div class="card">
+            <h3>Filtros</h3>
+            <label class="field">
+              <span>Estado</span>
+              <select id="filter-status">
+                <option value="">Todos</option>
+                <option value="draft">Borrador</option>
+                <option value="researching">En investigación</option>
+                <option value="evaluated">Evaluada</option>
+                <option value="approved">Aprobada</option>
+                <option value="needs_more_research">Necesita investigación</option>
+                <option value="deferred">Aplazada</option>
+                <option value="rejected">Rechazada</option>
+                <option value="blocked">Bloqueada</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Puntuación mínima</span>
+              <input id="filter-min-score" type="number" min="0" max="100" placeholder="0" />
+            </label>
+            <button id="btn-new" class="btn btn-primary btn-block">Nueva oportunidad</button>
+            <button id="btn-import" class="btn btn-secondary btn-block">Importar investigación (JSON)</button>
+          </div>
+          <div class="card legend">
+            <h3>Leyenda</h3>
+            <div class="legend-row"><span class="dot dot-evidence"></span> Basado en evidencia</div>
+            <div class="legend-row"><span class="dot dot-estimate"></span> Estimación</div>
+            <div class="legend-row"><span class="dot dot-unknown"></span> Desconocido</div>
+          </div>
+          <div class="card">
+            <h3>Proveedor de IA</h3>
+            <div id="providers-info">—</div>
+          </div>
+          <div class="card">
+            <h3>Sesiones Freebuff <span class="tag tag-unverified">FREEBUFF SESSION · NO 24/7 GUARANTEED · API COST 0</span></h3>
+            <button id="btn-campaigns-demo" class="btn btn-ghost btn-sm" title="Crea el piloto SINTÉTICO FREEBUFF-FIRST PILOT 001">Piloto sintético</button>
+            <div id="campaigns" class="stack" style="margin-top:10px"></div>
+            <div id="campaigns-empty" class="empty hidden">
+              <p>Sin campañas Freebuff-first. Lanza el piloto sintético o crea una campaña desde <code>scripts/continue_campaign.py</code>.</p>
+            </div>
+          </div>
+        </div>
+        <div id="opportunities" class="grid" style="margin-top:14px"></div>
+        <div id="empty-state" class="empty hidden">
+          <p>No hay oportunidades todavía. Crea una nueva, importa investigación o promueve finalistas desde Ideas.</p>
+        </div>
       </section>
     </main>
 
-    <!-- Modal: nueva oportunidad -->
+    <section id="detail" class="detail hidden">
+      <div id="detail-content"></div>
+    </section>
+
+    <!-- Modales (ids originales que espera app.js) -->
     <div id="modal-new" class="modal hidden">
       <div class="modal-box">
         <div class="modal-head"><h3>Nueva oportunidad</h3><button class="modal-close" data-close="modal-new">×</button></div>
@@ -213,7 +262,6 @@
       </div>
     </div>
 
-    <!-- Modal: nueva campaña de descubrimiento -->
     <div id="modal-campaign" class="modal hidden">
       <div class="modal-box">
         <div class="modal-head"><h3>Nueva campaña de descubrimiento</h3><button class="modal-close" data-close="modal-campaign">×</button></div>
@@ -234,12 +282,11 @@
       </div>
     </div>
 
-    <!-- Modal: importar revisión externa -->
     <div id="modal-review" class="modal hidden">
       <div class="modal-box">
         <div class="modal-head"><h3>Comité externo — importar respuesta</h3><button class="modal-close" data-close="modal-review">×</button></div>
         <div class="modal-body">
-          <p class="hint">Pega la respuesta de un modelo (GPT, Grok, Gemini...) o sube el archivo TXT/Markdown. El texto se guarda como <strong>dato</strong>: nunca se ejecuta y nunca modifica presupuesto, modos ni producción. Se procesa con un parser con allowlist y se conserva el original.</p>
+          <p class="hint">Pega la respuesta de un modelo (GPT, Grok, Gemini...) o sube el archivo TXT/Markdown. El texto se guarda como <strong>dato</strong>: nunca se ejecuta y nunca modifica presupuesto, modos ni producción.</p>
           <div id="review-combined-note" class="hint hidden">
             Modo <strong>archivo combinado</strong>: usa un único archivo con secciones
             <code># GPT</code>, <code># GROK</code>, <code># GEMINI</code> y opcionalmente
@@ -268,7 +315,6 @@
       </div>
     </div>
 
-    <!-- Modal: importar investigación -->
     <div id="modal-import" class="modal hidden">
       <div class="modal-box">
         <div class="modal-head"><h3>Importar investigación (JSON)</h3><button class="modal-close" data-close="modal-import">×</button></div>
@@ -281,6 +327,13 @@
       </div>
     </div>
 
-    <script src="/app.js?v=011"></script>
+    <noscript>
+      <div class="noscript-box">
+        <p><strong>JavaScript no se ha cargado.</strong> Revisa app.js o abre Diagnóstico.</p>
+        <p>La navegación y el botón INICIAR CAMPAÑA REAL están aquí arriba (HTML estático). Para diagnóstico: <a href="/api/health">/api/health</a></p>
+      </div>
+    </noscript>
+
+    <script src="/app.js?v=0111"></script>
   </body>
 </html>

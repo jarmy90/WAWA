@@ -55,6 +55,12 @@ async function loadHealth() {
     const htmlVersion = document.documentElement.dataset.wawaVersion || "";
     const vChip = $("#wawa-version");
     if (vChip) vChip.textContent = `v${health.version}`;
+    const dBack = $("#diag-backend");
+    if (dBack) dBack.textContent = `v${health.version}`;
+    const dIter = $("#diag-iter");
+    if (dIter) dIter.textContent = document.documentElement.dataset.iteration || "—";
+    const dPkg = $("#diag-package");
+    if (dPkg) dPkg.textContent = document.documentElement.dataset.build || "—";
     if (htmlVersion && health.version && htmlVersion !== health.version) {
       const warn = $("#version-warning");
       if (warn) {
@@ -144,12 +150,15 @@ function fmtVal(v) {
 
 function renderEngine(st) {
   if (!st) return;
+  // El "huevo" desapareció en el rediseño 012; los elementos pueden no existir.
   const egg = $("#egg");
-  egg.dataset.state = st.engine_state;
-  egg.dataset.mode = st.mode;
-  $("#egg-label").textContent = st.engine_state_label.toLowerCase();
-  $("#egg-wrap").title = `Motor: ${st.engine_state_label} · Modo: ${st.mode_label}`;
+  if (egg) { egg.dataset.state = st.engine_state; egg.dataset.mode = st.mode; }
+  const eggLabel = $("#egg-label");
+  if (eggLabel) eggLabel.textContent = st.engine_state_label.toLowerCase();
+  const eggWrap = $("#egg-wrap");
+  if (eggWrap) eggWrap.title = `Motor: ${st.engine_state_label} · Modo: ${st.mode_label}`;
   const chip = $("#engine-mode-chip");
+  if (!chip) return;
   const color = st.mode === "autonomous_production" ? "green" : st.mode === "safe_pause" ? "red" : st.mode === "simulation" ? "amber" : "neutral";
   chip.className = `chip chip-${color}`;
   chip.textContent = st.mode_label;
@@ -195,7 +204,7 @@ async function loadList() {
   if (minScore !== "") params.set("min_score", minScore);
   const data = await api(`/api/opportunities?${params.toString()}`);
   state.items = data.items;
-  $("#count-badge").textContent = data.count;
+  $("#count-badge") && ($("#count-badge").textContent = data.count);
   renderList();
 }
 
@@ -678,9 +687,14 @@ async function loadStatus() {
     const cycle = await api("/api/economy/cycle");
     const st = $("#st-cycle");
     if (st) {
-      st.textContent = cycle.clock_running
-        ? `Ciclo: ACTIVO · ${cycle.days_remaining} días restantes · ${cycle.status}`
-        : `Ciclo: ${cycle.status} · 30 días · sin reloj (activación deliberada)`;
+      st.classList.remove("chip-ok", "chip-neutral", "chip-red");
+      if (cycle.clock_running) {
+        st.classList.add("chip-red");
+        st.textContent = `Ciclo: ACTIVO · ${cycle.days_remaining} días restantes · ${cycle.status}`;
+      } else {
+        st.classList.add("chip-ok");
+        st.textContent = `${cycle.status} · reloj detenido · ${cycle.days_remaining} días`;
+      }
     }
   } catch (_) {
     /* sin ciclo todavía */
@@ -702,9 +716,129 @@ async function loadStatus() {
   }
 }
 
-$("#btn-st-campaign")?.addEventListener("click", () => switchView("orchestrator"));
+/* Vistas Investigación y Experimento (iteración 012) */
+async function loadResearch() {
+  const box = $("#research-missions");
+  if (!box) return;
+  if (!currentRun) {
+    try {
+      const d = await api("/api/orchestrator/current");
+      currentRun = d.run;
+    } catch (_) { /* sin ejecución */ }
+  }
+  if (!currentRun) {
+    box.innerHTML = `<p class="hint">Inicia primero la campaña real en la portada.</p>`;
+    return;
+  }
+  try {
+    const data = await api(`/api/orchestrator/runs/${currentRun.id}/missions`);
+    if (!data.missions?.length) {
+      box.innerHTML = `<p class="hint">Sin misiones planificadas todavía (la campaña está en ${esc(data.state)}).</p>`;
+      return;
+    }
+    box.innerHTML = data.missions.map((m) => `
+      <div class="feed-item">
+        <strong>${esc(m.title || m.mission_id)}</strong> <span class="tag tag-unverified">${esc(m.kind || "MISSION")}</span>
+        <div class="row"><button class="btn btn-secondary btn-sm btn-copy-mission" data-md="${esc(m.markdown || "")}">Copiar misión</button></div>
+      </div>`).join("");
+    box.querySelectorAll(".btn-copy-mission").forEach((b) => {
+      b.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(b.dataset.md);
+          b.textContent = "¡Copiada!";
+          setTimeout(() => (b.textContent = "Copiar misión"), 1500);
+        } catch (_) {
+          const ta = document.createElement("textarea");
+          ta.value = b.dataset.md;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+          b.textContent = "¡Copiada!";
+          setTimeout(() => (b.textContent = "Copiar misión"), 1500);
+        }
+      });
+    });
+  } catch (e) {
+    box.innerHTML = `<p class="hint">Error: ${esc(e.message)}</p>`;
+  }
+}
+
+async function loadExperiment() {
+  const box = $("#experiment-plan");
+  if (!box) return;
+  let run = currentRun;
+  if (!run) {
+    try {
+      const d = await api("/api/orchestrator/current");
+      run = d.run;
+    } catch (_) { /* sin ejecución */ }
+  }
+  if (!run) {
+    box.innerHTML = `<p class="hint">Sin plan de experimento todavía.</p>`;
+    return;
+  }
+  try {
+    const detail = await api(`/api/orchestrator/runs/${run.id}`);
+    currentRun = detail.run;
+    const ep = detail.experiment_plan;
+    if (!ep) {
+      box.innerHTML = `<p class="hint">La campaña está en ${esc(detail.run.state)}. El plan de experimento se creará tras la decisión del comité (SMALL_EXPERIMENT o PRIORITY_EXPERIMENT).</p>`;
+      return;
+    }
+    box.innerHTML = `
+      <div class="card">
+        <h4>Plan de experimento</h4>
+        <p><strong>Oferta:</strong> ${esc(ep.offer || "—")}</p>
+        <p><strong>Comprador:</strong> ${esc(ep.buyer || "—")} · <strong>Precio:</strong> ${esc(ep.price || "—")}</p>
+        <p><strong>Métrica de éxito:</strong> ${esc(ep.success_metric || "—")} · umbral ${esc(ep.success_threshold || "—")} · abandono ${esc(ep.kill_condition || "—")}</p>
+        <p><strong>Coste máximo:</strong> ${esc(ep.max_cost_usd != null ? ep.max_cost_usd : "—")} USD · duración ${esc(ep.duration_days || "—")} días</p>
+      </div>`;
+  } catch (e) {
+    box.innerHTML = `<p class="hint">Error: ${esc(e.message)}</p>`;
+  }
+}
+
+$("#btn-st-campaign")?.addEventListener("click", () => switchView("campaign"));
 $("#btn-st-csv")?.addEventListener("click", () => {
   if (currentRun) location.href = exportHref(currentRun.id, "csv");
+});
+$("#btn-st-md")?.addEventListener("click", () => {
+  if (currentRun) location.href = exportHref(currentRun.id, "md");
+});
+$("#btn-research-import")?.addEventListener("click", async () => {
+  const text = $("#research-paste")?.value?.trim();
+  if (!text) return alert("Pega primero la respuesta de la misión.");
+  if (!currentRun) return alert("Inicia primero la campaña real.");
+  try {
+    const missions = await api(`/api/orchestrator/runs/${currentRun.id}/missions`);
+    const first = missions.missions?.[0];
+    if (!first) return alert("No hay misiones pendientes a las que asociar la respuesta.");
+    let payload = { mission_id: first.mission_id, evidences: [], notes: text.slice(0, 4000) };
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed === "object") {
+        payload = {
+          mission_id: first.mission_id,
+          evidences: Array.isArray(parsed.evidences) ? parsed.evidences : [],
+          competitors: Array.isArray(parsed.competitors) ? parsed.competitors : [],
+          buyer_confirmed: parsed.buyer_confirmed || null,
+          notes: String(parsed.notes || "").slice(0, 4000) || null,
+        };
+      }
+    } catch (_) {
+      /* texto libre: nota sin evidencias inventadas */
+    }
+    const res = await api(`/api/orchestrator/runs/${currentRun.id}/import-research`, {
+      method: "POST",
+      body: JSON.stringify([payload]),
+    });
+    alert(res.note || "Investigación importada.");
+    loadResearch();
+    loadOrchestrator();
+  } catch (e) {
+    alert("Error: " + e.message);
+  }
 });
 
 $("#filter-status").addEventListener("change", loadList);
@@ -727,33 +861,35 @@ const PHASE_ORDER = ["created", "phase1", "phase2", "phase3", "shortlist", "tour
 
 let campaigns = [];
 
+/* Vistas (iteración 012): la navegación es HTML estático; JS solo muestra/oculta. */
+const VIEWS = ["home", "campaign", "ideas", "research", "committee", "experiment", "economy", "activity", "config"];
+
 function switchView(name) {
-  const showOpps = name === "opps";
-  $("#view-opportunities").classList.toggle("hidden", !showOpps);
-  $("#view-discovery").classList.toggle("hidden", !(name === "discovery"));
-  $("#view-reviews").classList.toggle("hidden", !(name === "reviews"));
-  $("#view-orchestrator").classList.toggle("hidden", !(name === "orchestrator"));
-  $("#view-ideas").classList.toggle("hidden", !(name === "ideas"));
-  $("#view-campaigns").classList.toggle("hidden", !(name === "campaigns"));
-  $("#tab-opps").classList.toggle("active", showOpps);
-  $("#tab-discovery").classList.toggle("active", name === "discovery");
-  $("#tab-reviews").classList.toggle("active", name === "reviews");
-  $("#tab-orchestrator").classList.toggle("active", name === "orchestrator");
-  $("#tab-ideas").classList.toggle("active", name === "ideas");
-  $("#tab-campaigns").classList.toggle("active", name === "campaigns");
-  if (name === "discovery") loadDiscovery();
-  if (name === "reviews") loadReviews();
-  if (name === "orchestrator") loadOrchestrator();
+  VIEWS.forEach((v) => {
+    const sec = document.getElementById(`view-${v}`);
+    if (sec) sec.classList.toggle("hidden", v !== name);
+  });
+  document.querySelectorAll(".nav-link").forEach((a) => {
+    a.classList.toggle("active", a.dataset.view === name);
+  });
   if (name === "ideas") loadIdeas();
-  if (name === "campaigns") loadCampaigns();
+  if (name === "committee") loadReviews();
+  if (name === "campaign") loadOrchestrator();
+  if (name === "research") loadResearch();
+  if (name === "experiment") loadExperiment();
+  if (name === "economy") loadEconomy();
+  if (name === "activity") loadEngine();
+  if (name === "config") loadList();
 }
 
-$("#tab-opps").addEventListener("click", () => switchView("opps"));
-$("#tab-discovery").addEventListener("click", () => switchView("discovery"));
-$("#tab-reviews").addEventListener("click", () => switchView("reviews"));
-$("#tab-orchestrator").addEventListener("click", () => switchView("orchestrator"));
-$("#tab-ideas").addEventListener("click", () => switchView("ideas"));
-$("#tab-campaigns").addEventListener("click", () => switchView("campaigns"));
+/* Navegación: los enlaces <a href="#..."> funcionan sin JS (anclas); con JS
+   se convierten en conmutadores de vista. */
+document.querySelectorAll(".nav-link").forEach((a) => {
+  a.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    switchView(a.dataset.view);
+  });
+});
 
 $("#btn-campaigns-demo").addEventListener("click", async () => {
   const btn = $("#btn-campaigns-demo");
@@ -800,7 +936,7 @@ async function loadDiscovery() {
   try {
     const data = await api("/api/discovery/campaigns");
     campaigns = data.items;
-    $("#disc-badge").textContent = campaigns.length;
+    $("#disc-badge") && ($("#disc-badge").textContent = campaigns.length);
     const container = $("#discovery");
     $("#discovery-empty").classList.toggle("hidden", campaigns.length > 0);
     container.innerHTML = "";
@@ -976,7 +1112,7 @@ async function loadReviews() {
   try {
     const data = await api("/api/reviews/queue");
     reviewQueue = data.items;
-    $("#rev-badge").textContent = data.count;
+    $("#rev-badge") && ($("#rev-badge").textContent = data.count);
     let autoLine = "";
     try {
       const auto = (await api("/api/reviews/auto-status")).auto_status;
@@ -1292,7 +1428,7 @@ function renderOrchestrator(data) {
   const run = data.run;
   const panel = $("#orchestrator-panel");
   const empty = $("#orchestrator-empty");
-  const btnStart = $("#btn-orc-start");
+  const btnStart = $("#btn-hero-start");
   const btnAdvance = $("#btn-orc-advance");
   const btnPause = $("#btn-orc-pause");
   const btnResume = $("#btn-orc-resume");
@@ -1300,12 +1436,12 @@ function renderOrchestrator(data) {
   if (!run) {
     panel.innerHTML = "";
     empty.classList.remove("hidden");
-    btnStart.classList.remove("hidden");
+    if (btnStart) btnStart.classList.remove("hidden");
     [btnAdvance, btnPause, btnResume, btnCancel].forEach((b) => b.classList.add("hidden"));
     return;
   }
   empty.classList.add("hidden");
-  btnStart.classList.add("hidden");
+  if (btnStart) btnStart.classList.add("hidden");
   btnAdvance.classList.toggle("hidden", !["RESEARCH_PENDING", "RESEARCH_IMPORTED", "COMMITTEE_COMPLETED", "CANDIDATES_READY"].includes(run.state) && !data.research_pending);
   btnPause.classList.toggle("hidden", run.state === "PAUSED" || ["COMPLETED", "FAILED", "CANCELLED"].includes(run.state));
   btnResume.classList.toggle("hidden", run.state !== "PAUSED");
@@ -1406,7 +1542,7 @@ async function orchestratorAction(path, btnId, after) {
   }
 }
 
-$("#btn-orc-start").addEventListener("click", () => orchestratorAction("/api/orchestrator/start", "#btn-orc-start"));
+$("#btn-hero-start").addEventListener("click", () => orchestratorAction("/api/orchestrator/start", "#btn-hero-start", () => switchView("campaign")));
 $("#btn-orc-advance").addEventListener("click", () => {
   if (!currentRun) return;
   orchestratorAction(`/api/orchestrator/runs/${currentRun.id}/advance`, "#btn-orc-advance");
@@ -1567,7 +1703,7 @@ async function loadCampaigns() {
   try {
     const data = await api("/api/campaigns");
     const items = data.items || [];
-    $("#camp-badge").textContent = items.length;
+    $("#camp-badge") && ($("#camp-badge").textContent = items.length);
     const container = $("#campaigns");
     $("#campaigns-empty").classList.toggle("hidden", items.length > 0);
     container.innerHTML = "";
@@ -1659,6 +1795,11 @@ function renderFreebuffCampaign(detail) {
   } catch (e) {
     $("#empty-state").textContent = `Error cargando datos: ${e.message}`;
     $("#empty-state").classList.remove("hidden");
+  } finally {
+    const dj = $("#diag-js");
+    if (dj) dj.textContent = "cargado";
+    // Oculta la franja roja base solo si el init terminó (éxito o error controlado).
+    document.body.dataset.js = "ok";
   }
 })();
 

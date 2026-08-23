@@ -195,9 +195,13 @@ def test_demo_endpoint_creates_when_empty(client):
 def test_frontend_served(demo_client):
     resp = demo_client.get("/")
     assert resp.status_code == 200
-    assert "Autonomous Business Lab" in resp.text
-    assert demo_client.get("/styles.css").status_code == 200
-    assert demo_client.get("/app.js").status_code == 200
+    # Interfaz de la iteración 012: portada con navegación estática visible sin JS.
+    assert "data-wawa-version" in resp.text
+    assert "INICIAR CAMPAÑA REAL" in resp.text
+    assert "PRE_CYCLE" in resp.text
+    assert "Campaña real" in resp.text and "Ideas" in resp.text
+    assert demo_client.get("/styles.css?v=0111").status_code == 200
+    assert demo_client.get("/app.js?v=0111").status_code == 200
 
 
 def test_score_filter(demo_client):

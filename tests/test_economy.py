@@ -538,7 +538,9 @@ def test_dashboard_integrates_economy(client):
     # El frontend incluye la sección económica simulada y la API responde.
     resp = client.get("/")
     assert resp.status_code == 200
-    assert "economy-card" in resp.text
+    # Vista Economía de la iteración 012 (la economía simulada vive en su vista).
+    assert 'id="view-economy"' in resp.text
+    assert 'id="economy-info"' in resp.text
     assert "SIMULADA" in resp.text
     assert "SIMULACIÓN" in resp.text
     assert client.get("/api/economy/status").status_code == 200

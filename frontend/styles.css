@@ -538,3 +538,157 @@ code { background: var(--slate-soft); padding: 1px 5px; border-radius: 4px; font
 .session-row { font-size: 0.8rem; color: var(--slate); padding: 4px 8px; background: var(--bg-soft); border-radius: 6px; }
 .session-row.dim { opacity: 0.6; }
 .campaign-note { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+
+/* ================= Iteración 012: portada + navegación estática ================= */
+.js-fail {
+  display: none;
+  background: var(--red-soft, #fee2e2);
+  color: var(--red, #b91c1c);
+  border-bottom: 1px solid var(--red, #b91c1c);
+  padding: 10px 24px;
+  font-weight: 700;
+  font-size: 13px;
+}
+/* Franja roja base: visible si app.js no completa el init (CSS puro, sin JS). */
+body:not([data-js="ok"]) .js-fail { display: block; }
+
+.diag {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 6px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.main-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--slate);
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.nav-link:hover { background: var(--slate-soft); color: var(--text); }
+.nav-link.active { background: var(--accent); color: #fff; }
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 24px 48px;
+}
+
+.view-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.view-head h2 { margin: 0; font-size: 19px; }
+.view-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+/* Portada */
+.hero {
+  text-align: center;
+  padding: 48px 24px;
+  background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+.hero-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.hero-title { margin: 0 0 16px; font-size: 30px; }
+.hero-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+.btn-hero {
+  font-size: 16px;
+  padding: 14px 34px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(15, 118, 110, 0.3);
+}
+.hero-sub {
+  margin: 22px auto 0;
+  max-width: 560px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.hero-actions {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Sub-bloques y config */
+.sub-block { margin-top: 26px; border-top: 1px solid var(--border); padding-top: 16px; }
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.noscript-box {
+  margin: 16px 24px;
+  padding: 14px 18px;
+  border: 1px solid var(--amber);
+  border-radius: var(--radius);
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 13px;
+}
+.noscript-box a { color: var(--amber); font-weight: 700; }
+
+@media (max-width: 700px) {
+  .hero { padding: 30px 14px; }
+  .hero-title { font-size: 22px; }
+  .app { padding: 14px 12px 40px; }
+  .main-nav { padding: 8px 12px; }
+  .diag { padding: 6px 12px; }
+}
+
+/* Compactación móvil (iteración 012): el botón INICIAR debe caber sin scroll. */
+@media (max-width: 700px) {
+  .hero { padding: 18px 12px; }
+  .hero-eyebrow { display: none; }
+  .hero-title { font-size: 20px; margin-bottom: 10px; }
+  .hero-status { margin-bottom: 12px; }
+  .btn-hero { padding: 12px 26px; font-size: 15px; }
+  .hero-sub { margin-top: 14px; font-size: 13px; }
+  .nav-link { padding: 6px 10px; font-size: 12px; }
+}
+@media (max-width: 480px) {
+  .hero-sub { display: none; }
+  .hero-actions { display: none; }
+  .topbar { padding: 10px 12px; }
+  .diag { font-size: 11px; }
+}
