@@ -161,6 +161,19 @@ class Settings(BaseSettings):
     review_required_for_sensitive_activities: bool = True
     review_max_file_bytes: int = 200_000
     review_allowed_extensions: tuple[str, ...] = (".txt", ".md", ".markdown")
+    # Iteración 009: mínimo de GRUPOS de evidencia independientes para entrar
+    # en el comité (además del umbral interno). Deterministica y configurable.
+    review_min_evidence_groups: int = 3
+    review_packet_version: str = "1"
+
+    # --- Ciclo económico inicial (iteración 009) --------------------------
+    # 30 días y 50 USD de capital máximo. La vía A exige 50 USD de ingresos
+    # CONFIRMADOS reales; la vía B exige >=1 pago real confirmado + condiciones
+    # y concede UNA prórroga de 14 días. Ningún ingreso simulado cuenta.
+    cycle_length_days: int = 30
+    cycle_capital_usd: float = 50.0
+    cycle_extension_days: int = 14
+    cycle_max_extensions: int = 1
 
     # ------------------------------------------------------------------
     def scoring_weights(self) -> dict[str, float]:

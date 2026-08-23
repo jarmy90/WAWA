@@ -13,7 +13,11 @@ from app.core.security import validate_extension, validate_payload_size, validat
 from app.models.campaign import CampaignCreate, ReasoningIn, SessionOutputIn, SessionPrepareIn, StageChangeIn
 from app.models.discovery import CampaignCreate as DiscoveryCampaignCreate, MissionIn
 from app.models.enums import Decision, OpportunityStatus, OperatingMode
-from app.models.external_review import QueueOpportunityIn, ReviewImportIn
+from app.models.external_review import (
+    CombinedReviewImportIn,
+    QueueOpportunityIn,
+    ReviewImportIn,
+)
 from app.models.ledger import ExpenseRequestIn, IncomeIn, ReverseIn, SimulationStartIn
 from app.models.opportunity import OpportunityCreate, ProblemSeed
 from app.services.import_export import ResearchPackageIn
@@ -168,6 +172,19 @@ def economy_status(request: Request) -> dict:
 @router.get("/economy/metrics")
 def economy_metrics(request: Request) -> dict:
     return get_container(request).economy.metrics()
+
+
+@router.get("/economy/cycle")
+def economy_cycle(request: Request) -> dict:
+    """Estado del ciclo económico inicial (30 días / 50 USD; vías A/B)."""
+    return get_container(request).cycle.evaluate()
+
+
+@router.post("/economy/cycle/extend")
+def economy_cycle_extend(request: Request) -> dict:
+    """Solicita la prórroga única de 14 días (vía B). Determinista: se rechaza
+    sin un pago real confirmado (y solo puede concederse una vez)."""
+    return get_container(request).cycle.request_extension()
 
 
 @router.get("/economy/ledger")
@@ -494,6 +511,36 @@ def reviews_download_packet(request: Request, opportunity_id: str = Depends(vali
 def reviews_import(request: Request, payload: ReviewImportIn, opportunity_id: str = Depends(valid_id)) -> dict:
     container = get_container(request)
     result = container.reviews.import_review(opportunity_id, payload)
+    return {**REVIEW_NOTICE, **result}
+
+
+@router.get("/reviews/opportunities/{opportunity_id}/packet/copy")
+def reviews_copy_packet(
+    request: Request, opportunity_id: str = Depends(valid_id), reviewer: str | None = Query(default=None)
+) -> dict:
+    """Expediente listo para COPIAR (mismo contenido base para todos los
+    revisores; solo varía la cabecera de metadatos del revisor)."""
+    container = get_container(request)
+    packet = container.reviews.review_packet_for_copy(opportunity_id, reviewer=reviewer)
+    return {**REVIEW_NOTICE, **packet}
+
+
+@router.post("/reviews/opportunities/{opportunity_id}/import-combined")
+def reviews_import_combined(
+    request: Request, payload: CombinedReviewImportIn, opportunity_id: str = Depends(valid_id)
+) -> dict:
+    """Importa un archivo combinado (# GPT / # GROK / # GEMINI / # HUMAN_NOTE)."""
+    container = get_container(request)
+    result = container.reviews.import_combined_review(opportunity_id, payload)
+    return {**REVIEW_NOTICE, **result}
+
+
+@router.post("/reviews/opportunities/{opportunity_id}/decide")
+def reviews_decide(request: Request, opportunity_id: str = Depends(valid_id)) -> dict:
+    """Decisión autónoma determinista (sin votos del propietario). Nunca
+    autoriza producción, gasto, ingresos ni elimina bloqueadores."""
+    container = get_container(request)
+    result = container.reviews.committee_decision(opportunity_id)
     return {**REVIEW_NOTICE, **result}
 
 

@@ -218,6 +218,23 @@ con `requested_model` vs `actual_model`. Si falla o no hay clave, **no se
 fabrica una revisión**: la ausencia es neutral. Botón **Revisión automática**
 en el Laboratorio. Sin clave todo sigue funcionando offline.
 
+### Comité externo visual (iteración 009)
+
+El panel se convierte en la **única interfaz** del propietario para el comité:
+botones **Copiar para GPT / Grok / Gemini** (mismo contenido base; solo varía
+la cabecera del revisor; token no secreto `packet_id`/`packet_version`/
+`content_hash`), **Pegar respuesta / Importar** TXT/Markdown, **archivo
+combinado** (`# GPT` / `# GROK` / `# GEMINI` / `# HUMAN_NOTE`), síntesis
+automática y **Decidir (automático)**: reglas deterministas que ajustan
+prioridad y confianza (±5 máx.) sin autorizar producción, gasto ni ingresos.
+Estados visuales por tarjeta y por proveedor (Pendiente/Importada/Procesada/
+Parcial/Inválida/Caducada/Continuó sin revisión). Entrada al comité con
+mínimo de **3 grupos de evidencia independientes**. Ciclo económico inicial:
+**30 días / 50 USD** con vías A/B y prórroga única de 14 días
+(`GET /api/economy/cycle`) — honestamente `NOT_PASSED` hasta que exista un
+pago real confirmado. Ver `docs/OWNER_COMMITTEE_UX.md` y
+`docs/ECONOMIC_CYCLE.md`.
+
 ### Business Discovery Engine (iteración 004)
 
 La prioridad central del proyecto es ahora la **calidad del motor de ideas**.

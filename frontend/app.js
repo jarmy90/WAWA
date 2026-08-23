@@ -911,9 +911,22 @@ const REC_LABEL = {
 };
 
 const QUEUE_STATE_LABEL = { pending: "Pendiente", continued: "Continuada", waiting: "Esperando", reviewed: "Revisada" };
+const COMMITTEE_STATE_LABEL = {
+  pendiente: "Pendiente",
+  importada: "Importada",
+  procesada: "Procesada",
+  parcial: "Parcial",
+  invalida: "Inválida",
+  caducada: "Caducada",
+  pendiente_validacion: "Pendiente de validación",
+  continuada_sin_revision: "Continuó sin revisión",
+  revisada: "Revisada",
+};
+const REVIEW_PROVIDER_LABEL = { gpt: "GPT", grok: "Grok", gemini: "Gemini", claude: "Claude", deepseek: "DeepSeek", openrouter: "OpenRouter", omniroute: "OmniRoute", human: "Humano" };
 
 let reviewQueue = [];
 let reviewImportTarget = null;
+let reviewCombinedMode = false;
 
 async function loadReviews() {
   try {
@@ -980,16 +993,25 @@ function renderReviewItem(item) {
     .join("");
   const consensus = syn.consensus_level || "NONE";
   const stateLabel = QUEUE_STATE_LABEL[item.status] || item.status;
+  const cState = COMMITTEE_STATE_LABEL[item.committee_state] || item.committee_state || stateLabel;
   const deadline = item.window_deadline ? `Ventana hasta: ${esc((item.window_deadline || "").slice(0, 19).replace("T", " "))}` : "";
+  const windowLeft = item.window_remaining_hours != null
+    ? ` · tiempo restante: <strong>${item.window_remaining_hours}h</strong>`
+    : "";
+  const perProv = (item.per_provider || {});
+  const provChips = Object.keys(perProv)
+    .map((p) => `<span class="chip chip-${perProv[p] === "valid" ? "ok" : perProv[p] === "partial" ? "amber" : perProv[p] === "invalid" ? "red" : "neutral"}" title="estado: ${esc(perProv[p])}">${esc(REVIEW_PROVIDER_LABEL[p] || p)}: ${esc(perProv[p])}</span>`)
+    .join(" ");
   card.innerHTML = `
     <div class="review-head">
       <div>
         <h4>${esc(item.title)}</h4>
-        <div class="review-meta">Puntuación interna <strong>${item.internal_score.toFixed(1)}</strong> · ${esc(item.status_label)} · ${deadline}</div>
+        <div class="review-meta">Puntuación interna <strong>${item.internal_score.toFixed(1)}</strong> · ${esc(item.status_label)} · ${deadline}${windowLeft}</div>
       </div>
       <div class="review-tags">
-        <span class="chip chip-neutral">${esc(stateLabel)}</span>
-        <span class="chip chip-${item.reviewed_without_external ? "amber" : "neutral"}">${item.reviewed_without_external ? "sin revisión externa (neutral)" : ""}</span>
+        <span class="chip chip-${item.reviewed_without_external ? "amber" : "neutral"}">${esc(cState)}</span>
+        ${item.reviewed_without_external ? `<span class="chip chip-amber">sin revisión externa (neutral)</span>` : ""}
+        ${provChips}
       </div>
     </div>
     <div class="review-row">
@@ -1002,13 +1024,21 @@ function renderReviewItem(item) {
     ${riskList ? `<div class="review-risks"><strong>Riesgos repetidos entre revisores:</strong><ul>${riskList}</ul></div>` : ""}
     ${syn.missing_evidence && syn.missing_evidence.length ? `<div class="review-risks"><strong>Evidencia ausente señalada:</strong> ${syn.missing_evidence.slice(0, 2).map(esc).join(" · ")}</div>` : ""}
     <div class="review-actions">
-      <button class="btn btn-primary btn-sm" data-packet="${item.opportunity_id}">Descargar expediente</button>
-      <button class="btn btn-secondary btn-sm" data-import="${item.opportunity_id}">Importar revisión</button>
+      <span class="review-action-label">Expediente:</span>
+      <button class="btn btn-primary btn-sm" data-copy="${item.opportunity_id}" data-reviewer="gpt" title="Copia el expediente completo para pegarlo en GPT">Copiar para GPT</button>
+      <button class="btn btn-primary btn-sm" data-copy="${item.opportunity_id}" data-reviewer="grok" title="Copia el expediente completo para pegarlo en Grok">Copiar para Grok</button>
+      <button class="btn btn-primary btn-sm" data-copy="${item.opportunity_id}" data-reviewer="gemini" title="Copia el expediente completo para pegarlo en Gemini">Copiar para Gemini</button>
+      <button class="btn btn-secondary btn-sm" data-packet="${item.opportunity_id}">Descargar .md</button>
+    </div>
+    <div class="review-actions">
+      <button class="btn btn-secondary btn-sm" data-import="${item.opportunity_id}" title="Pegar respuesta o importar TXT/Markdown">Pegar respuesta / Importar</button>
+      <button class="btn btn-secondary btn-sm" data-import-combined="${item.opportunity_id}" title="Importa un único archivo con secciones # GPT / # GROK / # GEMINI">Importar archivo combinado</button>
       <button class="btn btn-ghost btn-sm" data-synthesize="${item.opportunity_id}">Síntesis</button>
+      <button class="btn btn-ghost btn-sm" data-decide="${item.opportunity_id}" title="Decisión autónoma por reglas deterministas (sin votos): prioridad + confianza limitada. Nunca autoriza producción, gasto ni ingresos.">Decidir (automático)</button>
       <button class="btn btn-ghost btn-sm" data-auto-review="${item.opportunity_id}" title="Opción A: una revisión de contraste vía OpenRouter (guardas deterministas; sin clave no hace nada)">Revisión automática</button>
       ${item.status === "pending" ? `<button class="btn btn-ghost btn-sm" data-continue="${item.opportunity_id}">Continuar sin revisión</button>` : ""}
-      ${item.notes ? `<div class="review-notes">Notas: ${esc(item.notes)}</div>` : ""}
     </div>
+    ${item.notes ? `<div class="review-notes">Notas: ${esc(item.notes)}</div>` : ""}
   `;
   card.querySelectorAll("[data-packet]").forEach((b) => {
     b.addEventListener("click", () => {
@@ -1018,6 +1048,9 @@ function renderReviewItem(item) {
   card.querySelectorAll("[data-import]").forEach((b) => {
     b.addEventListener("click", () => {
       reviewImportTarget = b.dataset.import;
+      reviewCombinedMode = false;
+      $("#review-combined-note").classList.add("hidden");
+      $("#review-provider").disabled = false;
       openModal("review");
     });
   });
@@ -1037,6 +1070,66 @@ function renderReviewItem(item) {
       if (!confirm("¿Continuar sin revisión externa? La ausencia es NEUTRAL (no es aprobación).")) return;
       try {
         await api(`/api/reviews/opportunities/${b.dataset.continue}/continue`, { method: "POST" });
+        await loadReviews();
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      }
+    });
+  });
+  card.querySelectorAll("[data-copy]").forEach((b) => {
+    b.addEventListener("click", async () => {
+      const reviewer = b.dataset.reviewer;
+      const label = (REVIEW_PROVIDER_LABEL[reviewer] || reviewer).toUpperCase();
+      try {
+        const res = await api(`/api/reviews/opportunities/${b.dataset.copy}/packet/copy?reviewer=${reviewer}`);
+        const text = res.content;
+        let ok = false;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          try {
+            await navigator.clipboard.writeText(text);
+            ok = true;
+          } catch (e) {
+            ok = false;
+          }
+        }
+        if (!ok) {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          ok = true;
+        }
+        if (ok) {
+          alert(`Expediente copiado para ${label}. Pégalo completo en ${label} y guarda la respuesta para pegarla aquí (Pegar respuesta / Importar).`);
+        } else {
+          alert("No se pudo copiar automáticamente; abre el expediente (Descargar .md) y cópialo manualmente.");
+        }
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      }
+    });
+  });
+  card.querySelectorAll("[data-import-combined]").forEach((b) => {
+    b.addEventListener("click", () => {
+      reviewImportTarget = b.dataset.importCombined;
+      reviewCombinedMode = true;
+      $("#review-combined-note").classList.remove("hidden");
+      $("#review-provider").disabled = true;
+      openModal("review");
+    });
+  });
+  card.querySelectorAll("[data-decide]").forEach((b) => {
+    b.addEventListener("click", async () => {
+      try {
+        const res = await api(`/api/reviews/opportunities/${b.dataset.decide}/decide`, { method: "POST" });
+        alert(
+          `Decisión autónoma: ${res.decision} · Δconfianza ${res.confidence_delta > 0 ? "+" : ""}${res.confidence_delta} · ` +
+          `(producción no autorizada, gasto no autorizado, opinión ≠ evidencia)`
+        );
         await loadReviews();
       } catch (e) {
         alert(`Error: ${e.message}`);
@@ -1096,21 +1189,40 @@ $("#btn-review-import").addEventListener("click", async () => {
   const file = $("#review-file").files[0];
   const filename = file ? file.name : "revision.txt";
   try {
-    const res = await api(`/api/reviews/opportunities/${reviewImportTarget}/import`, {
-      method: "POST",
-      body: JSON.stringify({
-        filename,
-        content,
-        provider: $("#review-provider").value.trim() || null,
-        model: $("#review-model").value.trim() || null,
-        execution_mode: $("#review-mode").value,
-        imported_by: "human (panel)",
-      }),
-    });
-    const warnings = res.warnings && res.warnings.length ? ` · avisos: ${res.warnings.join("; ")}` : "";
-    showMsg("review", `Revisión importada (estado ${res.status}).${warnings}`, true);
+    let res;
+    if (reviewCombinedMode) {
+      res = await api(`/api/reviews/opportunities/${reviewImportTarget}/import-combined`, {
+        method: "POST",
+        body: JSON.stringify({
+          filename,
+          content,
+          default_model: $("#review-model").value.trim() || null,
+          execution_mode: $("#review-mode").value,
+          imported_by: "human (panel)",
+        }),
+      });
+      const skipped = res.skipped && res.skipped.length ? ` · omitidas: ${res.skipped.map((s) => s.provider).join(", ")}` : "";
+      showMsg("review", `Importación combinada: ${res.count} revisión(es) importada(s).${skipped}`, true);
+    } else {
+      res = await api(`/api/reviews/opportunities/${reviewImportTarget}/import`, {
+        method: "POST",
+        body: JSON.stringify({
+          filename,
+          content,
+          provider: $("#review-provider").value.trim() || null,
+          model: $("#review-model").value.trim() || null,
+          execution_mode: $("#review-mode").value,
+          imported_by: "human (panel)",
+        }),
+      });
+      const warnings = res.warnings && res.warnings.length ? ` · avisos: ${res.warnings.join("; ")}` : "";
+      showMsg("review", `Revisión importada (estado ${res.status}).${warnings}`, true);
+    }
     $("#review-content").value = "";
     $("#review-file").value = "";
+    $("#review-provider").disabled = false;
+    reviewCombinedMode = false;
+    $("#review-combined-note").classList.add("hidden");
     await loadReviews();
   } catch (e) {
     showMsg("review", `Error: ${e.message}`, false);

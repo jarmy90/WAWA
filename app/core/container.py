@@ -15,6 +15,7 @@ from app.repositories import Repos, build_repos, init_db, connect
 from app.repositories.costs import CostRepository
 from app.services.budget import BudgetGuard
 from app.services.campaign import CampaignService
+from app.services.cycle import CycleEvaluator
 from app.services.discovery import DiscoveryService
 from app.services.engine import EngineService
 from app.services.economy import EconomyService
@@ -40,6 +41,7 @@ class AppContainer:
     imports: ImportService
     reviews: ReviewService
     campaigns: CampaignService
+    cycle: CycleEvaluator
 
     def close(self) -> None:
         try:
@@ -67,6 +69,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     reviews = ReviewService(settings, repos, engine=engine, providers=providers)
     pipeline.reviews = reviews  # cola automática de finalistas en el Judge
     campaigns = CampaignService(settings, repos, discovery, reviews, engine=engine)
+    cycle = CycleEvaluator(settings, conn)
     return AppContainer(
         settings=settings,
         conn=conn,
@@ -82,4 +85,5 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         imports=imports,
         reviews=reviews,
         campaigns=campaigns,
+        cycle=cycle,
     )

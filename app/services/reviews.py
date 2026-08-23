@@ -32,7 +32,9 @@ from app.models.decision_log import DecisionLog
 from app.models.external_review import (
     KNOWN_PROVIDERS,
     PARSED_FIELDS,
+    REVIEWER_HEADERS,
     VALID_RECOMMENDATIONS,
+    CombinedReviewImportIn,
     ExternalReview,
     ReviewImportIn,
     ReviewSynthesis,
@@ -184,6 +186,14 @@ class ReviewService:
                 f"Puntuación interna {evaluation.final_score:.1f} por debajo del umbral "
                 f"({self.settings.review_min_internal_score:.1f}) para revisión externa."
             )
+        # Iteración 009: mínimo de GRUPOS de evidencia independientes.
+        if not demo_override and self.settings.review_min_evidence_groups > 0:
+            groups = int(getattr(evaluation, "independent_evidence_count", 0) or 0)
+            if groups < self.settings.review_min_evidence_groups:
+                raise ValidationError(
+                    f"La oportunidad tiene {groups} grupo(s) de evidencia independiente(s); "
+                    f"se requieren al menos {self.settings.review_min_evidence_groups} para el comité externo."
+                )
         if self.repos.reviews.queue_item(opportunity_id):
             return self.repos.reviews.queue_item(opportunity_id)  # type: ignore[return-value]
 
@@ -228,11 +238,27 @@ class ReviewService:
         """Estado de la cola con información de oportunidad, revisiones y síntesis."""
         self._expire_pending()
         items = self.repos.reviews.list_queue()
+        now = _now_dt()
         rows = []
         for item in items:
             opp = self.repos.opportunities.get(item["opportunity_id"])
             reviews = self.repos.reviews.reviews_for(item["opportunity_id"])
             synthesis = self.repos.reviews.get_synthesis(item["opportunity_id"])
+            # Estado por proveedor visible en el panel (solo los 3 manuales + automáticos).
+            per_provider: dict[str, str] = {}
+            for r in reviews:
+                prov = r["provider"] or "unknown"
+                if prov not in per_provider:
+                    per_provider[prov] = r["status"]
+            # Ventana restante en horas (0 si caducó).
+            window_remaining_hours: float | None = None
+            if item.get("window_deadline"):
+                try:
+                    deadline = datetime.fromisoformat(item["window_deadline"])
+                    remaining = (deadline - now).total_seconds() / 3600
+                    window_remaining_hours = round(max(0.0, remaining), 1)
+                except ValueError:
+                    window_remaining_hours = None
             rows.append(
                 {
                     **item,
@@ -242,6 +268,9 @@ class ReviewService:
                     "valid_reviews_count": sum(1 for r in reviews if r["status"] in ("valid", "partial")),
                     "recommendations": [r["recommendation"] for r in reviews if r["recommendation"]],
                     "synthesis": synthesis,
+                    "per_provider": per_provider,
+                    "window_remaining_hours": window_remaining_hours,
+                    "committee_state": self._committee_state(item, reviews),
                 }
             )
         return {
@@ -249,9 +278,37 @@ class ReviewService:
             "max_per_week": self.settings.review_max_finalists_per_week,
             "window_hours": self.settings.review_window_hours,
             "continue_without_review": self.settings.review_continue_without_review,
+            "min_evidence_groups": self.settings.review_min_evidence_groups,
+            "packet_version": self.settings.review_packet_version,
             "items": rows,
             "count": len(rows),
         }
+
+    @staticmethod
+    def _committee_state(item: dict, reviews: list[dict]) -> str:
+        """Etiqueta visual determinista: pendiente/importada/procesada/parcial/inválida/caducada/continuada."""
+        status = item.get("status")
+        if status == "continued":
+            return "continuada_sin_revision"
+        if status == "reviewed":
+            return "revisada"
+        if status == "pending" and item.get("window_deadline"):
+            try:
+                if item["window_deadline"] <= _now():
+                    return "caducada"
+            except (TypeError, ValueError):
+                pass
+        if not reviews:
+            return "pendiente"
+        valid = [r for r in reviews if r["status"] in ("valid", "partial")]
+        invalid = [r for r in reviews if r["status"] == "invalid"]
+        if not valid:
+            return "invalida" if invalid else "pendiente"
+        if any(r["status"] == "partial" for r in reviews):
+            return "parcial"
+        if any(r["status"] == "needs_validation" for r in reviews):
+            return "pendiente_validacion"
+        return "procesada"
 
     def _expire_pending(self) -> None:
         """Ventana caducada sin revisiones => continuación automática (neutral)."""
@@ -712,7 +769,13 @@ class ReviewService:
         return self._dir / f"opportunity_{opportunity_id}" / "review_packet.md"
 
     def generate_review_packet(self, opportunity_id: str) -> dict:
-        """Genera (o regenera idempotentemente) el expediente Markdown."""
+        """Genera (o regenera idempotentemente) el expediente Markdown.
+
+        Incluye un TOKEN no secreto (packet_id, packet_version, generated_at,
+        content_hash) para validar que una respuesta importada corresponde a
+        este expediente. El contenido base es IDÉNTICO para todos los
+        revisores; solo la cabecera de copiado varía (ver review_packet_for_copy).
+        """
         opportunity = self.repos.opportunities.get(opportunity_id)
         if opportunity is None:
             raise NotFoundError("Oportunidad no encontrada.")
@@ -720,15 +783,74 @@ class ReviewService:
         path = self.packet_path(opportunity_id)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(markdown, encoding="utf-8")
+        content_hash = _sha256(markdown)
+        # generated_at DETERMINISTA (creación de la oportunidad): el token del
+        # expediente debe ser idéntico para los tres revisores; solo la
+        # cabecera que identifica al revisor puede variar.
         return {
             "opportunity_id": opportunity_id,
+            "packet_id": _sha256(opportunity_id)[:16],
+            "packet_version": self.settings.review_packet_version,
+            "content_hash": content_hash,
+            "generated_at": opportunity.created_at,
             "path": str(path),
             "filename": path.name,
             "content": markdown,
             "byte_size": len(markdown.encode("utf-8")),
-            "sha256": _sha256(markdown),
-            "generated_at": _now(),
+            "sha256": content_hash,
         }
+
+    def review_packet_for_copy(self, opportunity_id: str, reviewer: str | None = None) -> dict:
+        """Expediente listo para COPIAR en el portapapeles.
+
+        Los tres botones (GPT/Grok/Gemini) usan EXACTAMENTE el mismo contenido
+        base; solo varía una cabecera de metadatos que identifica al revisor.
+        Nunca incluye claves ni instrucciones operativas del sistema.
+        """
+        packet = self.generate_review_packet(opportunity_id)
+        base = packet["content"]
+        header = ""
+        if reviewer:
+            key = str(reviewer).strip().lower()
+            if key in REVIEWER_HEADERS:
+                header = (
+                    f"> {REVIEWER_HEADERS[key]}\n> \n"
+                    f"> Token del expediente (no secreto): opportunity_id=`{opportunity_id}` · "
+                    f"packet_id=`{packet['packet_id']}` · packet_version=`{packet['packet_version']}` · "
+                    f"generated_at=`{packet['generated_at']}` · content_hash=`{packet['content_hash']}`\n\n"
+                )
+        return {
+            "opportunity_id": opportunity_id,
+            "reviewer": reviewer or "generic",
+            "packet_id": packet["packet_id"],
+            "packet_version": packet["packet_version"],
+            "content_hash": packet["content_hash"],
+            "generated_at": packet["generated_at"],
+            "content": header + base,
+            "byte_size": len((header + base).encode("utf-8")),
+        }
+
+    def _validate_packet_token(self, opportunity_id: str, packet_version: str | None, content_hash: str | None) -> list[str]:
+        """Valida el token del expediente en una respuesta importada.
+
+        Devuelve avisos (nunca errores fatales): una respuesta sin token puede
+        seguir importándose como DATO, pero se marca como no vinculada al
+        expediente actual.
+        """
+        warnings: list[str] = []
+        if not packet_version and not content_hash:
+            return warnings
+        current = self.generate_review_packet(opportunity_id)
+        if packet_version and packet_version != self.settings.review_packet_version:
+            warnings.append(
+                f"packet_version {packet_version!r} no coincide con la versión actual "
+                f"{self.settings.review_packet_version!r}; el expediente pudo cambiar."
+            )
+        if content_hash and content_hash != current["content_hash"]:
+            warnings.append("content_hash no coincide con el expediente actual; la respuesta puede corresponder a otra versión.")
+        if not warnings:
+            warnings.append("Token del expediente verificado (coincide con la versión actual).")
+        return warnings
 
     def get_review_packet(self, opportunity_id: str) -> dict:
         path = self.packet_path(opportunity_id)
@@ -927,6 +1049,103 @@ class ReviewService:
         )
         return {"review": saved, "warnings": errors, "status": status}
 
+    # ------------------------------------------------------------------
+    # Importación combinada (# GPT / # GROK / # GEMINI / # HUMAN_NOTE)
+    # ------------------------------------------------------------------
+    _COMBINED_SECTION_RE = re.compile(r"^\s*#{1,3}\s*\*{0,2}\s*([A-Z_]+)\s*\*{0,2}\s*$", re.MULTILINE)
+    _COMBINED_MAPPING = {
+        "GPT": "gpt",
+        "GROK": "grok",
+        "GEMINI": "gemini",
+        "CLAUDE": "claude",
+        "DEEPSEEK": "deepseek",
+        "OPENROUTER": "openrouter",
+        "OMNIROUTE": "omniroute",
+        "HUMAN_NOTE": "human",
+        "HUMAN": "human",
+    }
+
+    def _split_combined_sections(self, content: str) -> dict[str, str]:
+        """Divide el contenido en secciones por cabecera. Sin sección => vacío."""
+        markers = [m for m in self._COMBINED_SECTION_RE.finditer(content)]
+        sections: dict[str, str] = {}
+        for i, m in enumerate(markers):
+            name = m.group(1).strip().upper()
+            provider = self._COMBINED_MAPPING.get(name)
+            if not provider:
+                continue
+            start = m.end()
+            end = markers[i + 1].start() if i + 1 < len(markers) else len(content)
+            body = content[start:end].strip()
+            if body:
+                sections[provider] = body
+        return sections
+
+    def import_combined_review(self, opportunity_id: str, payload: CombinedReviewImportIn) -> dict:
+        """Importa un único archivo con secciones por revisor.
+
+        Separa las secciones y asocia cada una con el expediente. Si falta una
+        sección, importa las restantes. HUMAN_NOTE se guarda como nota de la
+        cola (nunca como opinión de modelo).
+        """
+        if self.repos.opportunities.get(opportunity_id) is None:
+            raise NotFoundError("Oportunidad no encontrada.")
+        size = len(payload.content.encode("utf-8"))
+        if size > self.settings.review_max_file_bytes * 4:
+            raise PayloadTooLargeError(
+                f"El archivo combinado supera el límite de {self.settings.review_max_file_bytes * 4} bytes.",
+                details={"size_bytes": size},
+            )
+        validate_extension(payload.filename, self.settings.review_allowed_extensions)
+
+        sections = self._split_combined_sections(payload.content)
+        if not sections:
+            raise ValidationError(
+                "No se encontró ninguna sección válida (# GPT / # GROK / # GEMINI / # HUMAN_NOTE)."
+            )
+
+        imported: list[dict] = []
+        skipped: list[dict] = []
+        human_notes: list[str] = []
+        for provider, body in sections.items():
+            if provider == "human":
+                human_notes.append(body)
+                continue
+            sub = ReviewImportIn(
+                filename=f"combined_{provider}.md",
+                content=body,
+                provider=provider,
+                model=payload.default_model,
+                execution_mode=payload.execution_mode,
+                imported_by=payload.imported_by,
+            )
+            try:
+                result = self.import_review(opportunity_id, sub)
+                imported.append({**result, "provider": provider})
+            except ConflictError as exc:
+                skipped.append({"provider": provider, "reason": exc.message})
+
+        if human_notes:
+            try:
+                self.add_note(opportunity_id, "\n\n".join(human_notes))
+            except (NotFoundError, ValidationError) as exc:
+                skipped.append({"provider": "human", "reason": exc.message})
+
+        if not imported:
+            raise ConflictError(
+                "Ninguna sección se importó como revisión nueva (todas duplicadas o sin sección válida).",
+                details={"skipped": skipped},
+            )
+
+        self._log(
+            agent="external_review",
+            opportunity_id=opportunity_id,
+            summary=f"Importación combinada: {len(imported)} revisión(es) importada(s), {len(skipped)} omitida(s).",
+            decision="imported_combined",
+            model_or_method="manual_import",
+        )
+        return {"imported": imported, "skipped": skipped, "count": len(imported)}
+
     def parse_review_response(self, text: str) -> tuple[dict, list[str], str]:
         """Parsing tolerante y con allowlist. Devuelve (parsed, errors, status)."""
         errors: list[str] = []
@@ -1109,6 +1328,183 @@ class ReviewService:
             model_or_method="deterministic aggregation",
         )
         return saved
+
+    # ==================================================================
+    # Decisión autónoma determinista (iteración 009)
+    # ==================================================================
+    def committee_decision(self, opportunity_id: str) -> dict:
+        """Decisión autónoma por reglas deterministas (sin LLM, sin votos del
+        propietario). Combina puntuación interna, evidencias, riesgos, estado
+        del presupuesto, recomendaciones externas y calidad del expediente.
+
+        Las revisiones pueden modificar PRIORIDAD y CONFIANZA (de forma
+        limitada), pero NUNCA pueden: autorizar producción, aumentar
+        presupuesto, mover dinero, eliminar bloqueadores, registrar ingresos
+        ni convertirse en evidencia de demanda.
+        """
+        if self.repos.opportunities.get(opportunity_id) is None:
+            raise NotFoundError("Oportunidad no encontrada.")
+        item = self.repos.reviews.queue_item(opportunity_id)
+        if item is None:
+            raise NotFoundError("La oportunidad no está en la cola del comité.")
+        evaluation = self.repos.evaluations.get(opportunity_id)
+        reviews = self.repos.reviews.reviews_for(opportunity_id)
+        synthesis = self.repos.reviews.get_synthesis(opportunity_id)
+        packet = None
+        packet_ok = False
+        if self.packet_path(opportunity_id).exists():
+            packet = self.get_review_packet(opportunity_id)
+            packet_ok = True
+
+        # 1) Bloqueadores críticos internos: NUNCA eliminables por opiniones.
+        blockers = list(evaluation.blockers or []) if evaluation else []
+        critical_risks = [
+            r.description for r in (evaluation.risks or [])
+            if r.severity == "high" and r.blocker
+        ] if evaluation else []
+        if blockers or critical_risks:
+            result = {
+                "opportunity_id": opportunity_id,
+                "decision": "REJECT",
+                "recommended_next_action": "REJECT",
+                "rationale": "Bloqueadores internos críticos activos; las revisiones externas no pueden eliminarlos.",
+                "reasons": ["internal_blockers", "reviews_cannot_remove_blockers"],
+                "confidence_delta": -5.0,
+            }
+            self._log_committee_decision(opportunity_id, result, reviews)
+            return result
+
+        valid = [r for r in reviews if r["status"] in ("valid", "partial")]
+        window_open = bool(item.get("window_deadline") and item["window_deadline"] > _now())
+        state = item.get("status")
+
+        # 2) Sin revisiones válidas: ausencia NEUTRAL (no bloquea, no aprueba).
+        if not valid:
+            if state == "continued":
+                result = self._base_decision(
+                    opportunity_id, item, evaluation, packet_ok,
+                    extra_reason="Continuó sin revisión externa (ausencia neutral); decisión basada solo en la evaluación interna.",
+                    confidence_delta=0.0,
+                )
+            elif window_open:
+                result = {
+                    "opportunity_id": opportunity_id,
+                    "decision": "AWAITING_REVIEW",
+                    "recommended_next_action": "AWAITING_REVIEW",
+                    "rationale": "Ventana de revisión abierta sin revisiones importadas; se espera (opcional) o se puede continuar sin revisión.",
+                    "reasons": ["window_open", "no_reviews"],
+                    "confidence_delta": 0.0,
+                }
+            else:
+                # Ventana caducada: _expire_pending ya debería haberlo marcado.
+                result = self._base_decision(
+                    opportunity_id, item, evaluation, packet_ok,
+                    extra_reason="Ventana de revisión caducada sin revisiones; ausencia neutral.",
+                    confidence_delta=0.0,
+                )
+            self._log_committee_decision(opportunity_id, result, reviews)
+            return result
+
+        # 3) Con revisiones válidas: la síntesis ajusta prioridad y confianza.
+        syn = synthesis or self.synthesize(opportunity_id)
+        distribution = syn.get("recommendation_distribution") or {}
+        total = max(1, syn.get("valid_reviews_count") or len(valid))
+        rej = distribution.get("REJECT", 0) / total
+        pri = distribution.get("PRIORITY_EXPERIMENT", 0) / total
+        small = distribution.get("SMALL_EXPERIMENT", 0) / total
+        research = distribution.get("MORE_RESEARCH", 0) / total
+        consensus = syn.get("consensus_level") or "NONE"
+
+        # Ajuste de confianza LIMITADO (±5). El consenso de opinión sube poco;
+        # el desacuerdo o el rechazo bajan; nunca modifica la puntuación interna.
+        if rej >= 0.5:
+            decision = "REJECT"
+            delta = -5.0
+            reason = "Mayoría de revisores externos recomienda REJECT (opinión; no evidencia, pero prioriza el rechazo)."
+        elif consensus == "OPINION_CONSENSUS":
+            decision = "MORE_RESEARCH" if research >= 0.5 else "SMALL_EXPERIMENT"
+            delta = +1.0
+            reason = "Consenso de opinión sin referencias de evidencia: no eleva la confianza; se recomienda más investigación antes de gastar."
+        elif pri >= 0.5:
+            decision = "PRIORITY_EXPERIMENT"
+            delta = +3.0 if consensus == "HIGH" else +1.0
+            reason = "Mayoría prioriza experimento con referencias de evidencia en las respuestas." if consensus == "HIGH" else "Mayoría prioriza experimento (consenso de opinión)."
+        elif pri + small >= 0.6:
+            decision = "SMALL_EXPERIMENT"
+            delta = +2.0 if consensus == "HIGH" else +1.0
+            reason = "Mayoría apoya un experimento pequeño."
+        elif research >= 0.5:
+            decision = "MORE_RESEARCH"
+            delta = -2.0
+            reason = "Mayoría pide más investigación; se frena el gasto hasta nueva evidencia."
+        else:
+            decision = "MORE_RESEARCH"
+            delta = -1.0
+            reason = "Sin mayoría clara entre revisores; se recomienda prudencia."
+
+        # La decisión nunca sube de categoría sin condiciones internas mínimas.
+        if decision in ("PRIORITY_EXPERIMENT", "SMALL_EXPERIMENT") and (evaluation is None or evaluation.final_score < self.settings.review_min_internal_score):
+            decision = "MORE_RESEARCH"
+            delta = min(delta, -1.0)
+            reason += " Puntuación interna por debajo del umbral: no se avanza a experimento."
+
+        result = {
+            "opportunity_id": opportunity_id,
+            "decision": decision,
+            "recommended_next_action": decision,
+            "rationale": reason,
+            "reasons": [f"consensus={consensus}", f"distribution={distribution}", "deterministic_rule"],
+            "confidence_delta": delta,
+            "internal_score_unchanged": True,
+            "blockers_untouched": True,
+            "packet_valid": packet_ok,
+        }
+        self._log_committee_decision(opportunity_id, result, reviews)
+        return result
+
+    def _base_decision(
+        self, opportunity_id: str, item: dict, evaluation, packet_ok: bool, *, extra_reason: str, confidence_delta: float
+    ) -> dict:
+        """Decisión sin revisiones: solo evaluación interna (ausencia neutral)."""
+        score = evaluation.final_score if evaluation else 0.0
+        if score >= 80 and packet_ok:
+            decision = "SMALL_EXPERIMENT"
+        elif score >= self.settings.review_min_internal_score:
+            decision = "MORE_RESEARCH"
+        else:
+            decision = "MORE_RESEARCH"
+        return {
+            "opportunity_id": opportunity_id,
+            "decision": decision,
+            "recommended_next_action": decision,
+            "rationale": extra_reason + f" Puntuación interna: {score:.1f}.",
+            "reasons": ["no_external_reviews", "neutral_absence"],
+            "confidence_delta": confidence_delta,
+            "internal_score_unchanged": True,
+            "blockers_untouched": True,
+            "packet_valid": packet_ok,
+        }
+
+    def _log_committee_decision(self, opportunity_id: str, result: dict, reviews: list[dict]) -> None:
+        """Registra la decisión en decision_log con las garantías explícitas."""
+        guarantees = {
+            "authorizes_production": False,
+            "raises_budget": False,
+            "moves_money": False,
+            "removes_blockers": False,
+            "records_income": False,
+            "opinion_is_evidence": False,
+        }
+        self._log(
+            agent="committee_decision",
+            opportunity_id=opportunity_id,
+            summary=(
+                f"Decisión autónoma: {result['decision']} (Δconfianza {result.get('confidence_delta', 0):+.1f}). "
+                f"Garantías: {guarantees}. Revisiones consideradas: {len(reviews)}."
+            ),
+            decision=result["decision"],
+            model_or_method="deterministic_rule",
+        )
 
     def invalidate_review(self, review_id: str, *, reason: str | None = None) -> dict:
         review = self.repos.reviews.get_review(review_id)

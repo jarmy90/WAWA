@@ -146,3 +146,45 @@ class QueueOpportunityIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     note: str | None = Field(default=None, max_length=2_000)
+
+
+# Revisores visibles en el panel "Comité externo" (etiquetas de cabecera).
+# Los tres botones de copiado usan EXACTAMENTE el mismo contenido base: solo
+# varía esta cabecera de metadatos que identifica al revisor.
+REVIEWER_HEADERS = {
+    "gpt": "REVISOR: GPT — responde ÚNICAMENTE al prompt de revisión del expediente.",
+    "grok": "REVISOR: Grok — responde ÚNICAMENTE al prompt de revisión del expediente.",
+    "gemini": "REVISOR: Gemini — responde ÚNICAMENTE al prompt de revisión del expediente.",
+    "claude": "REVISOR: Claude — responde ÚNICAMENTE al prompt de revisión del expediente.",
+    "deepseek": "REVISOR: DeepSeek — responde ÚNICAMENTE al prompt de revisión del expediente.",
+    "human": "REVISOR: humano — nota opcional.",
+}
+
+
+class CombinedReviewImportIn(BaseModel):
+    """Importación de un único archivo con secciones combinadas.
+
+    Formato aceptado (TXT o Markdown):
+
+        # GPT
+        <respuesta para GPT>
+
+        # GROK
+        <respuesta para Grok>
+
+        # GEMINI
+        <respuesta para Gemini>
+
+        # HUMAN_NOTE
+        <nota opcional>
+
+    Si falta una sección, se importan las restantes.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    filename: str = Field(min_length=1, max_length=300)
+    content: str = Field(min_length=1, max_length=200_000)
+    default_model: str | None = Field(default=None, max_length=200)
+    execution_mode: str = Field(default=ReviewExecutionMode.manual_import.value)
+    imported_by: str = Field(default="human", max_length=200)

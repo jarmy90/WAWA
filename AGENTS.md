@@ -180,6 +180,17 @@ explícita del propietario). Reglas permanentes:
     "Alpha 0" sin identificarlo en el catálogo real; `auto` es el
     predeterminado provisional. El gateway corre como servicio separado
     (perfil Docker opcional, solo 127.0.0.1), nunca dentro de WAWA.
+11. **Comité externo visual con intervención mínima (iteración 009)**: el
+    propietario solo copia el expediente, lo pega en GPT/Grok/Gemini y pega
+    la respuesta en el panel; el sistema hace el resto. Los tres botones de
+    copiado usan el MISMO contenido base (solo varía la cabecera del
+    revisor). El expediente lleva un token no secreto (packet_id/version/
+    content_hash) y nunca claves ni instrucciones operativas. La decisión es
+    AUTÓNOMA y determinista (sin votos): ajusta prioridad/confianza (±5 máx.)
+    y NUNCA autoriza producción, gasto, ingresos, ni elimina bloqueadores. El
+    ciclo económico inicial es 30 días / 50 USD (vías A/B, prórroga única de
+    14 días); sin pago real confirmado el estado es NOT_PASSED y la prórroga
+    se rechaza (un intento rechazado no consume el cupo).
 
 ## Qué NO hacer
 

@@ -496,7 +496,14 @@ code { background: var(--slate-soft); padding: 1px 5px; border-radius: 4px; font
   gap: 8px;
   margin-top: 12px;
   flex-wrap: wrap;
+  align-items: center;
 }
+.review-action-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.review-actions .btn { margin: 0; }
 
 /* Campañas Freebuff-first */
 .camp-badges { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }

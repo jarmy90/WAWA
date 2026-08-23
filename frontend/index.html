@@ -186,12 +186,17 @@
     <!-- Modal: importar revisión externa -->
     <div id="modal-review" class="modal hidden">
       <div class="modal-box">
-        <div class="modal-head"><h3>Importar revisión externa (TXT / Markdown)</h3><button class="modal-close" data-close="modal-review">×</button></div>
+        <div class="modal-head"><h3>Comité externo — importar respuesta</h3><button class="modal-close" data-close="modal-review">×</button></div>
         <div class="modal-body">
-          <p class="hint">Pega la respuesta de un modelo (GPT, Grok, Gemini...) o sube el archivo. El texto se guarda como <strong>dato</strong>: nunca se ejecuta y nunca modifica presupuesto, modos ni producción. El contenido se procesa con un parser con allowlist.</p>
+          <p class="hint">Pega la respuesta de un modelo (GPT, Grok, Gemini...) o sube el archivo TXT/Markdown. El texto se guarda como <strong>dato</strong>: nunca se ejecuta y nunca modifica presupuesto, modos ni producción. Se procesa con un parser con allowlist y se conserva el original.</p>
+          <div id="review-combined-note" class="hint hidden">
+            Modo <strong>archivo combinado</strong>: usa un único archivo con secciones
+            <code># GPT</code>, <code># GROK</code>, <code># GEMINI</code> y opcionalmente
+            <code># HUMAN_NOTE</code>. Si falta una sección, se importan las restantes.
+          </div>
           <label class="field"><span>Archivo o pegar respuesta</span>
             <input id="review-file" type="file" accept=".txt,.md,.markdown" />
-            <textarea id="review-content" rows="10" placeholder="recommendation: SMALL_EXPERIMENT&#10;confidence: 65&#10;primary_risk: ..."></textarea>
+            <textarea id="review-content" rows="10" placeholder="# GPT&#10;recommendation: SMALL_EXPERIMENT&#10;confidence: 65&#10;primary_risk: ...&#10;&#10;# GROK&#10;...&#10;&#10;# GEMINI&#10;..."></textarea>
           </label>
           <div class="field-row">
             <label class="field"><span>Proveedor</span><input id="review-provider" placeholder="gpt / grok / gemini / claude" /></label>

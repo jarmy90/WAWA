@@ -133,7 +133,19 @@ automáticamente al arrancar. `decision_log` y `costs` son append-only.
   `auto_review_omniroute` (segundo revisor opcional vía el gateway local
   OmniRoute, mismo contrato de no-fabricación y guardas; desactivado por
   defecto; registra `actual_provider`, `routing_strategy`, `quota_state` y
-  `response_is_external/synthetic`).
+  `response_is_external/synthetic`). Desde la iteración 009, el comité es
+  **visual y con intervención mínima**: expediente con token no secreto
+  (`packet_id`/`packet_version`/`content_hash`, generado deterministamente)
+  y cabecera por revisor (`review_packet_for_copy`), importación combinada
+  (`# GPT/# GROK/# GEMINI/# HUMAN_NOTE`), estados por proveedor en la cola y
+  **decisión autónoma determinista** (`committee_decision`): ajusta
+  prioridad/confianza ±5 máx., nunca autoriza producción/gasto/ingresos ni
+  elimina bloqueadores. La entrada al comité exige ≥ `review_min_evidence_groups`
+  grupos de evidencia independientes.
+- **CycleEvaluator** (iteración 009): ciclo económico inicial de 30 días /
+  50 USD (vías A/B), prórroga única de 14 días persistida en `cycle_state`;
+  determinista y honestamente `NOT_PASSED` sin pago real confirmado (ver
+  `docs/ECONOMIC_CYCLE.md`).
 - **OpportunityService**: CRUD, detalle agregado, decisiones manuales.
 - **ImportService/ExportService**: importación de investigación (JSON) y
   exportación JSON/Markdown (oportunidades y misiones).

@@ -356,6 +356,15 @@ CREATE TABLE IF NOT EXISTS external_reviews (
 CREATE INDEX IF NOT EXISTS idx_reviews_opp ON external_reviews(opportunity_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_status ON external_reviews(status);
 
+-- Estado del ciclo económico inicial (iteración 009): fila única (id=1).
+-- Concesión de prórroga auditable: una sola vez por ciclo.
+CREATE TABLE IF NOT EXISTS cycle_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    started_at TEXT NOT NULL,
+    extension_granted_at TEXT,
+    extension_count INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS review_syntheses (
     opportunity_id TEXT PRIMARY KEY REFERENCES opportunities(id) ON DELETE CASCADE,
     reviews_count INTEGER NOT NULL DEFAULT 0,

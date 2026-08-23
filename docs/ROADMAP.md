@@ -53,6 +53,18 @@ sandbox** (ENOSPC). Pendiente en un entorno con disco suficiente:
 - Solo tras superar el A/B: considerar OmniRoute para Discovery (nunca
   sustituyendo el modelo fijo del comité OpenRouter).
 
+### 0b. Primera experiencia real del comité: flujo visual completo (iteración 009)
+El comité externo ahora funciona **sin intervención técnica del propietario**
+(copiar → pegar en GPT/Grok/Gemini → pegar respuesta en el panel) y decide de
+forma autónoma con reglas deterministas. Siguiente paso con finalistas reales:
+- Ejecutar el flujo completo (copiar expediente → 3 modelos → importar →
+  síntesis → decidir) con 2-3 finalistas reales de una campaña.
+- Medir: ¿las objeciones del comité cambian el orden de prioridad? ¿el
+  `confidence_delta` es informativo?
+- El ciclo económico (30 días / 50 USD) arranca en `NOT_PASSED`: la primera
+  meta real es **un pago confirmado** (experimento comercial manual) para
+  activar la vía B y la prórroga de 14 días.
+
 ### 1. Poner a trabajar el comité de contraste con modelos reales (iteración 005 + 007)
 El **Laboratorio de oportunidades** funciona offline (`MANUAL_IMPORT` +
 `MOCK`) y desde la iteración 007 también con **revisión automática vía
