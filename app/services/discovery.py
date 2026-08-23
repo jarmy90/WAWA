@@ -326,6 +326,26 @@ class DiscoveryService:
         )
         return {**concept, "venture": saved}
 
+    def evaluate_structural(self, campaign_id: str) -> dict[str, Any]:
+        """Análisis estructural (iteración 010): Venture Quality Score
+        determinista para los conceptos que pasaron el filtro. Sin LLM.
+        No cambia estados: solo registra evaluaciones estructurales."""
+        campaign = self.get_campaign(campaign_id)
+        concepts = self.repos.discovery.concepts_by_campaign(campaign_id)
+        evaluated = 0
+        for concept in concepts:
+            if concept["status"] not in ("passed", "recombined"):
+                continue
+            self._evaluate_venture(concept, campaign_id)
+            evaluated += 1
+        self.repos.discovery.update_campaign(campaign_id, phase="structural")
+        self._log(
+            "discovery.structural",
+            f"Análisis estructural: {evaluated} conceptos con Venture Quality Score (campaña {campaign_id}).",
+            model="rules",
+        )
+        return self.campaign_detail(campaign_id)
+
     def run_shortlist(self, campaign_id: str) -> dict[str, Any]:
         campaign = self.get_campaign(campaign_id)
         candidates = [c for c in self.repos.discovery.concepts_by_campaign(campaign_id) if c["status"] == "passed"]

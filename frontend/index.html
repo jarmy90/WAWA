@@ -92,6 +92,8 @@
             <button id="tab-opps" class="tab-btn active">Oportunidades <span id="count-badge" class="badge">0</span></button>
             <button id="tab-discovery" class="tab-btn">Descubrimiento <span id="disc-badge" class="badge">0</span></button>
             <button id="tab-reviews" class="tab-btn">Laboratorio <span id="rev-badge" class="badge">0</span></button>
+            <button id="tab-orchestrator" class="tab-btn">Campaña real</button>
+            <button id="tab-ideas" class="tab-btn">Ideas <span id="ideas-badge" class="badge">0</span></button>
             <button id="tab-campaigns" class="tab-btn">Campañas <span id="camp-badge" class="badge">0</span></button>
           </div>
         </div>
@@ -121,6 +123,43 @@
           <div id="reviews-empty" class="empty hidden">
             <p>Sin finalistas en revisión. Las oportunidades aprobadas con puntuación ≥ umbral entran aquí automáticamente; también puedes generarlas con la demo o promover conceptos desde Descubrimiento.</p>
           </div>
+        </div>
+        <div id="view-orchestrator" class="hidden">
+          <div class="list-header sub">
+            <h2>Campaña real <span id="orc-tag" class="tag tag-unverified">PRIMERA CAMPAÑA REAL 001</span></h2>
+            <button id="btn-orc-start" class="btn btn-primary btn-sm">INICIAR CAMPAÑA REAL</button>
+            <button id="btn-orc-advance" class="btn btn-secondary btn-sm hidden">Continuar hasta el próximo bloqueo</button>
+            <button id="btn-orc-pause" class="btn btn-ghost btn-sm hidden">Pausar</button>
+            <button id="btn-orc-resume" class="btn btn-ghost btn-sm hidden">Reanudar</button>
+            <button id="btn-orc-cancel" class="btn btn-ghost btn-sm hidden">Cancelar</button>
+          </div>
+          <p class="hint">Un solo flujo: descubrimiento → ideas → filtros → torneo → investigación → evidencias → reevaluación → finalistas → comité → decisión → plan de experimento → PRE_CYCLE. El orquestador avanza automáticamente y se detiene <strong>honestamente</strong> donde hace falta investigación externa o una intervención legítima. <span class="tag tag-unverified">NO 24/7 · sin investigación web automática · los conceptos offline son SINTÉTICOS hasta tener evidencias con fuente</span></p>
+          <div id="orchestrator-panel" class="stack"></div>
+          <div id="orchestrator-empty" class="empty hidden">
+            <p>No hay campaña real en curso. Pulsa <strong>INICIAR CAMPAÑA REAL</strong> para crear la PRIMERA CAMPAÑA REAL 001 (60 conceptos iniciales, territorios diversos, sin ventaja de sector).</p>
+          </div>
+        </div>
+        <div id="view-ideas" class="hidden">
+          <div class="list-header sub">
+            <h2>Ideas de la campaña</h2>
+            <select id="ideas-filter" class="input">
+              <option value="all">Todas</option>
+              <option value="active">Activas</option>
+              <option value="blocked">Descartadas</option>
+              <option value="commodity">Commodity wrapper</option>
+              <option value="shortlist">Shortlist</option>
+              <option value="finalist">Finalistas</option>
+              <option value="promoted">En investigación</option>
+            </select>
+            <button id="btn-ideas-export" class="btn btn-secondary btn-sm">Descargar CSV</button>
+            <button id="btn-ideas-export-md" class="btn btn-ghost btn-sm">Markdown</button>
+            <button id="btn-ideas-export-json" class="btn btn-ghost btn-sm">JSON</button>
+            <button id="btn-ideas-export-finalists" class="btn btn-ghost btn-sm">Finalistas .md</button>
+            <button id="btn-ideas-export-research" class="btn btn-ghost btn-sm">Paquetes investigación (.zip)</button>
+          </div>
+          <p class="hint">Todas las ideas de la campaña, incluidas las descartadas (los motivos son aprendizaje, no se ocultan). Filtra por estado, territorio o puntuación.</p>
+          <div id="ideas-grid" class="grid"></div>
+          <div id="ideas-empty" class="empty hidden"><p>Sin ideas. Inicia la campaña real en la pestaña <strong>Campaña real</strong>.</p></div>
         </div>
         <div id="view-campaigns" class="hidden">
           <div class="list-header sub">

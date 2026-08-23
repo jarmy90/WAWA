@@ -23,6 +23,7 @@ from app.repositories.evidence import EvidenceRepository
 from app.repositories.experiments import ExperimentRepository
 from app.repositories.ledger import LedgerRepository
 from app.repositories.opportunities import OpportunityRepository
+from app.repositories.orchestrator import OrchestratorRepository
 from app.repositories.reviews import ReviewRepository
 
 
@@ -43,6 +44,7 @@ class Repos:
     reviews: ReviewRepository
     campaigns: CampaignRepository
     llm_calls: LLMCallRepository
+    orchestrator: OrchestratorRepository
 
 
 def build_repos(conn) -> Repos:
@@ -60,6 +62,7 @@ def build_repos(conn) -> Repos:
         reviews=ReviewRepository(conn),
         campaigns=CampaignRepository(conn),
         llm_calls=LLMCallRepository(conn),
+        orchestrator=OrchestratorRepository(conn),
     )
 
 

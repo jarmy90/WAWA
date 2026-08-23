@@ -687,7 +687,7 @@ const PHASE_LABEL = {
   finalists: "Finalistas",
 };
 
-const PHASE_ORDER = ["created", "phase1", "phase2", "phase3", "shortlist", "tournament", "finalists"];
+const PHASE_ORDER = ["created", "phase1", "phase2", "phase3", "shortlist", "tournament", "finalists"]; // ok
 
 let campaigns = [];
 
@@ -696,19 +696,27 @@ function switchView(name) {
   $("#view-opportunities").classList.toggle("hidden", !showOpps);
   $("#view-discovery").classList.toggle("hidden", !(name === "discovery"));
   $("#view-reviews").classList.toggle("hidden", !(name === "reviews"));
+  $("#view-orchestrator").classList.toggle("hidden", !(name === "orchestrator"));
+  $("#view-ideas").classList.toggle("hidden", !(name === "ideas"));
   $("#view-campaigns").classList.toggle("hidden", !(name === "campaigns"));
   $("#tab-opps").classList.toggle("active", showOpps);
   $("#tab-discovery").classList.toggle("active", name === "discovery");
   $("#tab-reviews").classList.toggle("active", name === "reviews");
+  $("#tab-orchestrator").classList.toggle("active", name === "orchestrator");
+  $("#tab-ideas").classList.toggle("active", name === "ideas");
   $("#tab-campaigns").classList.toggle("active", name === "campaigns");
   if (name === "discovery") loadDiscovery();
   if (name === "reviews") loadReviews();
+  if (name === "orchestrator") loadOrchestrator();
+  if (name === "ideas") loadIdeas();
   if (name === "campaigns") loadCampaigns();
 }
 
 $("#tab-opps").addEventListener("click", () => switchView("opps"));
 $("#tab-discovery").addEventListener("click", () => switchView("discovery"));
 $("#tab-reviews").addEventListener("click", () => switchView("reviews"));
+$("#tab-orchestrator").addEventListener("click", () => switchView("orchestrator"));
+$("#tab-ideas").addEventListener("click", () => switchView("ideas"));
 $("#tab-campaigns").addEventListener("click", () => switchView("campaigns"));
 
 $("#btn-campaigns-demo").addEventListener("click", async () => {
@@ -1227,6 +1235,271 @@ $("#btn-review-import").addEventListener("click", async () => {
   } catch (e) {
     showMsg("review", `Error: ${e.message}`, false);
   }
+});
+
+/* ------------------------------------------------------------------ */
+/* Orquestador end-to-end (iteración 010)                              */
+/* ------------------------------------------------------------------ */
+let currentRun = null;
+
+async function loadOrchestrator() {
+  try {
+    const data = await api("/api/orchestrator/current");
+    currentRun = data.run;
+    renderOrchestrator(data);
+  } catch (e) {
+    $("#orchestrator-panel").innerHTML = `<p class="hint">Error: ${esc(e.message)}</p>`;
+  }
+}
+
+function renderOrchestrator(data) {
+  const run = data.run;
+  const panel = $("#orchestrator-panel");
+  const empty = $("#orchestrator-empty");
+  const btnStart = $("#btn-orc-start");
+  const btnAdvance = $("#btn-orc-advance");
+  const btnPause = $("#btn-orc-pause");
+  const btnResume = $("#btn-orc-resume");
+  const btnCancel = $("#btn-orc-cancel");
+  if (!run) {
+    panel.innerHTML = "";
+    empty.classList.remove("hidden");
+    btnStart.classList.remove("hidden");
+    [btnAdvance, btnPause, btnResume, btnCancel].forEach((b) => b.classList.add("hidden"));
+    return;
+  }
+  empty.classList.add("hidden");
+  btnStart.classList.add("hidden");
+  btnAdvance.classList.toggle("hidden", !["RESEARCH_PENDING", "RESEARCH_IMPORTED", "COMMITTEE_COMPLETED", "CANDIDATES_READY"].includes(run.state) && !data.research_pending);
+  btnPause.classList.toggle("hidden", run.state === "PAUSED" || ["COMPLETED", "FAILED", "CANCELLED"].includes(run.state));
+  btnResume.classList.toggle("hidden", run.state !== "PAUSED");
+  btnCancel.classList.toggle("hidden", ["COMPLETED", "FAILED", "CANCELLED"].includes(run.state));
+
+  const disc = data.discovery || {};
+  const concepts = disc.concepts || [];
+  const byStatus = (s) => concepts.filter((c) => c.status === s).length;
+  const funnel = `
+    <div class="eco-kpis">
+      <div class="eco-kpi"><div class="k">Estado</div><div class="v">${esc(run.state)}</div></div>
+      <div class="eco-kpi"><div class="k">Iniciales</div><div class="v">${concepts.length}</div></div>
+      <div class="eco-kpi"><div class="k">Descartadas</div><div class="v">${byStatus("blocked") + byStatus("eliminated")}</div></div>
+      <div class="eco-kpi"><div class="k">Shortlist</div><div class="v">${byStatus("shortlisted")}</div></div>
+      <div class="eco-kpi"><div class="k">Finalistas</div><div class="v">${byStatus("finalist")}</div></div>
+      <div class="eco-kpi"><div class="k">En investigación</div><div class="v">${byStatus("promoted")}</div></div>
+    </div>`;
+
+  const nextAction = data.next_action ? `<p class="hint"><strong>Próxima acción:</strong> ${esc(data.next_action)}</p>` : "";
+  const owner = data.owner_action_required ? `<p class="hint"><span class="tag tag-unverified">INTERVENCIÓN DEL PROPIETARIO NECESARIA</span></p>` : "";
+
+  let research = "";
+  if (data.research_pending) {
+    research = `<div class="card"><h4>Investigación externa necesaria</h4><p class="hint">El orquestador se detiene aquí honestamente: no hay investigación web automática en este entorno. Copia cada misión, pégala en Freebuff (o en el modelo que prefieras), copia la respuesta y pégala abajo.</p><div id="orc-missions"></div><div class="row"><textarea id="orc-paste-research" class="input" rows="6" placeholder="Pega aquí la respuesta completa de la misión…"></textarea></div><div class="row"><button id="btn-orc-import-research" class="btn btn-primary btn-sm">Pegar investigación</button></div></div>`;
+  }
+
+  let committee = "";
+  if (data.committee && data.committee.length) {
+    committee = `<div class="card"><h4>Comité externo</h4><div class="stack">` + data.committee.map((c) => {
+      const rec = c.synthesis ? `<div class="v">Recomendación: ${esc(c.synthesis.recommended_next_action)} · consenso ${esc(c.synthesis.consensus_level)}</div>` : `<div class="v">Sin síntesis · ${c.reviews_count} revisión(es)</div>`;
+      return `<div class="feed-item"><strong>${esc(c.title)}</strong> (score ${c.final_score != null ? c.final_score.toFixed(1) : "—"}) ${rec}</div>`;
+    }).join("") + `</div></div>`;
+  }
+
+  let experiment = "";
+  if (data.experiment_plan) {
+    const ep = data.experiment_plan;
+    experiment = `<div class="card"><h4>Plan de experimento</h4><p><strong>Oferta:</strong> ${esc(ep.offer || "—")}</p><p><strong>Comprador:</strong> ${esc(ep.buyer || "—")} · <strong>Precio:</strong> ${esc(ep.price || "—")}</p><p><strong>Métrica de éxito:</strong> ${esc(ep.success_metric || "—")} · umbral ${esc(ep.success_threshold || "—")} · abandono ${esc(ep.kill_condition || "—")}</p><p><strong>Coste máximo:</strong> ${esc(ep.max_cost_usd != null ? ep.max_cost_usd : "—")} USD · duración ${esc(ep.duration_days || "—")} días</p></div>`;
+  }
+
+  panel.innerHTML = funnel + nextAction + owner + research + committee + experiment;
+
+  if (data.research_pending) {
+    loadOrchestratorMissions(run.id);
+  }
+  loadIdeas();
+}
+
+async function loadOrchestratorMissions(runId) {
+  try {
+    const data = await api(`/api/orchestrator/runs/${runId}/missions`);
+    const box = $("#orc-missions");
+    if (!box) return;
+    if (!data.missions?.length) {
+      box.innerHTML = `<p class="hint">Sin misiones planificadas todavía.</p>`;
+      return;
+    }
+    box.innerHTML = data.missions.map((m) => `
+      <div class="feed-item">
+        <strong>${esc(m.title || m.mission_id)}</strong> <span class="tag tag-unverified">${esc(m.kind || "MISSION")}</span>
+        <div class="row"><button class="btn btn-secondary btn-sm btn-copy-mission" data-md="${esc(m.markdown || "")}">Copiar misión</button></div>
+      </div>`).join("");
+    box.querySelectorAll(".btn-copy-mission").forEach((b) => {
+      b.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(b.dataset.md);
+          b.textContent = "¡Copiada!";
+          setTimeout(() => (b.textContent = "Copiar misión"), 1500);
+        } catch (_) {
+          const ta = document.createElement("textarea");
+          ta.value = b.dataset.md;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+          b.textContent = "¡Copiada!";
+          setTimeout(() => (b.textContent = "Copiar misión"), 1500);
+        }
+      });
+    });
+  } catch (e) {
+    const box = $("#orc-missions");
+    if (box) box.innerHTML = `<p class="hint">Error: ${esc(e.message)}</p>`;
+  }
+}
+
+async function orchestratorAction(path, btnId, after) {
+  const btn = $(btnId);
+  if (btn) btn.disabled = true;
+  try {
+    await api(path, { method: "POST" });
+    await loadOrchestrator();
+    if (after) after();
+  } catch (e) {
+    alert("Error: " + e.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+$("#btn-orc-start").addEventListener("click", () => orchestratorAction("/api/orchestrator/start", "#btn-orc-start"));
+$("#btn-orc-advance").addEventListener("click", () => {
+  if (!currentRun) return;
+  orchestratorAction(`/api/orchestrator/runs/${currentRun.id}/advance`, "#btn-orc-advance");
+});
+$("#btn-orc-pause").addEventListener("click", () => {
+  if (!currentRun) return;
+  orchestratorAction(`/api/orchestrator/runs/${currentRun.id}/pause`, "#btn-orc-pause");
+});
+$("#btn-orc-resume").addEventListener("click", () => {
+  if (!currentRun) return;
+  orchestratorAction(`/api/orchestrator/runs/${currentRun.id}/resume`, "#btn-orc-resume");
+});
+$("#btn-orc-cancel").addEventListener("click", () => {
+  if (!currentRun) return;
+  if (!confirm("¿Cancelar la campaña real? Se conservan las ideas y los aprendizajes.")) return;
+  orchestratorAction(`/api/orchestrator/runs/${currentRun.id}/cancel`, "#btn-orc-cancel");
+});
+
+document.addEventListener("click", (ev) => {
+  const target = ev.target.closest("#btn-orc-import-research");
+  if (!target || !currentRun) return;
+  const text = $("#orc-paste-research")?.value?.trim();
+  if (!text) return alert("Pega primero la respuesta de la misión.");
+  (async () => {
+    try {
+      // Asocia la respuesta pegada a la primera misión pendiente.
+      const missions = await api(`/api/orchestrator/runs/${currentRun.id}/missions`);
+      const first = missions.missions?.[0];
+      if (!first) return alert("No hay misiones pendientes a las que asociar la respuesta.");
+      let payload = { mission_id: first.mission_id, evidences: [], notes: text.slice(0, 4000) };
+      // Si la respuesta es el JSON estructurado que pedía la misión, pasa tal cual.
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed && typeof parsed === "object") {
+          payload = {
+            mission_id: first.mission_id,
+            evidences: Array.isArray(parsed.evidences) ? parsed.evidences : [],
+            competitors: Array.isArray(parsed.competitors) ? parsed.competitors : [],
+            buyer_confirmed: parsed.buyer_confirmed || null,
+            notes: String(parsed.notes || "").slice(0, 4000) || null,
+          };
+        }
+      } catch (_) {
+        /* texto libre: se guarda como nota, sin evidencias inventadas */
+      }
+      const res = await api(`/api/orchestrator/runs/${currentRun.id}/import-research`, {
+        method: "POST",
+        body: JSON.stringify([payload]),
+      });
+      alert(res.note || "Investigación importada.");
+      await loadOrchestrator();
+    } catch (e) {
+      alert("Error: " + e.message);
+    }
+  })();
+});
+
+/* ------------------------------------------------------------------ */
+/* Ideas (vista filtrable de la campaña real)                          */
+/* ------------------------------------------------------------------ */
+async function loadIdeas() {
+  let run = currentRun;
+  if (!run) {
+    try {
+      const data = await api("/api/orchestrator/current");
+      run = data.run;
+    } catch (_) {
+      /* sin ejecución */
+    }
+  }
+  const grid = $("#ideas-grid");
+  const empty = $("#ideas-empty");
+  if (!grid) return;
+  if (!run) {
+    grid.innerHTML = "";
+    empty.classList.remove("hidden");
+    return;
+  }
+  const detail = await api(`/api/orchestrator/runs/${run.id}`);
+  currentRun = detail.run;
+  const concepts = (detail.discovery?.concepts || []).slice().reverse();
+  const filter = $("#ideas-filter")?.value || "all";
+  const filtered = concepts.filter((c) => {
+    if (filter === "all") return true;
+    if (filter === "active") return ["draft", "shortlisted", "finalist", "promoted"].includes(c.status);
+    if (filter === "blocked") return ["blocked", "eliminated"].includes(c.status);
+    if (filter === "commodity") return c.status === "blocked" && (c.substitution?.classification === "COMMODITY_WRAPPER");
+    if (filter === "shortlist") return c.status === "shortlisted";
+    if (filter === "finalist") return c.status === "finalist";
+    if (filter === "promoted") return c.status === "promoted";
+    return true;
+  });
+  empty.classList.toggle("hidden", filtered.length > 0);
+  grid.innerHTML = filtered.map((c) => {
+    const sub = c.substitution?.classification || "sin test";
+    const v = c.venture?.final_score;
+    const vq = v != null ? `<div class="v">Venture: ${v.toFixed(1)}</div>` : "";
+    const why = c.rejection_reason || c.venture?.blockers?.[0] || "";
+    return `
+      <div class="card idea-card">
+        <div class="card-head"><strong>${esc(c.title)}</strong> <span class="tag ${c.status === "blocked" || c.status === "eliminated" ? "tag-bad" : "tag-ok"}">${esc(c.status)}</span></div>
+        <p class="small">${esc((c.problem_hypothesis || "").slice(0, 140))}</p>
+        <p class="small muted">Comprador: ${esc((c.buyer_hypothesis || "—").slice(0, 90))}</p>
+        <div class="row small"><span class="tag tag-unverified">${esc(sub)}</span>${vq}</div>
+        ${why ? `<p class="small muted">Motivo: ${esc(why.slice(0, 160))}</p>` : ""}
+      </div>`;
+  }).join("");
+}
+
+$("#ideas-filter").addEventListener("change", loadIdeas);
+
+function exportHref(runId, fmt) {
+  return `/api/orchestrator/runs/${runId}/exports/${fmt}`;
+}
+
+$("#btn-ideas-export").addEventListener("click", () => {
+  if (currentRun) location.href = exportHref(currentRun.id, "csv");
+});
+$("#btn-ideas-export-md").addEventListener("click", () => {
+  if (currentRun) location.href = exportHref(currentRun.id, "md");
+});
+$("#btn-ideas-export-json").addEventListener("click", () => {
+  if (currentRun) location.href = exportHref(currentRun.id, "json");
+});
+$("#btn-ideas-export-finalists").addEventListener("click", () => {
+  if (currentRun) location.href = exportHref(currentRun.id, "finalists");
+});
+$("#btn-ideas-export-research").addEventListener("click", () => {
+  if (currentRun) location.href = exportHref(currentRun.id, "research_zip");
 });
 
 /* ------------------------------------------------------------------ */

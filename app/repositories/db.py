@@ -356,13 +356,87 @@ CREATE TABLE IF NOT EXISTS external_reviews (
 CREATE INDEX IF NOT EXISTS idx_reviews_opp ON external_reviews(opportunity_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_status ON external_reviews(status);
 
--- Estado del ciclo económico inicial (iteración 009): fila única (id=1).
+-- Estado del ciclo económico inicial (iteración 009-010): fila única (id=1).
+-- started_at es NULLABLE: el reloj NO arranca hasta POST /cycle/start.
 -- Concesión de prórroga auditable: una sola vez por ciclo.
 CREATE TABLE IF NOT EXISTS cycle_state (
     id INTEGER PRIMARY KEY CHECK (id = 1),
-    started_at TEXT NOT NULL,
+    started_at TEXT,
     extension_granted_at TEXT,
     extension_count INTEGER NOT NULL DEFAULT 0
+);
+
+-- Orquestador end-to-end (iteración 010): ejecución única por campaña real.
+CREATE TABLE IF NOT EXISTS orchestrator_runs (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    campaign_type TEXT NOT NULL DEFAULT 'real_market_discovery',
+    state TEXT NOT NULL DEFAULT 'CAMPAIGN_CREATED',
+    status TEXT NOT NULL DEFAULT 'active',
+    config TEXT NOT NULL DEFAULT '{}',
+    discovery_campaign_id TEXT,
+    selected_opportunity_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_orchestrator_state ON orchestrator_runs(state);
+
+CREATE TABLE IF NOT EXISTS orchestrator_transitions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id TEXT NOT NULL REFERENCES orchestrator_runs(id) ON DELETE CASCADE,
+    from_state TEXT NOT NULL,
+    to_state TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    actor TEXT NOT NULL DEFAULT 'system',
+    reason TEXT,
+    inputs TEXT NOT NULL DEFAULT '{}',
+    outputs TEXT NOT NULL DEFAULT '{}',
+    concepts_considered INTEGER NOT NULL DEFAULT 0,
+    concepts_rejected INTEGER NOT NULL DEFAULT 0,
+    cost_usd REAL,
+    cost_source TEXT,
+    errors TEXT NOT NULL DEFAULT '[]',
+    blockers TEXT NOT NULL DEFAULT '[]',
+    next_action TEXT,
+    owner_action_required INTEGER NOT NULL DEFAULT 0,
+    synthetic INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_orchestrator_transitions_run ON orchestrator_transitions(run_id);
+
+-- Plan de experimento (iteración 010): creado tras decisión SMALL/PRIORITY.
+CREATE TABLE IF NOT EXISTS experiment_plans (
+    id TEXT PRIMARY KEY,
+    run_id TEXT NOT NULL REFERENCES orchestrator_runs(id) ON DELETE CASCADE,
+    opportunity_id TEXT NOT NULL,
+    decision TEXT NOT NULL,
+    offer TEXT,
+    buyer TEXT,
+    user TEXT,
+    problem TEXT,
+    value_proposition TEXT,
+    price_usd REAL,
+    delivery_format TEXT,
+    demo TEXT,
+    channel TEXT,
+    initial_message TEXT,
+    min_sample INTEGER,
+    max_contacts INTEGER,
+    acquisition_method TEXT,
+    max_cost_usd REAL,
+    duration_days INTEGER,
+    success_metric TEXT,
+    success_threshold TEXT,
+    kill_condition TEXT,
+    product_death_condition TEXT,
+    possible_pivots TEXT NOT NULL DEFAULT '[]',
+    automatable_tasks TEXT NOT NULL DEFAULT '[]',
+    owner_tasks TEXT NOT NULL DEFAULT '[]',
+    risks TEXT NOT NULL DEFAULT '[]',
+    dependencies TEXT NOT NULL DEFAULT '[]',
+    payment_readiness TEXT,
+    missing_capabilities TEXT NOT NULL DEFAULT '[]',
+    blockers TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS review_syntheses (
@@ -537,6 +611,34 @@ def _ensure_llm_call_columns(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def _migrate_cycle_state_nullable(conn: sqlite3.Connection) -> None:
+    """Migración idempotente (iteración 010): cycle_state.started_at pasa a
+    aceptar NULL para que el estado PRE_CYCLE no cree el reloj al consultar.
+    Bases de la 009 pueden tener la columna NOT NULL; se reconstruye la tabla
+    sin borrar datos de prórroga (extension_count/extension_granted_at)."""
+    cols = conn.execute("PRAGMA table_info(cycle_state)").fetchall()
+    if not cols:
+        return
+    started = next((c for c in cols if c["name"] == "started_at"), None)
+    if started is not None and started["notnull"] == 0:
+        return  # ya es NULLABLE: nada que hacer
+    conn.execute("ALTER TABLE cycle_state RENAME TO cycle_state_old")
+    conn.execute(
+        """CREATE TABLE cycle_state (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            started_at TEXT,
+            extension_granted_at TEXT,
+            extension_count INTEGER NOT NULL DEFAULT 0
+        )"""
+    )
+    conn.execute(
+        """INSERT INTO cycle_state (id, started_at, extension_granted_at, extension_count)
+           SELECT id, NULL, extension_granted_at, extension_count FROM cycle_state_old"""
+    )
+    conn.execute("DROP TABLE cycle_state_old")
+    conn.commit()
+
+
 def connect(db_path: Path | str) -> sqlite3.Connection:
     # check_same_thread=False: los servidores web (uvicorn/TestClient) atienden
     # peticiones en hilos distintos; cada operación es una transacción corta y
@@ -556,5 +658,6 @@ def init_db(settings: Settings) -> None:
         conn.executescript(SCHEMA)
         conn.commit()
         _ensure_llm_call_columns(conn)
+        _migrate_cycle_state_nullable(conn)
     finally:
         conn.close()

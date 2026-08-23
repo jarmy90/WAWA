@@ -117,6 +117,24 @@ automáticamente al arrancar. `decision_log` y `costs` son append-only.
   reversiones, métricas deterministas (runway, burn rate, coste por
   oportunidad/experimento, margen, survival status) y reconciliación
   (ver `docs/ECONOMY.md`).
+- **CampaignOrchestrator** (iteración 010): coordina los servicios existentes
+  (DiscoveryService, PipelineService, ReviewService, CycleEvaluator,
+  repositorios, BudgetGuard) en un único flujo end-to-end con estados
+  auditados (CAMPAIGN_CREATED → … → RESEARCH_PENDING → … → PRE_CYCLE →
+  READY_TO_START_CYCLE). No duplica servicios: cada transición registra
+  timestamp, actor, motivo, entradas/salidas, conceptos considerados/
+  rechazados, coste (real/estimado/desconocido), errores, bloqueadores y
+  `owner_action_required`. Avanza automáticamente hasta el siguiente punto
+  que exija datos externos (se detiene en `RESEARCH_PENDING`, sin inventar
+  evidencia) o intervención legítima. Exportaciones de campaña en
+  `app/services/campaign_exports.py` (CSV/JSON/MD/finalistas/paquete de
+  investigación .zip).
+- **CycleEvaluator** (iteración 009, corregido en 010): ciclo económico 30
+  días / 50 USD con estado inicial **PRE_CYCLE** — consultar el estado ya no
+  inicia el reloj; `started_at` admite NULL y solo `POST /api/economy/cycle/start`
+  (12 precondiciones + activación deliberada) arranca el contador. Vía A:
+  50 USD de ingresos reales confirmados; vía B: un pago real confirmado
+  (prórroga única de 14 días). Sin pago real ⇒ `NOT_PASSED` honesto.
 - **ReviewService** (iteración 005 + 007): comité de contraste — cola de
   finalistas (umbral interno ≥ 72, máximo semanal, ventana de 48 h),
   expediente idéntico para todos los revisores (`review_packet.md` con prompt

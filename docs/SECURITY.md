@@ -115,10 +115,20 @@ se tratan como **datos no confiables** (ver `docs/REVIEW_SECURITY.md`):
 - No activa producción, no modifica presupuestos, no sustituye el modelo fijo
   del comité OpenRouter.
 
+## Local por defecto (iteración 010)
+
+- El panel escucha en **`127.0.0.1`** por defecto (`start_wawa.sh` /
+  `START_WAWA.bat`); no se declara seguro exponerlo a Internet.
+- **CORS restringido** a `http://127.0.0.1:8000` y `http://localhost:8000`
+  (ya no `*`) — `settings.cors_origins`.
+- Las respuestas importadas (datos no confiables) se escapan con `esc()`
+  antes de entrar en `innerHTML`; hay test de escape XSS con contenido
+  hostil (`tests/test_orchestrator_010.py`).
+
 ## Si esto se expone a internet (futuro)
 
 - Añadir autenticación/authorization (Convex Auth u OIDC) y control de acceso.
-- Restringir CORS a orígenes conocidos.
 - Revisar límites de tasa por IP.
 - Mover claves a secretos gestionados; rotación.
 - Auditoría de `decision_log` como dato inmutable (backup).
+- TLS, gestión de sesiones y protección de endpoints administrativos.

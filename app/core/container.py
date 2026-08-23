@@ -21,6 +21,7 @@ from app.services.engine import EngineService
 from app.services.economy import EconomyService
 from app.services.import_export import ExportService, ImportService
 from app.services.opportunities import OpportunityService
+from app.services.orchestrator import CampaignOrchestrator
 from app.services.reviews import ReviewService
 from app.workflows.pipeline import PipelineService
 
@@ -42,6 +43,7 @@ class AppContainer:
     reviews: ReviewService
     campaigns: CampaignService
     cycle: CycleEvaluator
+    orchestrator: CampaignOrchestrator
 
     def close(self) -> None:
         try:
@@ -69,7 +71,10 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     reviews = ReviewService(settings, repos, engine=engine, providers=providers)
     pipeline.reviews = reviews  # cola automática de finalistas en el Judge
     campaigns = CampaignService(settings, repos, discovery, reviews, engine=engine)
-    cycle = CycleEvaluator(settings, conn)
+    orchestrator = CampaignOrchestrator(
+        settings, repos, repos.orchestrator, discovery, pipeline, reviews, opportunities
+    )
+    cycle = CycleEvaluator(settings, conn, repos=repos, orchestrator=orchestrator)
     return AppContainer(
         settings=settings,
         conn=conn,
@@ -86,4 +91,5 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         reviews=reviews,
         campaigns=campaigns,
         cycle=cycle,
+        orchestrator=orchestrator,
     )

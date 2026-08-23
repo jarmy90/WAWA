@@ -15,6 +15,7 @@
 | 007 | 2026-08-23 | OpenRouter para el comité (Opción A): modelo fijo + router gratuito fallback, `llm_call_log` con coste honesto (reported_cost/estimated_cost/cost_source/billing_verified), guardas deterministas (1 revisión por oportunidad, límites diario/mensual, circuit breaker, reintentos acotados) y no-fabricación de revisiones. Verificado en vivo con 1 llamada real (0.0003006 USD, PROVIDER_RESPONSE). | entregado | autonomous-business-lab_iteracion-007_2026-08-23.zip.txt | 563cab6a8350d29ae268f3c90519d6bc3518b45551f68669973a84f28bc69979 (canónico) |
 | 008 | 2026-08-23 | Evaluación e integración aislada de OmniRoute: gateway local OpenAI-compatible como proveedor opcional desactivado por defecto, allowlist de conexiones (UNKNOWN => bloqueado en producción), routing por tarea, perfil Docker separado (127.0.0.1:20128), 2º revisor opcional del comité sin fabricación, benchmark A/B con 10 problemas sintéticos y 6 docs de investigación. Arranque real del gateway pendiente (ENOSPC en el sandbox); sin evidencia de modelo "Alpha 0". | entregado | autonomous-business-lab_iteracion-008_2026-08-23.zip.txt | 39db98c953a556bfd5c119f8f095d42760206b955707ea8fb7bf65b74839316e (canónico) |
 | 009 | 2026-08-23 | Comité externo visual con intervención mínima: copiar/pegar el expediente en GPT/Grok/Gemini (token no secreto packet_id/version/content_hash, mismo contenido base), importación combinada (# GPT/# GROK/# GEMINI/# HUMAN_NOTE), decisión autónoma determinista (prioridad/confianza ±5, sin autorizar producción/gasto/ingresos), estados visuales por tarjeta y proveedor, filtro de 3 grupos de evidencia independientes, y ciclo económico inicial 30 días / 50 USD (vías A/B, prórroga única de 14 días; NOT_PASSED honesto sin pago real). | entregado | autonomous-business-lab_iteracion-009_2026-08-23.zip.txt | 0cb0a09d8e39694660911f8d5b267bb88fd0a822c099c68e260eba167f2ae362 (canónico) |
+| 010 | 2026-08-23 | Cierre end-to-end + PRE_CYCLE + PRIMERA CAMPAÑA REAL 001: orquestador único auditable (descubrimiento → filtros → torneo → investigación → evidencias → reevaluación → finalistas → comité → decisión → plan de experimento → PRE_CYCLE) que avanza solo hasta donde falten datos externos (RESEARCH_PENDING, sin inventar evidencia); corrección crítica: consultar el estado ya no inicia el reloj de 30 días (started_at NULL, /cycle/start con 12 precondiciones, reloj solo con activación deliberada); única fuente cycle_length_days=30 (initial_cycle_days deprecado); exportaciones CSV/JSON/MD/finalistas/zip; scripts start/stop locales (127.0.0.1) + COMO_ABRIR_WAWA.md; CORS restringido; test de escape XSS. | entregado | autonomous-business-lab_iteracion-010_2026-08-23.zip.txt | 6af9ccc8088b126165ed3ff959cfdafeae4e73af3a160845c4cfb576ee7f2fb0 (canónico) |
 
 ## Registro de entregas (lo completa `scripts/package_for_review.py`)
 
@@ -29,3 +30,32 @@
 - **Iteración 7** · 2026-08-23T11:58:10.624198+00:00 · paquete: `autonomous-business-lab_iteracion-007_2026-08-23.zip.txt` · tamaño: 357465 bytes · SHA-256 (canónico): `563cab6a8350d29ae268f3c90519d6bc3518b45551f68669973a84f28bc69979`
 - **Iteración 8** · 2026-08-23T12:23:13.781881+00:00 · paquete: `autonomous-business-lab_iteracion-008_2026-08-23.zip.txt` · tamaño: 391267 bytes · SHA-256 (canónico): `39db98c953a556bfd5c119f8f095d42760206b955707ea8fb7bf65b74839316e`
 - **Iteración 9** · 2026-08-23T12:39:35.185266+00:00 · paquete: `autonomous-business-lab_iteracion-009_2026-08-23.zip.txt` · tamaño: 414022 bytes · SHA-256 (canónico): `0cb0a09d8e39694660911f8d5b267bb88fd0a822c099c68e260eba167f2ae362`
+
+
+## Trazabilidad del paquete de la iteración 009 (auditoría externa)
+
+El paquete `autonomous-business-lab_iteracion-009_2026-08-23.zip.txt` fue
+auditado externamente. Esta sección conserva la trazabilidad completa sin
+borrar el historial previo.
+
+### Artefacto anterior (SUPERSEDED)
+
+- Tamaño: **413955 bytes**
+- SHA-256 (canónico): `87351f4958825c307704edbba0df949065cfc64d62997369274d9b9e62db7375`
+- Estado: **SUPERSEDED**
+- Motivo de sustitución: el manifiesto registraba 414024 bytes, pero el
+  artefacto recibido medía 414022 bytes. El paquete se regeneró para que el
+  manifiesto coincidiera con el artefacto real, y la ITERATION_HISTORY quedó
+  sincronizada con el paquete final (misma práctica que en iteraciones 006-008).
+
+### Artefacto final auditado
+
+- Nombre: `autonomous-business-lab_iteracion-009_2026-08-23.zip.txt`
+- Tamaño exacto: **414022 bytes**
+- SHA-256 (canónico): `0cb0a09d8e39694660911f8d5b267bb88fd0a822c099c68e260eba167f2ae362`
+- SHA-256 (binario completo): `9618cba17e16ff4b81289db2401303cc32520a73a63512efbfaed7cb912762da`
+- Estado: **AUDITADO**
+- Fecha: 2026-08-23
+- Commit: `7307e1f` (Iteración 009: comité externo visual con intervención mínima)
+- Verificación: 15/15 (`scripts/verify_review_package.py`)
+- **Iteración 10** · 2026-08-23T13:17:57.661484+00:00 · paquete: `autonomous-business-lab_iteracion-010_2026-08-23.zip.txt` · tamaño: 453498 bytes · SHA-256 (canónico): `6af9ccc8088b126165ed3ff959cfdafeae4e73af3a160845c4cfb576ee7f2fb0`

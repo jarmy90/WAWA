@@ -47,6 +47,10 @@ def valid_campaign_id(campaign_id: str) -> str:
     return validate_uuid(campaign_id, field="campaign_id")
 
 
+def valid_run_id(run_id: str) -> str:
+    return validate_uuid(run_id, field="run_id")
+
+
 def valid_concept_id(concept_id: str) -> str:
     return validate_uuid(concept_id, field="concept_id")
 
@@ -162,6 +166,148 @@ def engine_transitions(request: Request, limit: int = Query(default=20, ge=1, le
 
 
 # ---------------------------------------------------------------------------
+# Orquestador end-to-end (iteración 010)
+# ---------------------------------------------------------------------------
+@router.post("/orchestrator/start")
+def orchestrator_start(request: Request) -> dict:
+    """INICIAR CAMPAÑA REAL: crea la ejecución + campaña de descubrimiento y
+    avanza hasta el siguiente punto que exija datos externos (RESEARCH_PENDING)
+    o una intervención legítima. Idempotente."""
+    container = get_container(request)
+    run = container.orchestrator.create_real_campaign()
+    run = container.orchestrator.advance(run["run"]["id"])
+    return {**run, "real_money_moved": False}
+
+
+@router.get("/orchestrator/runs/{run_id}")
+def orchestrator_detail(request: Request, run_id: str = Depends(valid_run_id)) -> dict:
+    return get_container(request).orchestrator.detail(run_id)
+
+
+@router.get("/orchestrator/current")
+def orchestrator_current(request: Request) -> dict:
+    """Ejecución activa del orquestador (o null si no hay)."""
+    container = get_container(request)
+    run = container.orchestrator.current_run()
+    if run is None:
+        return {"run": None}
+    return container.orchestrator.detail(run["id"])
+
+
+@router.post("/orchestrator/runs/{run_id}/advance")
+def orchestrator_advance(request: Request, run_id: str = Depends(valid_run_id)) -> dict:
+    return get_container(request).orchestrator.advance(run_id)
+
+
+@router.post("/orchestrator/runs/{run_id}/pause")
+def orchestrator_pause(request: Request, run_id: str = Depends(valid_run_id)) -> dict:
+    return get_container(request).orchestrator.pause(run_id)
+
+
+@router.post("/orchestrator/runs/{run_id}/resume")
+def orchestrator_resume(request: Request, run_id: str = Depends(valid_run_id)) -> dict:
+    return get_container(request).orchestrator.resume(run_id)
+
+
+@router.post("/orchestrator/runs/{run_id}/cancel")
+def orchestrator_cancel(request: Request, run_id: str = Depends(valid_run_id)) -> dict:
+    return get_container(request).orchestrator.cancel(run_id)
+
+
+class ResearchImportIn(BaseModel):
+    """Importación de resultados de misiones pegados desde el panel."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    mission_id: str = Field(min_length=1, max_length=200)
+    opportunity_id: str | None = Field(default=None, max_length=64)
+    evidences: list[dict] = Field(default_factory=list)
+    competitors: list[dict] = Field(default_factory=list)
+    buyer_confirmed: dict | None = None
+    notes: str | None = Field(default=None, max_length=5_000)
+
+
+@router.post("/orchestrator/runs/{run_id}/import-research")
+def orchestrator_import_research(
+    request: Request, payload: list[ResearchImportIn], run_id: str = Depends(valid_run_id)
+) -> dict:
+    """Pegar investigación (respuestas Freebuff/modelos) y reanudar la campaña
+    automáticamente. Las evidencias solo cuentan con URL + fecha + fragmento."""
+    container = get_container(request)
+    result = container.orchestrator.import_research(run_id, [p.model_dump() for p in payload])
+    return {**result, "real_money_moved": False}
+
+
+@router.get("/orchestrator/runs/{run_id}/missions")
+def orchestrator_missions(request: Request, run_id: str = Depends(valid_run_id)) -> dict:
+    """Misiones pendientes de investigación de la ejecución (para copiar)."""
+    container = get_container(request)
+    run = container.orchestrator._get(run_id)
+    rows = container.repos.orchestrator.transitions_for(run_id)
+    missions: list[dict] = []
+    for t in rows:
+        if t.get("to_state") == "RESEARCH_PLANNED":
+            missions = list((t.get("outputs") or {}).get("missions") or [])
+            break
+    for m in missions:
+        try:
+            m["markdown"] = container.discovery.export_mission_markdown(m["mission_id"])
+        except Exception:
+            m["markdown"] = None
+    return {"run_id": run_id, "state": run["state"], "missions": missions, "count": len(missions)}
+
+
+@router.get("/orchestrator/runs/{run_id}/exports/{fmt}")
+def orchestrator_export(
+    request: Request, run_id: str = Depends(valid_run_id), fmt: str = "csv"
+) -> Response:
+    """Descargables de ideas: csv | json | md | finalists | research_zip."""
+    from app.services import campaign_exports as exp
+
+    container = get_container(request)
+    run = container.orchestrator._get(run_id)
+    detail = container.discovery.campaign_detail(run["discovery_campaign_id"])
+    # Etiqueta conservadora: los conceptos generados offline (mock) no son
+    # evidencia de mercado; se marcan como sintéticos hasta que haya
+    # investigación externa verificada importada.
+    synthetic = True
+    if fmt == "csv":
+        content = exp.build_csv(detail, synthetic=synthetic)
+        media, name = "text/csv; charset=utf-8", f"business_ideas_campaign_{run['id'][:8]}.csv"
+    elif fmt == "json":
+        content = exp.build_json(detail, synthetic=synthetic, run=run)
+        media, name = "application/json; charset=utf-8", f"business_ideas_campaign_{run['id'][:8]}.json"
+    elif fmt == "md":
+        content = exp.build_markdown(detail, synthetic=synthetic)
+        media, name = "text/markdown; charset=utf-8", f"business_ideas_campaign_{run['id'][:8]}.md"
+    elif fmt == "finalists":
+        content = exp.build_finalists_markdown(detail, synthetic=synthetic, committee=container.orchestrator.detail(run_id)["committee"])
+        media, name = "text/markdown; charset=utf-8", f"business_ideas_campaign_{run['id'][:8]}_finalists.md"
+    elif fmt == "research_zip":
+        missions = container.orchestrator.detail(run_id)["transitions"]
+        by_concept: dict[str, list[dict]] = {}
+        md_map: dict[str, str] = {}
+        for t in missions:
+            if t.get("to_state") == "RESEARCH_PLANNED":
+                for m in (t.get("outputs") or {}).get("missions") or []:
+                    by_concept.setdefault(m.get("concept_id"), []).append(m)
+                    try:
+                        md_map[m["mission_id"]] = container.discovery.export_mission_markdown(m["mission_id"])
+                    except Exception:
+                        pass
+        content = exp.build_research_packets_zip(detail, by_concept, md_map)
+        media, name = "application/zip", f"business_ideas_campaign_{run['id'][:8]}_research_packets.zip"
+        return Response(content=content, media_type=media, headers={"Content-Disposition": f'attachment; filename="{name}"'})
+    else:
+        raise ValidationError(f"Formato de exportación desconocido: {fmt}")
+    return Response(
+        content=content if isinstance(content, str) else content,
+        media_type=media,
+        headers={"Content-Disposition": f'attachment; filename="{name}"'},
+    )
+
+
+# ---------------------------------------------------------------------------
 # Economía SIMULADA (nunca mueve dinero real)
 # ---------------------------------------------------------------------------
 @router.get("/economy/status")
@@ -185,6 +331,15 @@ def economy_cycle_extend(request: Request) -> dict:
     """Solicita la prórroga única de 14 días (vía B). Determinista: se rechaza
     sin un pago real confirmado (y solo puede concederse una vez)."""
     return get_container(request).cycle.request_extension()
+
+
+@router.post("/economy/cycle/start")
+def economy_cycle_start(request: Request) -> dict:
+    """Arranque EXPLÍCITO del ciclo (PRE_CYCLE → en marcha). Determinista e
+    idempotente. Sin precondiciones cumplidas devuelve started:false con
+    missing_conditions y el reloj sigue parado. Consultar el estado o abrir
+    la web NUNCA arranca el reloj."""
+    return get_container(request).cycle.start(actor="owner")
 
 
 @router.get("/economy/ledger")

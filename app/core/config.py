@@ -11,7 +11,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -135,7 +135,10 @@ class Settings(BaseSettings):
     max_daily_spend_usd: float = 0.0
     max_per_experiment_usd: float = 0.0
     max_simultaneous_experiments: int = 1
-    initial_cycle_days: int = 20
+    # DEPRECADO (iteración 010): sustituido por cycle_length_days=30.
+    # Se conserva por compatibilidad de estado/API, pero un validator lo fija
+    # SIEMPRE a 30 para impedir divergencias. No usar en cálculos nuevos.
+    initial_cycle_days: int = 30
     report_period: Literal["daily", "weekly", "monthly", "disabled"] = "weekly"
     alerts_mode: Literal["critical_only", "all", "disabled"] = "critical_only"
 
@@ -146,7 +149,9 @@ class Settings(BaseSettings):
     # --- Seguridad / límites --------------------------------------------
     max_upload_bytes: int = 1_000_000
     allowed_import_extensions: tuple[str, ...] = (".json",)
-    cors_origins: list[str] = Field(default_factory=lambda: ["*"])
+    # Iteración 010: CORS local restrictivo por defecto (no "*"). El panel
+    # solo se sirve en 127.0.0.1/localhost. No exponer a Internet sin auth.
+    cors_origins: list[str] = Field(default_factory=lambda: ["http://127.0.0.1:8000", "http://localhost:8000"])
 
     # --- Comité de contraste (revisiones externas, iteración 005) -----------
     # Las revisiones de modelos son OPINIÓN, nunca evidencia. Los umbrales
@@ -166,16 +171,33 @@ class Settings(BaseSettings):
     review_min_evidence_groups: int = 3
     review_packet_version: str = "1"
 
-    # --- Ciclo económico inicial (iteración 009) --------------------------
-    # 30 días y 50 USD de capital máximo. La vía A exige 50 USD de ingresos
-    # CONFIRMADOS reales; la vía B exige >=1 pago real confirmado + condiciones
-    # y concede UNA prórroga de 14 días. Ningún ingreso simulado cuenta.
+    # --- Ciclo económico inicial (iteración 010) --------------------------
+    # ÚNICA fuente de verdad: 30 días y 50 USD de capital máximo. La vía A
+    # exige 50 USD de ingresos CONFIRMADOS reales; la vía B exige >=1 pago
+    # real confirmado + condiciones y concede UNA prórroga de 14 días.
+    # Ningún ingreso simulado cuenta. El reloj NO arranca hasta POST /cycle/start
+    # (activación deliberada; estado inicial PRE_CYCLE).
     cycle_length_days: int = 30
     cycle_capital_usd: float = 50.0
     cycle_extension_days: int = 14
     cycle_max_extensions: int = 1
+    cycle_checkpoint_day: int = 20  # control intermedio
+    max_products_buildable: int = 2  # máximo productos construidos en el ciclo
+    max_experiments_per_cycle: int = 3  # máximo experimentos
+    max_pivots_per_product: int = 1  # máximo pivotes por producto
+    # Método permitido para confirmar un pago real. Vacío = NO existe todavía
+    # (sin integración financiera real): precondición del ciclo NO cumplida.
+    real_payment_confirmation_method: str = ""
 
     # ------------------------------------------------------------------
+    @model_validator(mode="after")
+    def _pin_deprecated_cycle_days(self) -> "Settings":
+        """ITERACIÓN 010: initial_cycle_days está DEPRECADO; la única fuente de
+        verdad es cycle_length_days. Se fuerza a 30 para impedir divergencias
+        (la prueba test_cycle_single_source detecta cualquier separación)."""
+        self.initial_cycle_days = self.cycle_length_days
+        return self
+
     def scoring_weights(self) -> dict[str, float]:
         """Pesos de los 8 criterios (0..1, deben sumar 1)."""
         if self.scoring_weights_json:

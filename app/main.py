@@ -8,6 +8,7 @@ from __future__ import annotations
 import traceback
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -33,6 +34,16 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
         description="Motor autónomo de investigación y selección de oportunidades (MVP local).",
     )
     app.state.container = container
+
+    # Iteración 010: CORS local RESTRICTIVO por defecto (127.0.0.1/localhost).
+    # El panel NO debe exponerse a Internet sin autenticación/CSRF/TLS/rate limit.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.cors_origins),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     app.include_router(api_router)
 

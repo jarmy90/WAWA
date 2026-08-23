@@ -8,7 +8,7 @@ Motor local de **descubrimiento, investigación y selección de oportunidades** 
 
 ## Estado
 
-**MVP v0.4 (iteración 004)** — funciona 100% offline, sin APIs obligatorias. Gemini es un proveedor opcional. Incluye dashboard web local, API, SQLite, 7 agentes, **Business Discovery Engine** (campañas de descubrimiento abierto, General AI Substitution Test, Venture Quality Score, torneo de ideas, misiones Freebuff-first), scoring determinista, BudgetGuard, modos de operación (con `PRODUCTION_ARMED` y arranque seguro → `SAFE_PAUSE`), **economía simulada auditada** (ledger append-only, idempotencia, reversiones, métricas, reconciliación) y **149 tests**.
+**MVP v0.10 (iteración 010)** — funciona 100% offline, sin APIs obligatorias. Gemini/OpenRouter/OmniRoute son opcionales. Incluye dashboard web local en `/` (una sola interfaz operativa: Inicio, Campaña real, Ideas, Laboratorio, Comité, Economía), **orquestador end-to-end** (descubrimiento → filtros → torneo → investigación → evidencias → finalistas → comité → decisión → plan de experimento → **PRE_CYCLE** con reloj de 30 días que solo arranca con activación deliberada del propietario), **Business Discovery Engine** (campañas de descubrimiento abierto, General AI Substitution Test, Venture Quality Score, torneo de ideas, misiones Freebuff-first), comité externo visual (copiar/pegar en GPT/Grok/Gemini con decisión autónoma determinista), scoring determinista, BudgetGuard, modos de operación (con `PRODUCTION_ARMED` y arranque seguro → `SAFE_PAUSE`), **economía simulada auditada** (ledger append-only, idempotencia, reversiones, métricas, reconciliación) y **283 tests**.
 
 ## Requisitos
 
@@ -47,15 +47,19 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 curl -X POST http://localhost:8000/api/demo/load?evaluate=true
 ```
 
-- **Dashboard**: http://localhost:8000
+- **Dashboard**: http://localhost:8000 (por defecto en `127.0.0.1`, no expuesto a Internet)
 - **API docs (Swagger)**: http://localhost:8000/docs
 - **Health**: http://localhost:8000/api/health
 
-Alternativa con script:
+Alternativa con script (recomendada para el propietario):
 
 ```bash
-sh scripts/run.sh
+sh start_wawa.sh        # Linux/macOS (crea venv, instala deps, abre el navegador)
+START_WAWA.bat          # Windows
 ```
+
+Para detener: `sh stop_wawa.sh` / `STOP_WAWA.bat`. Instrucciones sencillas
+en `COMO_ABRIR_WAWA.md`.
 
 ## Uso rápido (sin navegador)
 
@@ -305,6 +309,31 @@ El arranque real del gateway quedó pendiente (disco insuficiente en el
 sandbox); las máx. 5 llamadas reales de la iteración se reservan para un
 entorno con espacio.
 
+### Orquestador end-to-end + PRE_CYCLE (iteración 010)
+
+La ruta `/` es ahora la **interfaz operativa completa**: el botón
+**INICIAR CAMPAÑA REAL** crea la PRIMERA CAMPAÑA REAL 001 (60 conceptos,
+territorios diversos, sin ventaja MQL5/trading) y el `CampaignOrchestrator`
+coordina los servicios existentes —descubrimiento, deduplicación, filtro de
+commodities, análisis estructural, shortlist, torneo, misiones, importación
+de investigación, reevaluación, finalistas, comité, decisión autónoma y plan
+de experimento— avanzando automáticamente hasta el siguiente punto que exija
+datos externos (`RESEARCH_PENDING`, sin inventar evidencia) o intervención
+legítima. Cada transición queda auditada con coste real/estimado/desconocido,
+bloqueadores y `owner_action_required`.
+
+**PRE_CYCLE corregido** (crítico): consultar `GET /api/economy/cycle`, abrir
+la web, crear campañas, generar ideas o investigar **ya no inicia el reloj**
+de 30 días. `cycle_state.started_at` admite NULL y el reloj solo arranca con
+`POST /api/economy/cycle/start`, que exige 12 precondiciones (oportunidad
+seleccionada, experimento aprobado, oferta+precio+comprador+canal, métrica de
+éxito, condición de abandono, método de confirmación de pago, sin bloqueadores,
+producción bloqueada y activación deliberada del propietario). Se eliminó la
+contradicción `initial_cycle_days=20` vs `cycle_length_days=30` (única fuente:
+30 días; `initial_cycle_days` deprecado y fijado a 30 con prueba de
+divergencia). Descargables de ideas: CSV / JSON / Markdown / finalistas MD /
+paquete de investigación `.zip` (las ideas descartadas no se ocultan).
+
 ## Decisiones técnicas clave
 
 - **SQLite con `sqlite3` de la stdlib** en lugar de SQLAlchemy: menos dependencias y suficiente para el MVP; los repositorios encapsulan la SQL para migrar fácilmente si hace falta.
@@ -315,6 +344,7 @@ entorno con espacio.
 - **Ledger contable append-only**: los saldos se derivan siempre de los asientos (Decimal, nunca float); idempotencia por clave; reversiones auditadas; reconciliación con `SAFE_PAUSE` automática.
 - **Capacidad de producción explícita**: `production_capability_available=false` bloquea AUTONOMOUS_PRODUCTION de forma auditable, no solo por ausencia de configuración.
 - **Nunca se ejecuta código generado**; sin operaciones financieras reales ni publicación automática.
+- **Seguridad local (iteración 010)**: CORS restringido a `http://127.0.0.1:8000` y `http://localhost:8000` (ya no `*`); el panel escucha en `127.0.0.1` por defecto; test de escape XSS que verifica que las respuestas importadas se escapan antes de entrar en `innerHTML`. Exponer WAWA a Internet sigue sin estar soportado (falta auth/TLS/rate limiting; ver `docs/SECURITY.md`).
 
 ## Limitaciones (resumen honesto)
 

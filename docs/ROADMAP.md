@@ -53,6 +53,23 @@ sandbox** (ENOSPC). Pendiente en un entorno con disco suficiente:
 - Solo tras superar el A/B: considerar OmniRoute para Discovery (nunca
   sustituyendo el modelo fijo del comité OpenRouter).
 
+### 0c. Cierre end-to-end + PRE_CYCLE + PRIMERA CAMPAÑA REAL 001 (iteración 010)
+El sistema ya opera desde **una sola web** (`/`): el botón **INICIAR CAMPAÑA
+REAL** crea la campaña y el `CampaignOrchestrator` coordina el flujo completo
+hasta el siguiente punto que exija datos externos (`RESEARCH_PENDING`) o
+intervención legítima, sin inventar evidencia. Corrección crítica aplicada:
+**consultar el estado ya no inicia el reloj de 30 días** — el ciclo arranca
+solo con `POST /api/economy/cycle/start` y 12 precondiciones (estado inicial
+`PRE_CYCLE`, `started_at` NULL, `clock_running=false`). Pendiente real:
+- Ejecutar la PRIMERA CAMPAÑA REAL 001: copiar las misiones a Freebuff,
+  pegar la investigación con fuentes (URL + fecha + fragmento) y dejar que
+  el orquestador reevalúe, seleccione finalistas y llegue al comité.
+- El experimento elegido (máx. 10 USD, 5 días de construcción, objetivo de
+  primer pago a los 10 días) busca el primer **pago real confirmado** para
+  activar la vía B del ciclo (prórroga única de 14 días).
+- No hay publicidad pagada, spam, trading ni sectores financieros/sanitarios
+  regulados en esta fase.
+
 ### 0b. Primera experiencia real del comité: flujo visual completo (iteración 009)
 El comité externo ahora funciona **sin intervención técnica del propietario**
 (copiar → pegar en GPT/Grok/Gemini → pegar respuesta en el panel) y decide de

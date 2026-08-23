@@ -319,28 +319,56 @@ def test_decision_blockers_never_removed(container):
 
 
 # ------------------------------------------------------------------ economic cycle
-def test_cycle_not_passed_no_real_income(container):
+def test_cycle_pre_cycle_by_default_and_reading_does_not_start(container):
+    # Corrección crítica 010: consultar el estado NO crea la fila ni arranca el reloj.
     st = container.cycle.evaluate()
-    assert st["status"] == "NOT_PASSED"
+    assert st["status"] == "PRE_CYCLE"
+    assert st["clock_running"] is False
+    assert st["started_at"] is None
+    assert st["days_elapsed"] == 0
+    assert st["days_remaining"] == 30
     assert st["simulated"] is True and st["real_money_moved"] is False
     assert st["cycle_days"] == 30
     assert st["cycle_capital_usd"] == 50.0
     assert st["confirmed_real_income_usd"] == 0.0
     assert st["path_a"]["passed"] is False
     assert st["path_b"]["passed"] is False
+    # La lectura NO persistió nada.
+    assert container.cycle._row() is None
+    # La fila solo se crea en el arranque explícito (aunque aquí estará bloqueado
+    # por precondiciones, el intento de start NO debe dejar estado en marcha).
+    res = container.cycle.start()
+    assert res["started"] is False and res["status"] == "PRE_CYCLE"
+    assert res["clock_running"] is False
+    assert container.cycle._row() is None
+
+
+def test_cycle_start_blocked_by_missing_preconditions(container):
+    res = container.cycle.start()
+    assert res["started"] is False
+    assert res["status"] == "PRE_CYCLE"
+    assert res["clock_running"] is False
+    assert "metodo_pago_real_permitido" in res["missing_conditions"]
+    assert "next_action" in res
 
 
 def test_cycle_extension_rejected_without_payment_and_once_only(container):
-    # Sin pago real: la prórroga se rechaza y el intento NO consume el cupo.
-    for _ in range(3):
-        ext = container.cycle.request_extension()
-        assert ext["granted"] is False
-        assert "pago real" in ext["reason"]
+    # En PRE_CYCLE la prórroga no aplica (no hay reloj en marcha).
+    ext = container.cycle.request_extension()
+    assert ext["granted"] is False
+    assert ext["status"] == "PRE_CYCLE"
+    # Con el reloj en marcha (arranque explícito simulado en la fila), la
+    # prórroga se rechaza por la vía B (sin pago real) y no consume el cupo.
+    container.conn.execute(
+        "INSERT INTO cycle_state (id, started_at, extension_granted_at, extension_count) VALUES (1, '2026-08-23T00:00:00+00:00', NULL, 0)"
+    )
+    container.conn.commit()
+    ext = container.cycle.request_extension()
+    assert ext["granted"] is False
+    assert "pago real" in ext["reason"]
     st = container.cycle.evaluate()
     assert st["path_b"]["extension_used"] is False
-    assert st["path_b"]["extension_granted_at"] is None
-    # Simular una concesión previa (auditable en cycle_state) y verificar que
-    # la segunda queda bloqueada: la prórroga solo puede concederse una vez.
+    # Prórroga ya concedida (simulación auditable): la segunda queda bloqueada.
     container.conn.execute(
         "UPDATE cycle_state SET extension_count = 1, extension_granted_at = '2026-08-23T00:00:00+00:00' WHERE id = 1"
     )
@@ -354,11 +382,16 @@ def test_cycle_endpoint_via_api(client):
     r = client.get("/api/economy/cycle")
     assert r.status_code == 200
     body = r.json()
-    assert body["status"] == "NOT_PASSED"
+    assert body["status"] == "PRE_CYCLE"
+    assert body["clock_running"] is False
     assert body["simulated"] is True
     r2 = client.post("/api/economy/cycle/extend")
     assert r2.status_code == 200
     assert r2.json()["granted"] is False
+    r3 = client.post("/api/economy/cycle/start")
+    assert r3.status_code == 200
+    assert r3.json()["started"] is False
+    assert r3.json()["status"] == "PRE_CYCLE"
 
 
 def test_committee_queue_endpoint_has_provider_state(client, container):
