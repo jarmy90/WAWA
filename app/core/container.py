@@ -14,6 +14,7 @@ from app.providers.manager import ProviderManager
 from app.repositories import Repos, build_repos, init_db, connect
 from app.repositories.costs import CostRepository
 from app.services.budget import BudgetGuard
+from app.services.discovery import DiscoveryService
 from app.services.engine import EngineService
 from app.services.economy import EconomyService
 from app.services.import_export import ExportService, ImportService
@@ -32,6 +33,7 @@ class AppContainer:
     providers: ProviderManager
     opportunities: OpportunityService
     pipeline: PipelineService
+    discovery: DiscoveryService
     exports: ExportService
     imports: ImportService
 
@@ -55,6 +57,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     providers = ProviderManager(settings, budget)
     opportunities = OpportunityService(settings, repos)
     pipeline = PipelineService(settings, repos, providers, budget, engine=engine)
+    discovery = DiscoveryService(settings, repos, providers, opportunities)
     exports = ExportService(repos)
     imports = ImportService(settings, repos, pipeline)
     return AppContainer(
@@ -67,6 +70,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         providers=providers,
         opportunities=opportunities,
         pipeline=pipeline,
+        discovery=discovery,
         exports=exports,
         imports=imports,
     )

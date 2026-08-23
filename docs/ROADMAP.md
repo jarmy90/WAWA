@@ -30,37 +30,52 @@
 
 ## Próximos pasos recomendados (por prioridad)
 
-### 1. Validar el sistema con investigación real
-- Usar Freebuff para investigar 2-3 de las oportunidades MQL5 de la demo
-  (hilos reales de MQL5.com, precios del Mercado/Freelance, perfiles).
-- Depositar la investigación como respuestas manuales y reevaluar.
-- Comprobar si la puntuación sube y si las decisiones cambian de forma
-  razonable. **Este es el test de la tesis del proyecto.**
+### 1. Validar el motor de ideas con investigación real (iteración 004)
+El Business Discovery Engine (Ruta B) ya genera campañas, filtra wrappers y
+selecciona finalistas offline. Ahora toca validar la **calidad** de las
+selecciones:
+- Lanzar 2-3 campañas completas y exportar las misiones de los finalistas.
+- Freebuff investiga las misiones (foros, precios, competidores, compradores)
+  y reimporta los resultados.
+- Comprobar: ¿los finalistas del torneo siguen pareciendo buenos con
+  evidencia real? ¿alguno se revela como wrapper o sin comprador?
+- **Este es el test de la tesis del proyecto.**
 
-### 2. Conectores de investigación éticos
+### 2. Misiones de investigación con más profundidad
+- Permitir adjuntar el JSON de resultados de misión directamente en el panel
+  (hoy: import vía API).
+- Misión por defecto al promover un finalista (tesis + experimento).
+
+### 3. Conectores de investigación éticos
 - Conector opcional a fuentes autorizadas (ej. RSS de foros públicos, docs)
   con: robots.txt, límites de frecuencia, identificación transparente,
   retención mínima (URL, fecha, fragmento, resumen, fiabilidad).
 
-### 3. Mejorar el Scout
-- Generar candidatos de mayor calidad para sectores arbitrarios
-  (plantillas por vertical + refinamiento con Gemini cuando esté disponible).
+### 4. Mejorar el Scout y el generador
+- Generar candidatos de mayor calidad para sectores arbitrarios con Gemini
+  (opcional): el MockProvider es determinista y tosco por diseño, pero las
+  plantillas por keyword (sector MQL5) producen candidatos genéricos fuera
+  del vertical.
+- Ajustar las bibliotecas (territorios/lentes/arquetipos) con lo que
+  aprendan las campañas (memoria empresarial ya persistida).
 
-### 4. Experimentos
+### 5. Experimentos con estado real
 - Dar estado real a `Experiment` (`running → success/failed`) con registro de
   resultados y aprendizaje (qué hipótesis fallaron y por qué).
+- Conectar el coste por experimento del ledger con el blueprint de la
+  iteración 004.
 
-### 5. Autonomía económica (solo tras validar)
+### 6. Autonomía económica (solo tras validar)
 - Presupuesto por experimento, métricas de ROI, y (más adelante) integración
   con pagos **explícitamente aprobada por el humano**. Fuera de alcance:
   wallet, smart contracts, trading, compras autónomas, muerte irreversible.
 
-### 6. Calidad de código
+### 7. Calidad de código
 - Migrar a SQLAlchemy/Alembic si el esquema crece.
 - Añadir lint/typecheck (ruff/mypy) al CI.
 - Dockerfile opcional (el proyecto ya funciona sin Docker).
 
-### 7. Producción
+### 8. Producción
 - Auth (Convex Auth u OIDC), CORS restringido, rate limiting.
 - Hosting Python 24/7 para la API + scheduler de evaluaciones.
 - Copias de seguridad de `data/abl.db`.
@@ -72,3 +87,5 @@
 - La confianza media de las evaluaciones con evidencia verificada > 60%.
 - Al menos un experimento propuesto se ejecuta con presupuesto < 50 USD y da
   una señal clara (éxito o fracaso) en < 30 días.
+- Los finalistas del torneo de descubrimiento mantienen su atractivo con
+  evidencia real, y los COMMODITY_WRAPPER del filtro se confirman como tales.

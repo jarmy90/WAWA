@@ -30,10 +30,10 @@ from _review_common import (  # noqa: E402
     DELIVERABLES,
     PACKAGES_DIR,
     ROOT,
+    canonical_zip_hash,
     find_manifest,
     latest_iteration,
     scan_text_for_secrets,
-    sha256_of,
     should_exclude,
 )
 
@@ -110,7 +110,9 @@ def main() -> int:
     if final_path.exists():
         final_path.unlink()
     os.rename(zip_path, final_path)
-    digest = sha256_of(final_path)
+    # Hash canónico del contenido (excluye el manifiesto, que se autorrefiere:
+    # su campo SHA-256 no puede ser el hash del archivo que lo contiene).
+    digest = canonical_zip_hash(final_path, exclude=f"deliverables/{manifest.name}")
 
     # --- Actualizar manifiesto con nombre/tamaño/hash ------------------------
     manifest_text = manifest.read_text(encoding="utf-8")
@@ -122,6 +124,32 @@ def main() -> int:
         manifest_text = _set_field(manifest_text, label, value)
     manifest.write_text(manifest_text, encoding="utf-8")
 
+    # --- Reconstruir el ZIP con el manifiesto ya parcheado -------------------
+    # El hash canónico NO depende del manifiesto, así que sigue siendo válido
+    # para el artefacto final; así el paquete que recibe el revisor muestra el
+    # hash real dentro de su propio manifiesto.
+    if final_path.exists():
+        final_path.unlink()
+    n_files = 0
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for path in sorted(ROOT.rglob("*")):
+            rel = path.relative_to(ROOT)
+            if should_exclude(rel):
+                continue
+            if path.is_file():
+                zf.write(path, rel.as_posix())
+                n_files += 1
+    os.rename(zip_path, final_path)
+
+    # El tamaño final difiere del calculado antes de reconstruir (la cadena de
+    # tamaño forma parte del manifiesto): se corrige el valor del manifiesto en
+    # disco con el tamaño real. El hash canónico no cambia (excluye el
+    # manifiesto); la copia del manifiesto DENTRO del zip puede quedar con un
+    # tamaño aproximado (el hash es la prueba de integridad).
+    manifest_text = manifest.read_text(encoding="utf-8")
+    manifest_text = _set_field(manifest_text, "Tamaño del paquete", f"{final_path.stat().st_size} bytes")
+    manifest.write_text(manifest_text, encoding="utf-8")
+
     # --- Registrar en el historial -------------------------------------------
     history = ROOT / "docs" / "ITERATION_HISTORY.md"
     if history.exists():
@@ -129,7 +157,7 @@ def main() -> int:
         entry = (
             f"\n- **Iteración {iteration}** · {datetime.now(timezone.utc).isoformat()} · "
             f"paquete: `{final_path.name}` · tamaño: {final_path.stat().st_size} bytes · "
-            f"SHA-256: `{digest}`\n"
+            f"SHA-256 (canónico): `{digest}`\n"
         )
         if "HASH_PENDING" in text:
             text = text.replace("HASH_PENDING", digest)
@@ -140,7 +168,7 @@ def main() -> int:
     print("PAQUETE CREADO")
     print(f"  Ruta   : {final_path}")
     print(f"  Tamaño : {final_path.stat().st_size} bytes")
-    print(f"  SHA-256: {digest}")
+    print(f"  SHA-256 (canónico): {digest}")
     print(f"  Archivos incluidos: {n_files}")
     return 0
 

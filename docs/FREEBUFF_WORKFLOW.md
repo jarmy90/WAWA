@@ -13,6 +13,38 @@ inventado ninguna). Por lo tanto:
 3. Para ejecución 24/7 haría falta un **endpoint externo** (hosting con
    uvicorn) — ver "Ejecución continua" abajo.
 
+## Misiones de investigación exportables (iteración 004)
+
+El **Business Discovery Engine** genera misiones de investigación listas para
+Freebuff: paquetes Markdown (descargables) y JSON con objetivo, preguntas,
+consultas sugeridas, formato de salida, **regla de no invención**, criterios de
+fiabilidad y el esquema JSON exacto para reimportar.
+
+### Tipos de misión
+
+`campaign` (campaña completa), `signal` (señal/territorio), `candidate`
+(candidata), `tournament` (comparación entre finalistas), `competitors`
+(búsqueda de competidores), `buyer` (validación de comprador), `substitution`
+(General AI Substitution Test) y `equivalents` (equivalentes existentes).
+
+### Flujo
+
+1. `POST /api/discovery/missions` con `kind` + `campaign_id` o `concept_id`.
+2. Descarga el Markdown (`GET /api/discovery/missions/{id}/export`) y
+   entrégaselo a Freebuff (o a un humano) como prompt de investigación.
+3. Freebuff investiga fuentes reales y devuelve el JSON conforme al esquema
+   (con URL, fecha, fragmento y notas de incertidumbre).
+4. `POST /api/discovery/missions/{id}/import` con el JSON.
+5. `POST /api/discovery/opportunities/{opp_id}/missions/{mission_id}/attach`
+   copia las evidencias **verificadas** a la oportunidad promovida.
+
+### Regla de verificación
+
+**Nada se auto-verifica.** Una evidencia solo se marca `verified=true` si
+incluye URL concreta, fecha de consulta y fragmento/resumen. Freebuff sin esos
+campos queda `verified=false` (y así se contabiliza). Esto evita que "lo dijo
+Freebuff" se convierta en "evidencia verificada".
+
 ## Qué se puede automatizar dentro de Freebuff (ahora)
 
 - **Desarrollo**: editar código, ejecutar `pytest`, revisar resultados,
@@ -65,8 +97,11 @@ inventado ninguna). Por lo tanto:
 ## Flujo recomendado por iteración
 
 1. Freebuff escribe/refina código y corre `pytest`.
-2. Freebuff (o el humano) realiza investigación real para 1-3 oportunidades y
-   la deposita en `data/manual_research/responses/`.
-3. Se reevalúa y se revisa el dashboard: ¿subió la confianza? ¿cambió la
+2. Freebuff lanza campañas de descubrimiento (`/api/discovery/*`), exporta
+   misiones, las investiga con fuentes reales y reimporta los resultados.
+3. Freebuff (o el humano) también puede investigar 1-3 oportunidades del
+   pipeline clásico y depositar la respuesta en
+   `data/manual_research/responses/` (formato anterior).
+4. Se reevalúa y se revisa el dashboard: ¿subió la confianza? ¿cambió la
    decisión?
-4. Se exportan las fichas y se decide el siguiente experimento.
+5. Se exportan las fichas y se decide el siguiente experimento.

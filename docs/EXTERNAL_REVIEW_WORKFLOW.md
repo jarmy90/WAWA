@@ -138,6 +138,16 @@ archivos cambiados. **No** incluir `.git` en el paquete.
   de secretos detectables, ausencia del propio paquete, y coincidencia del
   SHA-256 con el registrado.
 
+> **Nota sobre el SHA-256 registrado**: el manifiesto vive DENTRO del paquete
+> y contiene su propio hash, lo que crea una referencia circular (el hash de
+> un archivo depende de su contenido, que incluye el hash). Por eso el SHA-256
+> registrado es el **hash canónico del contenido del ZIP** (nombres + bytes de
+> todos los miembros, EXCEPTO el propio manifiesto). Es autoconsistente,
+> detecta cualquier manipulación del resto del paquete y permite que la
+> verificación pase tanto en el workspace como desde un paquete extraído por
+> el revisor. El verifier imprime además el hash del archivo completo como
+> referencia.
+
 **Obligatorio ejecutar la verificación antes de entregar el archivo.** Si
 falla: no declarar válido el paquete, corregir, regenerar, repetir la
 verificación y explicar el fallo y su corrección.

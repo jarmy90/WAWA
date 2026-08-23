@@ -8,7 +8,7 @@ Motor local de **descubrimiento, investigación y selección de oportunidades** 
 
 ## Estado
 
-**MVP v0.3 (iteración 003)** — funciona 100% offline, sin APIs obligatorias. Gemini es un proveedor opcional. Incluye dashboard web local, API, SQLite, 7 agentes, scoring determinista, BudgetGuard, modos de operación (con `PRODUCTION_ARMED` y arranque seguro → `SAFE_PAUSE`), **economía simulada auditada** (ledger append-only, idempotencia, reversiones, métricas, reconciliación) y **124 tests**.
+**MVP v0.4 (iteración 004)** — funciona 100% offline, sin APIs obligatorias. Gemini es un proveedor opcional. Incluye dashboard web local, API, SQLite, 7 agentes, **Business Discovery Engine** (campañas de descubrimiento abierto, General AI Substitution Test, Venture Quality Score, torneo de ideas, misiones Freebuff-first), scoring determinista, BudgetGuard, modos de operación (con `PRODUCTION_ARMED` y arranque seguro → `SAFE_PAUSE`), **economía simulada auditada** (ledger append-only, idempotencia, reversiones, métricas, reconciliación) y **149 tests**.
 
 ## Requisitos
 
@@ -60,10 +60,25 @@ sh scripts/run.sh
 ## Uso rápido (sin navegador)
 
 ```bash
-# Descubrir oportunidades desde un problema
+# Descubrir oportunidades desde un problema (Ruta A)
 curl -X POST http://localhost:8000/api/opportunities/discover \
   -H "Content-Type: application/json" \
   -d '{"problem":"Los traders MQL5 no tienen forma barata de auditar sus Expert Advisors."}'
+
+# Ruta B: campaña de descubrimiento abierto (sin problema previo)
+curl -X POST http://localhost:8000/api/discovery/campaigns \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Campaña Q4","phase1_target":60,"shortlist_target":10,"finalists_target":3}'
+curl -X POST http://localhost:8000/api/discovery/campaigns/<ID>/phase1
+curl -X POST http://localhost:8000/api/discovery/campaigns/<ID>/filter
+curl -X POST http://localhost:8000/api/discovery/campaigns/<ID>/recombine
+curl -X POST http://localhost:8000/api/discovery/campaigns/<ID>/shortlist
+curl -X POST http://localhost:8000/api/discovery/campaigns/<ID>/tournament
+# Promover un finalista a oportunidad y exportar su misión de investigación:
+curl -X POST http://localhost:8000/api/discovery/concepts/<CONCEPT_ID>/promote
+curl -X POST http://localhost:8000/api/discovery/missions \
+  -H "Content-Type: application/json" \
+  -d '{"kind":"candidate","concept_id":"<CONCEPT_ID>"}'
 
 # Evaluar una oportunidad (pipeline completo de 7 agentes)
 curl -X POST http://localhost:8000/api/opportunities/<ID>/evaluate
@@ -90,19 +105,19 @@ pytest            # suite completa, 100% offline
 app/
 ├── agents/       # Scout, Researcher, Skeptic, Economist, Builder, Compliance, Judge
 ├── api/          # Rutas FastAPI
-├── core/         # Config, logging, seguridad, DI container
-├── models/       # Contratos Pydantic (Opportunity, Evidence, Evaluation, ...)
+├── core/         # Config, logging, seguridad, DI container, bibliotecas de discovery
+├── models/       # Contratos Pydantic (Opportunity, Evidence, Evaluation, discovery...)
 ├── providers/    # BaseLLMProvider, Mock, Gemini (opcional), Manual/Freebuff
-├── repositories/ # SQLite (stdlib) + repositorios tipados
-├── scoring/      # Motor de puntuación determinista (funciones puras)
-├── services/     # BudgetGuard, oportunidades, import/export
+├── repositories/ # SQLite (stdlib) + repositorios tipados (incl. discovery)
+├── scoring/      # Opportunity Score + Venture Score + General AI Substitution Test
+├── services/     # BudgetGuard, oportunidades, economía, discovery, import/export
 ├── workflows/    # Pipeline de 13 pasos + datos de demo
 └── main.py
 frontend/         # Dashboard (HTML/CSS/JS vanilla, servido por FastAPI)
-tests/            # 80+ tests pytest
+tests/            # 149 tests pytest
 data/             # SQLite, demo, research manual
-docs/             # Arquitectura, scoring, seguridad, roadmap, workflow Freebuff
-scripts/          # run.sh, seed_demo.py
+docs/             # Arquitectura, scoring, discovery, seguridad, roadmap...
+scripts/          # run.sh, seed_demo.py, empaquetado/verificación
 ```
 
 La base de datos SQLite se crea automáticamente en `data/abl.db` al arrancar.
@@ -113,6 +128,8 @@ La base de datos SQLite se crea automáticamente en `data/abl.db` al arrancar.
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitectura, flujo de datos, agentes, proveedores, ledger |
 | [docs/SCORING.md](docs/SCORING.md) | Pesos, fórmulas, bandas de decisión, bloqueadores |
+| [docs/DISCOVERY.md](docs/DISCOVERY.md) | Business Discovery Engine: campañas, fases, territorios/lentes/arquetipos, misiones |
+| [docs/VENTURE_SCORING.md](docs/VENTURE_SCORING.md) | Venture Quality Score y General AI Substitution Test (fórmulas y reglas) |
 | [docs/ECONOMY.md](docs/ECONOMY.md) | Economía simulada: reglas contables, métricas, survival status |
 | [docs/LEDGER.md](docs/LEDGER.md) | Ledger append-only: modelo, contratos, API, límites |
 | [docs/RECONCILIATION.md](docs/RECONCILIATION.md) | Reconciliación y entrada automática en SAFE_PAUSE |
@@ -163,9 +180,38 @@ real**: toda respuesta incluye `simulated: true` y `real_money_moved: false`,
 y el panel muestra el aviso "SIMULACIÓN — NO REPRESENTA DINERO REAL".
 Documentación: `docs/ECONOMY.md`, `docs/LEDGER.md`, `docs/RECONCILIATION.md`.
 
+### Business Discovery Engine (iteración 004)
+
+La prioridad central del proyecto es ahora la **calidad del motor de ideas**.
+El sistema ya no depende de que le entregues un problema: desde el panel
+(pestaña **Descubrimiento**) puedes lanzar **campañas de descubrimiento
+abierto** (Ruta B) que:
+
+1. Generan 20-200 conceptos breves combinando **31 territorios × 30 lentes de
+   innovación × 27 arquetipos** (`app/core/libraries.py`, configurables).
+2. Ejecutan el **General AI Substitution Test**: una idea que una IA
+   generalista resuelve sin workflow/integración/memoria se clasifica
+   `COMMODITY_WRAPPER` y **no puede aprobarse** (aunque tenga demanda
+   aparente).
+3. Filtran, **recombinan** mecanismos, hacen **shortlist con diversidad**
+   (detecta clones conceptuales) y celebran un **torneo por pares** con 8
+   criterios (dolor económico, resistencia a IA, velocidad de validación,
+   distribución, activo acumulativo, explicabilidad, margen, merecimiento
+   del siguiente euro/hora).
+4. Promueven hasta 3 **finalistas** a `Opportunity` y generan **misiones de
+   investigación exportables** (Markdown/JSON) para que Freebuff investigue
+   con fuentes reales y reimporte los resultados (nada se auto-verifica: se
+   exige URL + fecha + fragmento).
+
+El **Venture Quality Score** (11 criterios, 100 puntos) valora la calidad
+empresarial y estratégica sin sustituir al Opportunity Score de la iteración
+001. En offline, `proven_demand=0`: la demanda nunca se inventa.
+Documentación: `docs/DISCOVERY.md`, `docs/VENTURE_SCORING.md`.
+
 ## Decisiones técnicas clave
 
 - **SQLite con `sqlite3` de la stdlib** en lugar de SQLAlchemy: menos dependencias y suficiente para el MVP; los repositorios encapsulan la SQL para migrar fácilmente si hace falta.
+- **Business Discovery Engine** (iteración 004): bibliotecas configurables (territorios/lentes/arquetipos), `General AI Substitution Test` con bloqueo duro de `COMMODITY_WRAPPER`, `Venture Quality Score` determinista (11 criterios + bloqueadores + etiquetas), fingerprints anti-clon, torneo por pares, memoria empresarial y misiones Freebuff-first con reglas de verificación estrictas.
 - **Judge 100% determinista**: puntúa solo con datos guardados (sin LLM), garantizando reproducibilidad.
 - **Proveedores desacoplados**: `MockProvider` (offline, determinista), `GeminiProvider` (opcional, fallback automático a mock), `ManualProvider` (asistido por humano/Freebuff vía JSON).
 - **BudgetGuard**: presupuesto diario, por oportunidad, tope de evaluaciones profundas/día, modos gratuito/simulación, bloqueo manual; consulta el estado económico (modo, saldo, comprometidos, límites) antes de autorizar gasto.

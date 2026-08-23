@@ -202,6 +202,115 @@ CREATE TABLE IF NOT EXISTS reconciliation_runs (
     summary TEXT NOT NULL DEFAULT '{}',
     triggered_pause INTEGER NOT NULL DEFAULT 0
 );
+
+-- Business Discovery Engine (iteración 004)
+CREATE TABLE IF NOT EXISTS discovery_campaigns (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    territory_keys TEXT NOT NULL DEFAULT '[]',
+    lens_keys TEXT NOT NULL DEFAULT '[]',
+    archetype_keys TEXT NOT NULL DEFAULT '[]',
+    phase TEXT NOT NULL DEFAULT 'created',
+    status TEXT NOT NULL DEFAULT 'active',
+    phase1_target INTEGER NOT NULL DEFAULT 60,
+    shortlist_target INTEGER NOT NULL DEFAULT 10,
+    finalists_target INTEGER NOT NULL DEFAULT 3,
+    diversity REAL NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS discovery_concepts (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES discovery_campaigns(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    territory_key TEXT,
+    lens_keys TEXT NOT NULL DEFAULT '[]',
+    archetype_key TEXT,
+    problem_hypothesis TEXT NOT NULL,
+    mechanism TEXT NOT NULL,
+    buyer_hypothesis TEXT,
+    outcome_hypothesis TEXT,
+    why_now TEXT,
+    general_ai_risk TEXT,
+    asset_potential TEXT,
+    fingerprint TEXT NOT NULL DEFAULT '{}',
+    phase TEXT NOT NULL DEFAULT 'phase1',
+    status TEXT NOT NULL DEFAULT 'draft',
+    source TEXT NOT NULL DEFAULT 'generated',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_concepts_campaign ON discovery_concepts(campaign_id);
+
+CREATE TABLE IF NOT EXISTS substitution_tests (
+    id TEXT PRIMARY KEY,
+    concept_id TEXT NOT NULL REFERENCES discovery_concepts(id) ON DELETE CASCADE,
+    classification TEXT NOT NULL,
+    general_ai_resistance REAL NOT NULL DEFAULT 0,
+    verdict TEXT NOT NULL,
+    answers TEXT NOT NULL DEFAULT '{}',
+    reasons TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_substitution_concept ON substitution_tests(concept_id);
+
+CREATE TABLE IF NOT EXISTS venture_evaluations (
+    id TEXT PRIMARY KEY,
+    concept_id TEXT NOT NULL REFERENCES discovery_concepts(id) ON DELETE CASCADE,
+    scores TEXT NOT NULL DEFAULT '{}',
+    final_score REAL NOT NULL DEFAULT 0,
+    novelty_score REAL NOT NULL DEFAULT 0,
+    utility_score REAL NOT NULL DEFAULT 0,
+    blockers TEXT NOT NULL DEFAULT '[]',
+    labels TEXT NOT NULL DEFAULT '[]',
+    rationale TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_venture_concept ON venture_evaluations(concept_id);
+
+CREATE TABLE IF NOT EXISTS concept_comparisons (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES discovery_campaigns(id) ON DELETE CASCADE,
+    winner_id TEXT NOT NULL,
+    loser_id TEXT NOT NULL,
+    winner_score REAL NOT NULL DEFAULT 0,
+    loser_score REAL NOT NULL DEFAULT 0,
+    criteria TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS learning_records (
+    id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL,
+    pattern TEXT NOT NULL,
+    source TEXT NOT NULL,
+    notes TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS research_missions (
+    id TEXT PRIMARY KEY,
+    mission_id TEXT NOT NULL UNIQUE,
+    kind TEXT NOT NULL,
+    target TEXT NOT NULL DEFAULT '{}',
+    export_payload TEXT NOT NULL DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'exported',
+    created_at TEXT NOT NULL,
+    imported_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS mission_results (
+    id TEXT PRIMARY KEY,
+    mission_id TEXT NOT NULL REFERENCES research_missions(mission_id) ON DELETE CASCADE,
+    raw TEXT NOT NULL DEFAULT '{}',
+    evidences TEXT NOT NULL DEFAULT '[]',
+    competitors TEXT NOT NULL DEFAULT '[]',
+    buyer_confirmed TEXT,
+    verified INTEGER NOT NULL DEFAULT 0,
+    verification_notes TEXT,
+    imported_at TEXT NOT NULL
+);
 """
 
 

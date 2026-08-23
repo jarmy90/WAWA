@@ -326,3 +326,89 @@ code { background: var(--slate-soft); padding: 1px 5px; border-radius: 4px; font
 .engine-row { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
 .engine-row .k { color: var(--muted); }
 .engine-row .v { font-weight: 600; text-align: right; }
+
+/* ------------------------------------------------------------------ */
+/* Descubrimiento (iteración 004)                                       */
+/* ------------------------------------------------------------------ */
+.view-tabs { display: flex; gap: 6px; }
+.tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--text); background: var(--slate-soft); }
+.tab-btn.active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.stack { display: flex; flex-direction: column; gap: 14px; }
+.campaign-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+}
+.campaign-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.campaign-head h3 { margin: 0; font-size: 16px; }
+.campaign-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.phase-steps { display: flex; gap: 4px; margin: 12px 0; flex-wrap: wrap; }
+.phase-step {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.phase-step.done { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.phase-step.active { color: var(--text); border-color: var(--accent); }
+.campaign-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.concept-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.concept-row {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--card) 60%, transparent);
+}
+.concept-row.finalist { border-color: var(--accent); }
+.concept-top { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+.concept-top h4 { margin: 0; font-size: 13.5px; }
+.concept-tags { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+.vscore {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-radius: 8px;
+  padding: 2px 8px;
+}
+.vscore.blocked { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.concept-body { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.concept-actions { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+.tag-commodity { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
+.mission-block {
+  margin-top: 12px;
+  border-top: 1px dashed var(--line);
+  padding-top: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+.mission-block select, .mission-block input {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+}

@@ -88,11 +88,26 @@
 
       <section class="content">
         <div id="list-header" class="list-header">
-          <h2>Oportunidades <span id="count-badge" class="badge">0</span></h2>
+          <div class="view-tabs">
+            <button id="tab-opps" class="tab-btn active">Oportunidades <span id="count-badge" class="badge">0</span></button>
+            <button id="tab-discovery" class="tab-btn">Descubrimiento <span id="disc-badge" class="badge">0</span></button>
+          </div>
         </div>
-        <div id="opportunities" class="grid"></div>
-        <div id="empty-state" class="empty hidden">
-          <p>No hay oportunidades todavía. Crea una nueva, importa investigación o carga la demo.</p>
+        <div id="view-opportunities">
+          <div id="opportunities" class="grid"></div>
+          <div id="empty-state" class="empty hidden">
+            <p>No hay oportunidades todavía. Crea una nueva, importa investigación o carga la demo.</p>
+          </div>
+        </div>
+        <div id="view-discovery" class="hidden">
+          <div class="list-header sub">
+            <h2>Campañas de descubrimiento</h2>
+            <button id="btn-campaign-new" class="btn btn-primary btn-sm">Nueva campaña</button>
+          </div>
+          <div id="discovery" class="stack"></div>
+          <div id="discovery-empty" class="empty hidden">
+            <p>Sin campañas. Lanza una campaña abierta (Ruta B): el sistema genera territorios, lentes y arquetipos, filtra wrappers de IA y selecciona finalistas sin que tengas que proponer un negocio.</p>
+          </div>
         </div>
       </section>
 
@@ -119,6 +134,27 @@
           <label class="field"><span>Sector</span><input id="new-sector" placeholder="(opcional)" /></label>
           <button id="btn-create" class="btn btn-secondary">Crear oportunidad</button>
           <div id="modal-new-msg" class="msg hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: nueva campaña de descubrimiento -->
+    <div id="modal-campaign" class="modal hidden">
+      <div class="modal-box">
+        <div class="modal-head"><h3>Nueva campaña de descubrimiento</h3><button class="modal-close" data-close="modal-campaign">×</button></div>
+        <div class="modal-body">
+          <p class="hint">Ruta B: genera conceptos desde territorios × lentes × arquetipos. Vacío = usar toda la biblioteca. Después ejecuta las fases: <strong>Fase 1 → Filtro → Recombinar → Shortlist → Torneo</strong>.</p>
+          <label class="field"><span>Título</span><input id="camp-title" placeholder="Campaña de validación Q3" /></label>
+          <label class="field"><span>Territorios (keys separadas por coma, opcional)</span><input id="camp-territories" placeholder="p. ej. expensive_slow_services, underused_assets" /></label>
+          <label class="field"><span>Lentes (keys, opcional)</span><input id="camp-lenses" placeholder="p. ej. PAY_FOR_OUTCOME, VERIFY_THE_OUTPUT" /></label>
+          <label class="field"><span>Arquetipos (keys, opcional)</span><input id="camp-archetypes" placeholder="p. ej. VALIDABLE_CONCIERGE, DATA_PRODUCT" /></label>
+          <div class="field-row">
+            <label class="field"><span>Conceptos fase 1 (20-200)</span><input id="camp-p1" type="number" min="20" max="200" value="60" /></label>
+            <label class="field"><span>Shortlist (6-16)</span><input id="camp-sl" type="number" min="6" max="16" value="10" /></label>
+            <label class="field"><span>Finalistas (1-5)</span><input id="camp-fin" type="number" min="1" max="5" value="3" /></label>
+          </div>
+          <button id="btn-campaign-create" class="btn btn-primary">Crear campaña</button>
+          <div id="modal-campaign-msg" class="msg hidden"></div>
         </div>
       </div>
     </div>

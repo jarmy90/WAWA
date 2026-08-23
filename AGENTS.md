@@ -39,6 +39,18 @@ modificar nada.
    capital, ledger inconsistente, moneda ausente…), el sistema entra en
    `SAFE_PAUSE` registrando motivo, evento crítico y transición; nunca se
    auto-recupera activando producción.
+10. **El motor de ideas nunca inventa demanda (Business Discovery Engine).**
+    Los conceptos de las campañas son HIPÓTESIS; `proven_demand` permanece en
+    0 sin evidencia de mercado. El General AI Substitution Test bloquea los
+    `COMMODITY_WRAPPER` (una IA generalista resuelve el problema sin workflow,
+    integración ni memoria) aunque tengan demanda aparente. Las bibliotecas
+    (territorios/lentes/arquetipos) viven en `app/core/libraries.py`;
+    cualquier cambio debe mantenerlas configurables y documentado en
+    `docs/DISCOVERY.md`. El Venture Quality Score (`app/scoring/venture.py`)
+    es determinista y sin LLM; la originalidad nunca se auto-asigna: usa
+    distancia de fingerprint y utilidad tope. Las misiones Freebuff no se
+    auto-verifican: una evidencia solo es `verified=true` con URL + fecha +
+    fragmento.
 
 ## Convenciones de código
 
@@ -101,7 +113,12 @@ explícita del propietario). Reglas permanentes:
    `docs/LEDGER.md` (append-only, Decimal, idempotencia, reversión,
    reconciliación) y añade pruebas de cada una. El saldo se deriva SIEMPRE de
    los asientos; nunca persistas un saldo editable.
-6. No declares que algo funciona sin ejecutarlo.
+7. Si tocas el discovery (`app/scoring/venture.py`, `app/services/discovery.py`,
+   `app/core/libraries.py`, `app/repositories/discovery.py`): respeta
+   `docs/DISCOVERY.md` y `docs/VENTURE_SCORING.md` (determinismo, no inventar
+   demanda, bloqueo COMMODITY_WRAPPER, fingerprint anti-clon, verificación
+   estricta de misiones) y añade pruebas.
+8. No declares que algo funciona sin ejecutarlo.
 
 ## Qué NO hacer
 

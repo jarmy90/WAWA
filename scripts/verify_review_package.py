@@ -37,6 +37,7 @@ from _review_common import (  # noqa: E402
     PACKAGES_DIR,
     PROHIBITED_ENTRY_PARTS,
     ROOT,
+    canonical_zip_hash,
     scan_text_for_secrets,
     sha256_of,
 )
@@ -80,8 +81,9 @@ def main() -> int:
 
     check(zipfile.is_zipfile(package), "4. Puede abrirse como ZIP")
 
-    m = re.match(r"iteracion-(\d{3})_", package.name)
-    iteration = int(m.group(1)) if m else (args.iteration or 0)
+    # re.search (no re.match): el nombre empieza por el prefijo del proyecto.
+    m = re.search(r"iteracion-(\d{3})_", package.name)
+    iteration = args.iteration or (int(m.group(1)) if m else 0)
     expected_manifest = f"deliverables/ITERATION_{iteration:03d}_MANIFEST.md"
 
     try:
@@ -139,10 +141,13 @@ def main() -> int:
             if not recorded_hash:
                 history = ROOT / "docs" / "ITERATION_HISTORY.md"
                 if history.exists():
-                    mh = re.search(rf"Iteración {iteration}.*?SHA-256: `([0-9a-f]{{64}})`", history.read_text(encoding="utf-8"), re.DOTALL)
+                    mh = re.search(rf"Iteración {iteration}.*?SHA-256[^`]*`([0-9a-f]{{64}})`", history.read_text(encoding="utf-8"), re.DOTALL)
                     if mh:
                         recorded_hash = mh.group(1)
-            real_hash = sha256_of(package)
+            # Hash canónico: el manifiesto se autorrefiere (su hash no puede
+            # ser el del archivo completo que lo contiene), así que se compara
+            # el hash del contenido del ZIP excluyendo el manifiesto.
+            real_hash = canonical_zip_hash(package, exclude=expected_manifest)
             if recorded_hash:
                 check(recorded_hash == real_hash, "15. SHA-256 coincide con el registrado", f"{real_hash[:16]}…")
             else:
@@ -151,7 +156,8 @@ def main() -> int:
         check(False, "Apertura del ZIP", str(exc))
         return 1
 
-    print(f"\nSHA-256 real: {sha256_of(package)}")
+    print(f"\nSHA-256 (canónico): {real_hash}")
+    print(f"SHA-256 (archivo completo, referencia): {sha256_of(package)}")
     if FAILURES:
         print(f"\nRESULTADO: FALLO ({len(FAILURES)} comprobaciones fallidas)")
         for label in FAILURES:

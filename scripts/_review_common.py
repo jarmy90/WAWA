@@ -90,6 +90,29 @@ def sha256_of(path: Path) -> str:
     return h.hexdigest()
 
 
+def canonical_zip_hash(zip_path: Path, *, exclude: str | None = None) -> str:
+    """Hash canónico del contenido de un ZIP (nombres + bytes de cada miembro).
+
+    El manifiesto se autorrefiere: su campo SHA-256 no puede ser el hash del
+    archivo completo que lo contiene (dependencia circular). Este hash se
+    calcula sobre el contenido de todos los miembros EXCEPTO el manifiesto
+    (parámetro ``exclude``), por lo que el valor registrado es siempre
+    autoconsistente y detecta cualquier manipulación del resto del paquete.
+    No depende del orden de los miembros ni de la compresión.
+    """
+    import zipfile
+
+    h = hashlib.sha256()
+    with zipfile.ZipFile(zip_path) as zf:
+        for name in zf.namelist():
+            if exclude and name == exclude:
+                continue
+            h.update(name.encode("utf-8"))
+            h.update(b"\x00")
+            h.update(zf.read(name))
+    return h.hexdigest()
+
+
 def find_manifest(iteration: int) -> Path:
     return DELIVERABLES / f"ITERATION_{iteration:03d}_MANIFEST.md"
 

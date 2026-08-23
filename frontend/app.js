@@ -675,6 +675,210 @@ $("#filter-status").addEventListener("change", loadList);
 $("#filter-min-score").addEventListener("input", debounce(loadList, 300));
 
 /* ------------------------------------------------------------------ */
+/* Descubrimiento (Ruta B: campañas de conceptos)                      */
+/* ------------------------------------------------------------------ */
+const PHASE_LABEL = {
+  created: "Creada",
+  phase1: "Fase 1: exploración",
+  phase2: "Filtro",
+  phase3: "Recombinación",
+  shortlist: "Shortlist",
+  tournament: "Torneo",
+  finalists: "Finalistas",
+};
+
+const PHASE_ORDER = ["created", "phase1", "phase2", "phase3", "shortlist", "tournament", "finalists"];
+
+let campaigns = [];
+
+function switchView(name) {
+  const showOpps = name === "opps";
+  $("#view-opportunities").classList.toggle("hidden", !showOpps);
+  $("#view-discovery").classList.toggle("hidden", showOpps);
+  $("#tab-opps").classList.toggle("active", showOpps);
+  $("#tab-discovery").classList.toggle("active", !showOpps);
+  if (!showOpps) loadDiscovery();
+}
+
+$("#tab-opps").addEventListener("click", () => switchView("opps"));
+$("#tab-discovery").addEventListener("click", () => switchView("discovery"));
+
+$("#btn-campaign-new").addEventListener("click", () => openModal("campaign"));
+
+$("#btn-campaign-create").addEventListener("click", async () => {
+  const title = $("#camp-title").value.trim();
+  if (!title) return showMsg("campaign", "El título es obligatorio.", false);
+  const splitKeys = (v) => v.split(",").map((s) => s.trim()).filter(Boolean);
+  try {
+    const res = await api("/api/discovery/campaigns", {
+      method: "POST",
+      body: JSON.stringify({
+        title,
+        territory_keys: splitKeys($("#camp-territories").value),
+        lens_keys: splitKeys($("#camp-lenses").value),
+        archetype_keys: splitKeys($("#camp-archetypes").value),
+        phase1_target: parseInt($("#camp-p1").value || "60", 10),
+        shortlist_target: parseInt($("#camp-sl").value || "10", 10),
+        finalists_target: parseInt($("#camp-fin").value || "3", 10),
+      }),
+    });
+    closeModal("campaign");
+    $("#camp-title").value = "";
+    await loadDiscovery();
+  } catch (e) {
+    showMsg("campaign", `Error: ${e.message}`, false);
+  }
+});
+
+async function loadDiscovery() {
+  try {
+    const data = await api("/api/discovery/campaigns");
+    campaigns = data.items;
+    $("#disc-badge").textContent = campaigns.length;
+    const container = $("#discovery");
+    $("#discovery-empty").classList.toggle("hidden", campaigns.length > 0);
+    container.innerHTML = "";
+    for (const camp of campaigns) {
+      const detail = await api(`/api/discovery/campaigns/${camp.id}`);
+      container.appendChild(renderCampaign(detail));
+    }
+  } catch (e) {
+    $("#discovery-empty").textContent = `Error: ${e.message}`;
+    $("#discovery-empty").classList.remove("hidden");
+  }
+}
+
+function renderCampaign(detail) {
+  const camp = detail.campaign;
+  const card = document.createElement("div");
+  card.className = "campaign-card";
+  const phaseIdx = PHASE_ORDER.indexOf(camp.phase);
+  const steps = PHASE_ORDER.map((p, i) => {
+    const cls = i < phaseIdx ? "done" : i === phaseIdx ? "active" : "";
+    return `<span class="phase-step ${cls}">${PHASE_LABEL[p] || p}</span>`;
+  }).join("");
+  const concepts = detail.concepts || [];
+  const shortlist = concepts.filter((c) => c.status === "shortlisted" || c.status === "finalist");
+  const finalists = concepts.filter((c) => c.status === "finalist");
+  const blocked = concepts.filter((c) => c.status === "blocked");
+  const shown = finalists.length ? finalists : shortlist;
+  card.innerHTML = `
+    <div class="campaign-head">
+      <div>
+        <h3>${esc(camp.title)}</h3>
+        <div class="campaign-meta">${concepts.length} conceptos · diversidad ${(camp.diversity || 0).toFixed(2)} · ${esc((camp.created_at || "").slice(0, 10))}</div>
+      </div>
+      <span class="chip chip-neutral">${PHASE_LABEL[camp.phase] || camp.phase}</span>
+    </div>
+    <div class="phase-steps">${steps}</div>
+    <div class="campaign-actions">
+      ${phaseBtn("phase1", "Fase 1: generar", camp.id, phaseIdx < 0)}
+      ${phaseBtn("filter", "Filtro", camp.id, phaseIdx < 1)}
+      ${phaseBtn("recombine", "Recombinar", camp.id, phaseIdx < 2)}
+      ${phaseBtn("shortlist", "Shortlist", camp.id, phaseIdx < 3)}
+      ${phaseBtn("tournament", "Torneo", camp.id, phaseIdx < 4)}
+    </div>
+    ${shown.length ? renderConcepts(shown, camp.id) : ""}
+    ${blocked.length ? `<div class="mission-block">${blocked.length} conceptos bloqueados (wrappers de IA / sin comprador / sin resultado).</div>` : ""}
+    <div class="mission-block">
+      <span>Misión de investigación Freebuff:</span>
+      <select class="mission-kind" data-campaign="${camp.id}">
+        <option value="campaign">campaña</option>
+        <option value="signal">señal</option>
+        <option value="tournament">torneo</option>
+        <option value="competitors">competidores</option>
+      </select>
+      <button class="btn btn-ghost btn-sm btn-mission" data-campaign="${camp.id}">Crear misión</button>
+    </div>
+  `;
+  card.querySelectorAll("[data-phase]").forEach((b) => {
+    b.addEventListener("click", async () => {
+      b.disabled = true;
+      try {
+        await api(`/api/discovery/campaigns/${camp.id}/${b.dataset.phase}`, { method: "POST" });
+        await loadDiscovery();
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+        b.disabled = false;
+      }
+    });
+  });
+  card.querySelectorAll("[data-promote]").forEach((b) => {
+    b.addEventListener("click", async () => {
+      if (!confirm("¿Promover este concepto a oportunidad? Se creará una Opportunity con estado borrador.")) return;
+      try {
+        await api(`/api/discovery/concepts/${b.dataset.promote}/promote`, { method: "POST" });
+        await loadDiscovery();
+        switchView("opps");
+        await loadList();
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      }
+    });
+  });
+  card.querySelectorAll("[data-mission-concept]").forEach((b) => {
+    b.addEventListener("click", async () => {
+      try {
+        const res = await api("/api/discovery/missions", {
+          method: "POST",
+          body: JSON.stringify({ kind: "candidate", concept_id: b.dataset.missionConcept }),
+        });
+        window.location.href = `/api/discovery/missions/${res.mission.mission_id}/export`;
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      }
+    });
+  });
+  card.querySelectorAll(".btn-mission").forEach((b) => {
+    b.addEventListener("click", async () => {
+      const kind = card.querySelector(".mission-kind").value;
+      try {
+        const res = await api("/api/discovery/missions", {
+          method: "POST",
+          body: JSON.stringify({ kind, campaign_id: b.dataset.campaign }),
+        });
+        window.location.href = `/api/discovery/missions/${res.mission.mission_id}/export`;
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      }
+    });
+  });
+  return card;
+}
+
+function phaseBtn(phase, label, campaignId, enabled) {
+  return `<button class="btn btn-ghost btn-sm" data-phase="${phase}" data-campaign="${campaignId}" ${enabled ? "" : "disabled"}>${label}</button>`;
+}
+
+function renderConcepts(list, campaignId) {
+  return `<div class="concept-list">${list.map((c) => {
+    const v = c.venture || {};
+    const s = c.substitution || {};
+    const blockedCls = s.verdict === "blocked" ? " blocked" : "";
+    const labels = (v.labels || []).slice(0, 2).map((l) => `<span class="tag">${esc(l)}</span>`).join("");
+    const classification = s.classification ? `<span class="tag ${s.verdict === "blocked" ? "tag-commodity" : ""}">${esc(s.classification)}</span>` : "";
+    const statusTag = c.status === "finalist" ? `<span class="tag tag-verified">finalista</span>` : "";
+    return `
+      <div class="concept-row${c.status === "finalist" ? " finalist" : ""}">
+        <div class="concept-top">
+          <h4>${esc(c.title)}</h4>
+          <div class="concept-tags">
+            <span class="vscore${blockedCls}">${v.final_score != null ? v.final_score.toFixed(1) : "—"}</span>
+            ${classification}
+            ${labels}
+            ${statusTag}
+          </div>
+        </div>
+        <div class="concept-body">${esc((c.mechanism || "").slice(0, 220))}</div>
+        <div class="concept-actions">
+          ${c.status === "shortlisted" || c.status === "finalist" ? `<button class="btn btn-primary btn-sm" data-promote="${c.id}">Promover a oportunidad</button>` : ""}
+          <button class="btn btn-ghost btn-sm" data-mission-concept="${c.id}">Misión de investigación</button>
+        </div>
+      </div>`;
+  }).join("")}</div>`;
+}
+
+/* ------------------------------------------------------------------ */
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
 function esc(value) {

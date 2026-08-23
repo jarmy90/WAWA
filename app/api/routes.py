@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.errors import ValidationError
 from app.core.security import validate_extension, validate_payload_size, validate_uuid
+from app.models.discovery import CampaignCreate, MissionIn
 from app.models.enums import Decision, OpportunityStatus, OperatingMode
 from app.models.ledger import ExpenseRequestIn, IncomeIn, ReverseIn, SimulationStartIn
 from app.models.opportunity import OpportunityCreate, ProblemSeed
@@ -34,6 +35,28 @@ def valid_entry_id(entry_id: str) -> str:
     con el parámetro de la ruta (entry_id), igual que `valid_id` para
     `opportunity_id`."""
     return validate_uuid(entry_id, field="entry_id")
+
+
+def valid_campaign_id(campaign_id: str) -> str:
+    return validate_uuid(campaign_id, field="campaign_id")
+
+
+def valid_concept_id(concept_id: str) -> str:
+    return validate_uuid(concept_id, field="concept_id")
+
+
+def valid_mission_id(mission_id: str) -> str:
+    return validate_uuid(mission_id, field="mission_id")
+
+
+class MissionCreateIn(BaseModel):
+    """Crea una misión de investigación Freebuff-first."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: str = Field(min_length=1, max_length=30)
+    campaign_id: str | None = Field(default=None, max_length=64)
+    concept_id: str | None = Field(default=None, max_length=64)
 
 
 class DecisionIn(BaseModel):
@@ -279,6 +302,127 @@ def export_opportunity(
         media_type="text/markdown; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="opportunity_{opportunity_id}.md"'},
     )
+
+
+# ---------------------------------------------------------------------------
+# Business Discovery Engine (iteración 004)
+# ---------------------------------------------------------------------------
+@router.get("/discovery/campaigns")
+def discovery_list_campaigns(request: Request) -> dict:
+    container = get_container(request)
+    items = container.discovery.list_campaigns()
+    return {"items": items, "count": len(items)}
+
+
+@router.post("/discovery/campaigns")
+def discovery_create_campaign(payload: CampaignCreate, request: Request) -> dict:
+    container = get_container(request)
+    campaign = container.discovery.create_campaign(payload.model_dump())
+    return {"campaign": campaign}
+
+
+@router.get("/discovery/campaigns/{campaign_id}")
+def discovery_get_campaign(request: Request, campaign_id: str = Depends(valid_campaign_id)) -> dict:
+    return get_container(request).discovery.campaign_detail(campaign_id)
+
+
+@router.post("/discovery/campaigns/{campaign_id}/phase1")
+def discovery_phase1(request: Request, campaign_id: str = Depends(valid_campaign_id)) -> dict:
+    return get_container(request).discovery.run_phase1(campaign_id)
+
+
+@router.post("/discovery/campaigns/{campaign_id}/filter")
+def discovery_filter(request: Request, campaign_id: str = Depends(valid_campaign_id)) -> dict:
+    return get_container(request).discovery.run_commodity_filter(campaign_id)
+
+
+@router.post("/discovery/campaigns/{campaign_id}/recombine")
+def discovery_recombine(request: Request, campaign_id: str = Depends(valid_campaign_id)) -> dict:
+    return get_container(request).discovery.run_recombine(campaign_id)
+
+
+@router.post("/discovery/campaigns/{campaign_id}/shortlist")
+def discovery_shortlist(request: Request, campaign_id: str = Depends(valid_campaign_id)) -> dict:
+    return get_container(request).discovery.run_shortlist(campaign_id)
+
+
+@router.post("/discovery/campaigns/{campaign_id}/tournament")
+def discovery_tournament(request: Request, campaign_id: str = Depends(valid_campaign_id)) -> dict:
+    return get_container(request).discovery.run_tournament(campaign_id)
+
+
+@router.get("/discovery/concepts/{concept_id}")
+def discovery_get_concept(request: Request, concept_id: str = Depends(valid_concept_id)) -> dict:
+    container = get_container(request)
+    concept = container.repos.discovery.get_concept(concept_id)
+    if concept is None:
+        from app.core.errors import NotFoundError
+
+        raise NotFoundError("Concepto no encontrado.")
+    tests = container.repos.discovery.substitution_tests_by_concept(concept_id)
+    evals = container.repos.discovery.venture_evaluations_by_concept(concept_id)
+    return {
+        "concept": concept,
+        "substitution": tests[0] if tests else None,
+        "venture": evals[0] if evals else None,
+    }
+
+
+@router.post("/discovery/concepts/{concept_id}/promote")
+def discovery_promote(request: Request, concept_id: str = Depends(valid_concept_id)) -> dict:
+    container = get_container(request)
+    opportunity = container.discovery.promote(concept_id)
+    return container.opportunities.detail(opportunity.id)
+
+
+@router.post("/discovery/missions")
+def discovery_create_mission(payload: MissionCreateIn, request: Request) -> dict:
+    container = get_container(request)
+    mission = container.discovery.create_mission(
+        kind=payload.kind,
+        campaign_id=payload.campaign_id,
+        concept_id=payload.concept_id,
+    )
+    return {"mission": mission.model_dump(mode="json")}
+
+
+@router.get("/discovery/missions")
+def discovery_list_missions(request: Request, status: str | None = None) -> dict:
+    container = get_container(request)
+    items = container.discovery.list_missions(status=status)
+    return {"items": items, "count": len(items)}
+
+
+@router.get("/discovery/missions/{mission_id}/export")
+def discovery_export_mission(request: Request, mission_id: str = Depends(valid_mission_id)) -> Response:
+    container = get_container(request)
+    markdown = container.discovery.export_mission_markdown(mission_id)
+    return Response(
+        content=markdown,
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="mission_{mission_id}.md"'},
+    )
+
+
+@router.post("/discovery/missions/{mission_id}/import")
+def discovery_import_mission(payload: MissionIn, request: Request, mission_id: str = Depends(valid_mission_id)) -> dict:
+    return get_container(request).discovery.import_mission_result(mission_id, payload)
+
+
+@router.post("/discovery/opportunities/{opportunity_id}/missions/{mission_id}/attach")
+def discovery_attach_mission(
+    request: Request,
+    opportunity_id: str = Depends(valid_id),
+    mission_id: str = Depends(valid_mission_id),
+) -> dict:
+    return get_container(request).discovery.attach_mission_evidence(opportunity_id, mission_id)
+
+
+@router.get("/discovery/learning")
+def discovery_learning(request: Request, kind: str | None = None) -> dict:
+    container = get_container(request)
+    items = container.discovery.list_learning_records(kind=kind)
+    return {"items": items, "count": len(items)}
 
 
 # ---------------------------------------------------------------------------

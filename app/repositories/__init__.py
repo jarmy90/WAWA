@@ -14,6 +14,7 @@ from app.repositories.competitors import CompetitorRepository
 from app.repositories.costs import CostRepository
 from app.repositories.db import connect, init_db
 from app.repositories.decision_log import DecisionLogRepository
+from app.repositories.discovery import DiscoveryRepository
 from app.repositories.engine import EngineRepository
 from app.repositories.evaluations import EvaluationRepository
 from app.repositories.evidence import EvidenceRepository
@@ -35,6 +36,7 @@ class Repos:
     costs: CostRepository
     engine: EngineRepository
     ledger: LedgerRepository
+    discovery: DiscoveryRepository
 
 
 def build_repos(conn) -> Repos:
@@ -48,6 +50,7 @@ def build_repos(conn) -> Repos:
         costs=CostRepository(conn),
         engine=EngineRepository(conn),
         ledger=LedgerRepository(conn),
+        discovery=DiscoveryRepository(conn),
     )
 
 
@@ -65,4 +68,5 @@ __all__ = [
     "CostRepository",
     "EngineRepository",
     "LedgerRepository",
+    "DiscoveryRepository",
 ]
