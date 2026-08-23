@@ -110,6 +110,14 @@ automáticamente al arrancar. `decision_log` y `costs` son append-only.
   reversiones, métricas deterministas (runway, burn rate, coste por
   oportunidad/experimento, margen, survival status) y reconciliación
   (ver `docs/ECONOMY.md`).
+- **ReviewService** (iteración 005): comité de contraste — cola de
+  finalistas (umbral interno ≥ 72, máximo semanal, ventana de 48 h),
+  expediente idéntico para todos los revisores (`review_packet.md` con prompt
+  normalizado), importación segura de revisiones TXT/Markdown (raw + hash +
+  parsing con allowlist + detección de inyección), síntesis determinista
+  (distribución, consenso opinión/evidencia, riesgos, acción recomendada) y
+  auto-continuación neutral al caducar la ventana. Los proveedores
+  automáticos son interfaces opcionales; la vía funcional es `MANUAL_IMPORT`.
 - **OpportunityService**: CRUD, detalle agregado, decisiones manuales.
 - **ImportService/ExportService**: importación de investigación (JSON) y
   exportación JSON/Markdown (oportunidades y misiones).
@@ -123,6 +131,12 @@ inmutables). Son espacios para explorar, nunca afirmaciones de demanda.
 Orquesta los 13 pasos, registra cada paso en `decision_log` con coste y
 errores, y gestiona estados (`draft → researching → approved/
 needs_more_research/deferred/rejected/blocked`).
+
+### `app/repositories/reviews.py` (iteración 005)
+Persistencia del comité: `review_queue` (cola por oportunidad con ventana),
+`external_reviews` (revisiones con raw + parsed + hash, UNIQUE por
+oportunidad+hash) y `review_syntheses` (una por oportunidad, reemplazable).
+Importes JSON para estructuras; nunca SQL interpolada.
 
 ### `frontend/`
 Dashboard vanilla (HTML/CSS/JS) servido por FastAPI en `/`: lista con filtros,
@@ -164,6 +178,24 @@ creación/exportación de misiones de investigación.
 8. `POST /api/discovery/missions` → misión Freebuff exportable; los
    resultados reimportados se adjuntan a la oportunidad promovida
    (`/api/discovery/opportunities/{id}/missions/{mission_id}/attach`).
+
+## Flujo de datos del comité de contraste (iteración 005)
+
+```
+Judge aprueba (score ≥ 72)
+  → pipeline.reviews.auto_queue()          (silencioso, sin romper el flujo)
+  → review_queue: pending + ventana 48h
+  → generate_review_packet()               review_packet.md idéntico
+  → descarga manual → consulta en GPT/Grok/Gemini/...
+  → import_review()                        raw + hash + parser allowlist
+  → synthesize()                           consenso, riesgos, acción
+  → ventana caducada? → continued (neutral) | espera (config)
+  → decision_log (append-only) + engine_events
+```
+
+Las revisiones importadas son DATOS: nunca modifican modo, presupuesto,
+ledger ni autorizan producción. El consenso se etiqueta como `OPINION_CONSENSUS`
+cuando varios modelos coinciden sin citar evidencia.
 
 ## Persistencia
 

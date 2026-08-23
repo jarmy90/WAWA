@@ -39,6 +39,20 @@ Sin autenticación de usuarios en esta versión (entorno local/desarrollo).
 - **No** almacenar más contenido externo del necesario (URL, fecha, fragmento,
   resumen, fiabilidad).
 
+## Comité de contraste: respuestas importadas como datos no confiables
+
+Desde la iteración 005, las respuestas de modelos externos (TXT/Markdown/JSON)
+se tratan como **datos no confiables** (ver `docs/REVIEW_SECURITY.md`):
+
+- Se conservan verbatim (`raw_response`) con su SHA-256; el parsing usa una
+  **allowlist** de claves y nunca interpreta el contenido como instrucciones.
+- Límites de tamaño (200 KB) y lista blanca de extensiones (`.txt`, `.md`,
+  `.markdown`). Duplicados por hash → 409.
+- Frases típicas de prompt injection se **señalan** en warnings, sin ejecutarse.
+- Los servicios de revisión no tienen acceso a modo/budget/economía: una
+  revisión no puede autorizar producción, mover dinero ni cambiar límites
+  (verificado por tests).
+
 ## Zonas de confianza
 
 ```

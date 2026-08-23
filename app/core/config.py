@@ -112,6 +112,18 @@ class Settings(BaseSettings):
     allowed_import_extensions: tuple[str, ...] = (".json",)
     cors_origins: list[str] = Field(default_factory=lambda: ["*"])
 
+    # --- Comité de contraste (revisiones externas, iteración 005) -----------
+    # Las revisiones de modelos son OPINIÓN, nunca evidencia. Los umbrales
+    # son configurables y deterministas; la ausencia de revisión es NEUTRAL.
+    external_reviews_dir: Path = PROJECT_ROOT / "data" / "external_reviews"
+    review_min_internal_score: float = 72.0
+    review_max_finalists_per_week: int = 3
+    review_window_hours: int = 48
+    review_continue_without_review: bool = True
+    review_required_for_sensitive_activities: bool = True
+    review_max_file_bytes: int = 200_000
+    review_allowed_extensions: tuple[str, ...] = (".txt", ".md", ".markdown")
+
     # ------------------------------------------------------------------
     def scoring_weights(self) -> dict[str, float]:
         """Pesos de los 8 criterios (0..1, deben sumar 1)."""
@@ -144,6 +156,7 @@ class Settings(BaseSettings):
             self.manual_research_dir / "requests",
             self.manual_research_dir / "responses",
             self.frontend_dir,
+            self.external_reviews_dir,
         ):
             d.mkdir(parents=True, exist_ok=True)
 

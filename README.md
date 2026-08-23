@@ -139,6 +139,12 @@ La base de datos SQLite se crea automáticamente en `data/abl.db` al arrancar.
 | [docs/ITERATION_HISTORY.md](docs/ITERATION_HISTORY.md) | Historial de iteraciones y entregas |
 | [docs/SECURITY.md](docs/SECURITY.md) | Modelo de amenazas y mitigaciones |
 | [docs/FREEBUFF_WORKFLOW.md](docs/FREEBUFF_WORKFLOW.md) | Cómo usar Freebuff para construir y operar |
+| [docs/EXTERNAL_MODEL_REVIEW.md](docs/EXTERNAL_MODEL_REVIEW.md) | Comité de contraste: revisiones de modelos independientes para finalistas |
+| [docs/REVIEW_PACKET_FORMAT.md](docs/REVIEW_PACKET_FORMAT.md) | Formato del expediente de revisión y prompt normalizado |
+| [docs/REVIEW_SYNTHESIS.md](docs/REVIEW_SYNTHESIS.md) | Parsing estructurado y síntesis agregada |
+| [docs/MANUAL_REVIEW_WORKFLOW.md](docs/MANUAL_REVIEW_WORKFLOW.md) | Flujo manual de revisión con modelos externos |
+| [docs/MODEL_CONSENSUS_LIMITATIONS.md](docs/MODEL_CONSENSUS_LIMITATIONS.md) | Falso consenso: límites del acuerdo entre modelos |
+| [docs/REVIEW_SECURITY.md](docs/REVIEW_SECURITY.md) | Seguridad del comité (prompt injection, sandbox lógico) |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Próximos pasos y limitaciones honestas |
 | [AGENTS.md](AGENTS.md) | Reglas para agentes de desarrollo futuros |
 | [SECURITY.md](SECURITY.md) | Reporte de vulnerabilidades |
@@ -179,6 +185,21 @@ entrada en `SAFE_PAUSE` ante inconsistencias. **Nada de esto mueve dinero
 real**: toda respuesta incluye `simulated: true` y `real_money_moved: false`,
 y el panel muestra el aviso "SIMULACIÓN — NO REPRESENTA DINERO REAL".
 Documentación: `docs/ECONOMY.md`, `docs/LEDGER.md`, `docs/RECONCILIATION.md`.
+
+### Comité de contraste (iteración 005)
+
+El **Laboratorio de oportunidades** (pestaña del dashboard y API
+`/api/reviews/*`) somete a las finalistas (puntuación interna ≥ 72) a
+revisiones de contraste de **modelos independientes** (GPT, Grok, Gemini,
+Claude, humano...). Se genera un expediente idéntico para todos los revisores
+(`review_packet.md` con prompt normalizado), se importan respuestas
+TXT/Markdown (raw conservado + parsing con allowlist + hash anti-duplicado) y
+se agrega una síntesis determinista (distribución de recomendaciones,
+consenso con etiqueta `OPINION_CONSENSUS` para falso consenso, riesgos
+repetidos, evidencia ausente). **Las opiniones de modelos NO son evidencia**
+de demanda: no modifican puntuaciones ni autorizan nada; la ausencia de
+revisión es neutral y nunca bloquea el flujo. Prueba: `POST /api/reviews/demo`
+(100% sintética). Ver `docs/EXTERNAL_MODEL_REVIEW.md`.
 
 ### Business Discovery Engine (iteración 004)
 

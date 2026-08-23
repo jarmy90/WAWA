@@ -118,7 +118,13 @@ explícita del propietario). Reglas permanentes:
    `docs/DISCOVERY.md` y `docs/VENTURE_SCORING.md` (determinismo, no inventar
    demanda, bloqueo COMMODITY_WRAPPER, fingerprint anti-clon, verificación
    estricta de misiones) y añade pruebas.
-8. No declares que algo funciona sin ejecutarlo.
+8. Si tocas el comité de contraste (`app/services/reviews.py`,
+   `app/repositories/reviews.py`, `app/models/external_review.py`): respeta
+   `docs/EXTERNAL_MODEL_REVIEW.md`, `docs/REVIEW_SYNTHESIS.md` y
+   `docs/REVIEW_SECURITY.md` (las opiniones de modelos NUNCA son evidencia ni
+   modifican puntuaciones/modos/presupuesto; el raw se conserva; el parsing es
+   con allowlist; la ausencia de revisión es neutral) y añade pruebas.
+9. No declares que algo funciona sin ejecutarlo.
 
 ## Qué NO hacer
 

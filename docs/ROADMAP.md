@@ -30,7 +30,17 @@
 
 ## Próximos pasos recomendados (por prioridad)
 
-### 1. Validar el motor de ideas con investigación real (iteración 004)
+### 1. Poner a trabajar el comité de contraste con modelos reales (iteración 005)
+El **Laboratorio de oportunidades** ya funciona offline (`MANUAL_IMPORT` +
+`MOCK`): expediente idéntico, importación TXT/MD, síntesis con etiqueta de
+falso consenso y no-bloqueo. Siguiente paso natural:
+- Usar el flujo manual con GPT/Grok/Gemini sobre 2-3 finalistas reales.
+- Comprobar si las objeciones del comité mejoran la selección frente al
+  Judge solo (medir con decisiones posteriores).
+- Evaluar `API_AUTOMATIC` cuando exista API estable, credencial, presupuesto
+  y condiciones de uso compatibles (sin inventar integraciones).
+
+### 2. Validar el motor de ideas con investigación real (iteración 004)
 El Business Discovery Engine (Ruta B) ya genera campañas, filtra wrappers y
 selecciona finalistas offline. Ahora toca validar la **calidad** de las
 selecciones:

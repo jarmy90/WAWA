@@ -412,3 +412,88 @@ code { background: var(--slate-soft); padding: 1px 5px; border-radius: 4px; font
   background: var(--card);
   color: var(--text);
 }
+
+/* ------------------------------------------------------------------ */
+/* Laboratorio de oportunidades (comité de contraste, iteración 005)    */
+/* ------------------------------------------------------------------ */
+.reviews-config {
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.reviews-config-row {
+  padding: 8px 12px;
+  background: var(--slate-soft);
+  border-radius: 8px;
+}
+.review-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.review-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.review-head h4 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+.review-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+.review-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.review-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  margin-top: 10px;
+}
+.rec-chip {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--slate-soft);
+}
+.rec-PRIORITY_EXPERIMENT { border-color: #15803d; color: #15803d; }
+.rec-SMALL_EXPERIMENT { border-color: #b45309; color: #b45309; }
+.rec-MORE_RESEARCH { border-color: #2563eb; color: #2563eb; }
+.rec-REJECT { border-color: #b91c1c; color: #b91c1c; }
+.cons-HIGH { color: #15803d; }
+.cons-OPINION_CONSENSUS { color: #b45309; }
+.cons-MEDIUM { color: #b45309; }
+.cons-LOW { color: #94a3b8; }
+.cons-NONE { color: var(--muted); }
+.review-risks {
+  font-size: 12px;
+  margin-top: 8px;
+  color: #b91c1c;
+}
+.review-risks ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+.review-notes {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: pre-line;
+}
+.review-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}

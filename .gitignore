@@ -17,12 +17,13 @@ build/
 .coverage
 htmlcov/
 
-# Runtime data (SQLite DBs, logs, manual research files)
+# Runtime data (SQLite DBs, logs, manual research files, review packets)
 data/*.db
 data/*.db-*
 data/logs/
 data/manual_research/requests/
 data/manual_research/responses/
+data/external_reviews/
 
 # OS / editor
 .DS_Store

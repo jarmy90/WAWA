@@ -694,14 +694,18 @@ let campaigns = [];
 function switchView(name) {
   const showOpps = name === "opps";
   $("#view-opportunities").classList.toggle("hidden", !showOpps);
-  $("#view-discovery").classList.toggle("hidden", showOpps);
+  $("#view-discovery").classList.toggle("hidden", showOpps || name === "reviews");
+  $("#view-reviews").classList.toggle("hidden", name !== "reviews");
   $("#tab-opps").classList.toggle("active", showOpps);
-  $("#tab-discovery").classList.toggle("active", !showOpps);
-  if (!showOpps) loadDiscovery();
+  $("#tab-discovery").classList.toggle("active", name === "discovery");
+  $("#tab-reviews").classList.toggle("active", name === "reviews");
+  if (name === "discovery") loadDiscovery();
+  if (name === "reviews") loadReviews();
 }
 
 $("#tab-opps").addEventListener("click", () => switchView("opps"));
 $("#tab-discovery").addEventListener("click", () => switchView("discovery"));
+$("#tab-reviews").addEventListener("click", () => switchView("reviews"));
 
 $("#btn-campaign-new").addEventListener("click", () => openModal("campaign"));
 
@@ -877,6 +881,168 @@ function renderConcepts(list, campaignId) {
       </div>`;
   }).join("")}</div>`;
 }
+
+/* ------------------------------------------------------------------ */
+/* Laboratorio de oportunidades (comité de contraste, iteración 005)    */
+/* ------------------------------------------------------------------ */
+const REC_LABEL = {
+  REJECT: "Rechazar",
+  MORE_RESEARCH: "Más investigación",
+  SMALL_EXPERIMENT: "Experimento pequeño",
+  PRIORITY_EXPERIMENT: "Experimento prioritario",
+};
+
+const QUEUE_STATE_LABEL = { pending: "Pendiente", continued: "Continuada", waiting: "Esperando", reviewed: "Revisada" };
+
+let reviewQueue = [];
+let reviewImportTarget = null;
+
+async function loadReviews() {
+  try {
+    const data = await api("/api/reviews/queue");
+    reviewQueue = data.items;
+    $("#rev-badge").textContent = data.count;
+    $("#reviews-config").innerHTML =
+      `<div class="reviews-config-row">Umbral interno: <strong>${data.threshold}</strong> · ` +
+      `Máximo finalistas/semana: <strong>${data.max_per_week}</strong> · ` +
+      `Ventana: <strong>${data.window_hours}h</strong> · ` +
+      `Continuar sin revisión: <strong>${data.continue_without_review ? "sí (neutral)" : "no"}</strong></div>`;
+    const container = $("#reviews-queue");
+    $("#reviews-empty").classList.toggle("hidden", data.items.length > 0);
+    container.innerHTML = "";
+    data.items.forEach((item) => container.appendChild(renderReviewItem(item)));
+  } catch (e) {
+    $("#reviews-empty").textContent = `Error: ${e.message}`;
+    $("#reviews-empty").classList.remove("hidden");
+  }
+}
+
+function renderReviewItem(item) {
+  const card = document.createElement("div");
+  card.className = "review-card";
+  const syn = item.synthesis || {};
+  const recs = item.recommendations || [];
+  const recChips = recs
+    .map((r) => `<span class="rec-chip rec-${r}">${REC_LABEL[r] || r}</span>`)
+    .join("");
+  const riskList = (syn.repeated_risks || [])
+    .map((r) => `<li>${esc(r)}</li>`)
+    .join("");
+  const consensus = syn.consensus_level || "NONE";
+  const stateLabel = QUEUE_STATE_LABEL[item.status] || item.status;
+  const deadline = item.window_deadline ? `Ventana hasta: ${esc((item.window_deadline || "").slice(0, 19).replace("T", " "))}` : "";
+  card.innerHTML = `
+    <div class="review-head">
+      <div>
+        <h4>${esc(item.title)}</h4>
+        <div class="review-meta">Puntuación interna <strong>${item.internal_score.toFixed(1)}</strong> · ${esc(item.status_label)} · ${deadline}</div>
+      </div>
+      <div class="review-tags">
+        <span class="chip chip-neutral">${esc(stateLabel)}</span>
+        <span class="chip chip-${item.reviewed_without_external ? "amber" : "neutral"}">${item.reviewed_without_external ? "sin revisión externa (neutral)" : ""}</span>
+      </div>
+    </div>
+    <div class="review-row">
+      <span>Revisiones: <strong>${item.valid_reviews_count}</strong>/<strong>${item.reviews_count}</strong> válidas</span>
+      <span>Consenso: <strong class="cons-${consensus}">${consensus}</strong></span>
+      <span>Confianza media: <strong>${syn.average_confidence != null ? syn.average_confidence : "—"}</strong></span>
+      <span>Acción recomendada: <strong>${syn.recommended_next_action ? (REC_LABEL[syn.recommended_next_action] || syn.recommended_next_action) : "—"}</strong></span>
+    </div>
+    ${recChips ? `<div class="review-row">${recChips}</div>` : ""}
+    ${riskList ? `<div class="review-risks"><strong>Riesgos repetidos entre revisores:</strong><ul>${riskList}</ul></div>` : ""}
+    ${syn.missing_evidence && syn.missing_evidence.length ? `<div class="review-risks"><strong>Evidencia ausente señalada:</strong> ${syn.missing_evidence.slice(0, 2).map(esc).join(" · ")}</div>` : ""}
+    <div class="review-actions">
+      <button class="btn btn-primary btn-sm" data-packet="${item.opportunity_id}">Descargar expediente</button>
+      <button class="btn btn-secondary btn-sm" data-import="${item.opportunity_id}">Importar revisión</button>
+      <button class="btn btn-ghost btn-sm" data-synthesize="${item.opportunity_id}">Síntesis</button>
+      ${item.status === "pending" ? `<button class="btn btn-ghost btn-sm" data-continue="${item.opportunity_id}">Continuar sin revisión</button>` : ""}
+      ${item.notes ? `<div class="review-notes">Notas: ${esc(item.notes)}</div>` : ""}
+    </div>
+  `;
+  card.querySelectorAll("[data-packet]").forEach((b) => {
+    b.addEventListener("click", () => {
+      window.location.href = `/api/reviews/opportunities/${b.dataset.packet}/packet`;
+    });
+  });
+  card.querySelectorAll("[data-import]").forEach((b) => {
+    b.addEventListener("click", () => {
+      reviewImportTarget = b.dataset.import;
+      openModal("review");
+    });
+  });
+  card.querySelectorAll("[data-synthesize]").forEach((b) => {
+    b.addEventListener("click", async () => {
+      try {
+        const res = await api(`/api/reviews/opportunities/${b.dataset.synthesize}/synthesize`, { method: "POST" });
+        alert(`Síntesis: consenso ${res.synthesis.consensus_level} · acción recomendada ${res.synthesis.recommended_next_action || "—"} · ${res.synthesis.valid_reviews_count} revisiones válidas`);
+        await loadReviews();
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      }
+    });
+  });
+  card.querySelectorAll("[data-continue]").forEach((b) => {
+    b.addEventListener("click", async () => {
+      if (!confirm("¿Continuar sin revisión externa? La ausencia es NEUTRAL (no es aprobación).")) return;
+      try {
+        await api(`/api/reviews/opportunities/${b.dataset.continue}/continue`, { method: "POST" });
+        await loadReviews();
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      }
+    });
+  });
+  return card;
+}
+
+$("#btn-reviews-demo").addEventListener("click", async () => {
+  if (!confirm("¿Crear la demostración SINTÉTICA del comité de contraste? Todo queda etiquetado como demo (no es evidencia real).")) return;
+  try {
+    const res = await api("/api/reviews/demo", { method: "POST" });
+    alert(`Demo del comité lista: puntuación interna ${res.internal_score.toFixed(1)} (umbral ${res.threshold}, sobrecédula demo auditable) · ${res.reviews.length} revisiones mock · consenso ${res.synthesis.consensus_level}`);
+    await loadReviews();
+  } catch (e) {
+    alert(`Error: ${e.message}`);
+  }
+});
+
+$("#review-file").addEventListener("change", () => {
+  const file = $("#review-file").files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    $("#review-content").value = String(reader.result || "");
+  };
+  reader.readAsText(file);
+});
+
+$("#btn-review-import").addEventListener("click", async () => {
+  if (!reviewImportTarget) return showMsg("review", "Selecciona primero una oportunidad de la cola.", false);
+  const content = $("#review-content").value.trim();
+  if (!content) return showMsg("review", "Pega el contenido de la revisión o sube un archivo.", false);
+  const file = $("#review-file").files[0];
+  const filename = file ? file.name : "revision.txt";
+  try {
+    const res = await api(`/api/reviews/opportunities/${reviewImportTarget}/import`, {
+      method: "POST",
+      body: JSON.stringify({
+        filename,
+        content,
+        provider: $("#review-provider").value.trim() || null,
+        model: $("#review-model").value.trim() || null,
+        execution_mode: $("#review-mode").value,
+        imported_by: "human (panel)",
+      }),
+    });
+    const warnings = res.warnings && res.warnings.length ? ` · avisos: ${res.warnings.join("; ")}` : "";
+    showMsg("review", `Revisión importada (estado ${res.status}).${warnings}`, true);
+    $("#review-content").value = "";
+    $("#review-file").value = "";
+    await loadReviews();
+  } catch (e) {
+    showMsg("review", `Error: ${e.message}`, false);
+  }
+});
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */

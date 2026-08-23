@@ -19,6 +19,7 @@ from app.services.engine import EngineService
 from app.services.economy import EconomyService
 from app.services.import_export import ExportService, ImportService
 from app.services.opportunities import OpportunityService
+from app.services.reviews import ReviewService
 from app.workflows.pipeline import PipelineService
 
 
@@ -36,6 +37,7 @@ class AppContainer:
     discovery: DiscoveryService
     exports: ExportService
     imports: ImportService
+    reviews: ReviewService
 
     def close(self) -> None:
         try:
@@ -60,6 +62,8 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     discovery = DiscoveryService(settings, repos, providers, opportunities)
     exports = ExportService(repos)
     imports = ImportService(settings, repos, pipeline)
+    reviews = ReviewService(settings, repos, engine=engine)
+    pipeline.reviews = reviews  # cola automática de finalistas en el Judge
     return AppContainer(
         settings=settings,
         conn=conn,
@@ -73,4 +77,5 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         discovery=discovery,
         exports=exports,
         imports=imports,
+        reviews=reviews,
     )

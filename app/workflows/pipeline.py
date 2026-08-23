@@ -60,6 +60,7 @@ class PipelineService:
         self.providers = providers
         self.budget = budget
         self.engine = engine  # EngineService opcional: alimenta el timeline en vivo
+        self.reviews = None  # ReviewService opcional: cola de finalistas (iteración 005)
         self.log = get_logger("pipeline")
 
     # ------------------------------------------------------------------
@@ -191,6 +192,11 @@ class PipelineService:
         }[evaluation.decision.value]
         self.repos.opportunities.set_status(opportunity_id, status)
         self._log_step(AgentName.judge, opportunity, ju_result, decision=evaluation.decision.value)
+
+        # Iteración 005: las finalistas aprobadas entran en la cola del comité
+        # de contraste (revisiones externas opcionales; nunca bloquea el flujo).
+        if self.reviews is not None and status == OpportunityStatus.approved:
+            self.reviews.auto_queue(opportunity_id)
 
         self.log.info(
             "Evaluación completada",

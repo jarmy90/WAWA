@@ -12,6 +12,7 @@ from app.core.errors import ValidationError
 from app.core.security import validate_extension, validate_payload_size, validate_uuid
 from app.models.discovery import CampaignCreate, MissionIn
 from app.models.enums import Decision, OpportunityStatus, OperatingMode
+from app.models.external_review import QueueOpportunityIn, ReviewImportIn
 from app.models.ledger import ExpenseRequestIn, IncomeIn, ReverseIn, SimulationStartIn
 from app.models.opportunity import OpportunityCreate, ProblemSeed
 from app.services.import_export import ResearchPackageIn
@@ -47,6 +48,10 @@ def valid_concept_id(concept_id: str) -> str:
 
 def valid_mission_id(mission_id: str) -> str:
     return validate_uuid(mission_id, field="mission_id")
+
+
+def valid_review_id(review_id: str) -> str:
+    return validate_uuid(review_id, field="review_id")
 
 
 class MissionCreateIn(BaseModel):
@@ -423,6 +428,121 @@ def discovery_learning(request: Request, kind: str | None = None) -> dict:
     container = get_container(request)
     items = container.discovery.list_learning_records(kind=kind)
     return {"items": items, "count": len(items)}
+
+
+# ---------------------------------------------------------------------------
+# Comité de contraste: Laboratorio de oportunidades (iteración 005)
+# ---------------------------------------------------------------------------
+# Las revisiones son OPINIÓN de modelos, nunca evidencia de demanda.
+REVIEW_NOTICE = {"model_opinion_not_evidence": True, "real_money_moved": False}
+
+
+@router.get("/reviews/queue")
+def reviews_queue(request: Request, status: str | None = None) -> dict:
+    container = get_container(request)
+    data = container.reviews.queue_status()
+    if status:
+        data["items"] = [i for i in data["items"] if i["status"] == status]
+        data["count"] = len(data["items"])
+    return {**REVIEW_NOTICE, **data}
+
+
+@router.post("/reviews/opportunities/{opportunity_id}/queue")
+def reviews_enqueue(request: Request, payload: QueueOpportunityIn, opportunity_id: str = Depends(valid_id)) -> dict:
+    container = get_container(request)
+    item = container.reviews.queue_opportunity(opportunity_id, note=payload.note)
+    return {**REVIEW_NOTICE, "queue_item": item}
+
+
+@router.post("/reviews/opportunities/{opportunity_id}/packet")
+def reviews_generate_packet(request: Request, opportunity_id: str = Depends(valid_id)) -> dict:
+    container = get_container(request)
+    packet = container.reviews.generate_review_packet(opportunity_id)
+    return {**REVIEW_NOTICE, **packet}
+
+
+@router.get("/reviews/opportunities/{opportunity_id}/packet")
+def reviews_download_packet(request: Request, opportunity_id: str = Depends(valid_id)) -> Response:
+    container = get_container(request)
+    packet = container.reviews.get_review_packet(opportunity_id)
+    return Response(
+        content=packet["content"],
+        media_type="text/markdown; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="review_packet_{opportunity_id}.md"',
+            "X-Review-Packet-Sha256": packet["sha256"],
+        },
+    )
+
+
+@router.post("/reviews/opportunities/{opportunity_id}/import")
+def reviews_import(request: Request, payload: ReviewImportIn, opportunity_id: str = Depends(valid_id)) -> dict:
+    container = get_container(request)
+    result = container.reviews.import_review(opportunity_id, payload)
+    return {**REVIEW_NOTICE, **result}
+
+
+@router.get("/reviews/opportunities/{opportunity_id}")
+def reviews_list_for_opportunity(request: Request, opportunity_id: str = Depends(valid_id)) -> dict:
+    container = get_container(request)
+    reviews = container.repos.reviews.reviews_for(opportunity_id)
+    synthesis = container.repos.reviews.get_synthesis(opportunity_id)
+    return {
+        **REVIEW_NOTICE,
+        "opportunity_id": opportunity_id,
+        "items": reviews,
+        "count": len(reviews),
+        "synthesis": synthesis,
+    }
+
+
+@router.get("/reviews/{review_id}")
+def reviews_get(request: Request, review_id: str = Depends(valid_review_id)) -> dict:
+    container = get_container(request)
+    review = container.repos.reviews.get_review(review_id)
+    if review is None:
+        from app.core.errors import NotFoundError
+
+        raise NotFoundError("Revisión no encontrada.")
+    return {**REVIEW_NOTICE, "review": review}
+
+
+@router.post("/reviews/{review_id}/invalidate")
+def reviews_invalidate(request: Request, review_id: str = Depends(valid_review_id), reason: str | None = None) -> dict:
+    container = get_container(request)
+    updated = container.reviews.invalidate_review(review_id, reason=reason)
+    return {**REVIEW_NOTICE, "review": updated}
+
+
+@router.post("/reviews/opportunities/{opportunity_id}/synthesize")
+def reviews_synthesize(request: Request, opportunity_id: str = Depends(valid_id)) -> dict:
+    container = get_container(request)
+    synthesis = container.reviews.synthesize(opportunity_id)
+    return {**REVIEW_NOTICE, "synthesis": synthesis}
+
+
+@router.post("/reviews/opportunities/{opportunity_id}/continue")
+def reviews_continue(request: Request, opportunity_id: str = Depends(valid_id), note: str | None = None) -> dict:
+    container = get_container(request)
+    item = container.reviews.continue_without_review(opportunity_id, note=note)
+    return {**REVIEW_NOTICE, "queue_item": item}
+
+
+@router.post("/reviews/opportunities/{opportunity_id}/note")
+def reviews_note(request: Request, payload: QueueOpportunityIn, opportunity_id: str = Depends(valid_id)) -> dict:
+    container = get_container(request)
+    if not payload.note:
+        raise ValidationError("La nota es obligatoria.")
+    item = container.reviews.add_note(opportunity_id, payload.note)
+    return {**REVIEW_NOTICE, "queue_item": item}
+
+
+@router.post("/reviews/demo")
+def reviews_demo(request: Request) -> dict:
+    """Demostración SINTÉTICA del comité de contraste (etiquetada como demo)."""
+    container = get_container(request)
+    result = container.reviews.run_review_demo(container.pipeline)
+    return {**REVIEW_NOTICE, **result}
 
 
 # ---------------------------------------------------------------------------

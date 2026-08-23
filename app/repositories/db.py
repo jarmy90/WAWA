@@ -311,6 +311,69 @@ CREATE TABLE IF NOT EXISTS mission_results (
     verification_notes TEXT,
     imported_at TEXT NOT NULL
 );
+
+-- Comité de contraste (iteración 005): revisiones externas de finalistas.
+CREATE TABLE IF NOT EXISTS review_queue (
+    opportunity_id TEXT PRIMARY KEY REFERENCES opportunities(id) ON DELETE CASCADE,
+    internal_score REAL NOT NULL DEFAULT 0,
+    queued_at TEXT NOT NULL,
+    window_deadline TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    review_required INTEGER NOT NULL DEFAULT 0,
+    reviewed_without_external INTEGER NOT NULL DEFAULT 0,
+    notes TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS external_reviews (
+    id TEXT PRIMARY KEY,
+    opportunity_id TEXT NOT NULL REFERENCES opportunities(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL DEFAULT 'unknown',
+    model TEXT NOT NULL DEFAULT 'unknown',
+    model_version TEXT,
+    execution_mode TEXT NOT NULL DEFAULT 'MANUAL_IMPORT',
+    review_date TEXT NOT NULL,
+    raw_response TEXT NOT NULL,
+    parsed_response TEXT NOT NULL DEFAULT '{}',
+    recommendation TEXT,
+    confidence REAL,
+    strongest_evidence TEXT,
+    weakest_assumption TEXT,
+    missing_evidence TEXT,
+    primary_risk TEXT,
+    suggested_improvement TEXT,
+    cheaper_experiment TEXT,
+    kill_condition TEXT,
+    cost REAL NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'valid',
+    parse_errors TEXT NOT NULL DEFAULT '[]',
+    imported_by TEXT NOT NULL DEFAULT 'system',
+    file_hash TEXT,
+    created_at TEXT NOT NULL,
+    UNIQUE (opportunity_id, file_hash)
+);
+CREATE INDEX IF NOT EXISTS idx_reviews_opp ON external_reviews(opportunity_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_status ON external_reviews(status);
+
+CREATE TABLE IF NOT EXISTS review_syntheses (
+    opportunity_id TEXT PRIMARY KEY REFERENCES opportunities(id) ON DELETE CASCADE,
+    reviews_count INTEGER NOT NULL DEFAULT 0,
+    valid_reviews_count INTEGER NOT NULL DEFAULT 0,
+    consensus_level TEXT NOT NULL DEFAULT 'NONE',
+    recommendation_distribution TEXT NOT NULL DEFAULT '{}',
+    average_confidence REAL,
+    agreements TEXT NOT NULL DEFAULT '[]',
+    disagreements TEXT NOT NULL DEFAULT '[]',
+    unique_risks TEXT NOT NULL DEFAULT '[]',
+    repeated_risks TEXT NOT NULL DEFAULT '[]',
+    missing_evidence TEXT NOT NULL DEFAULT '[]',
+    recommended_next_action TEXT,
+    internal_score_before REAL,
+    internal_score_after REAL,
+    score_change_reason TEXT,
+    generated_at TEXT NOT NULL
+);
 """
 
 

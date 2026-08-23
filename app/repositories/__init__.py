@@ -21,6 +21,7 @@ from app.repositories.evidence import EvidenceRepository
 from app.repositories.experiments import ExperimentRepository
 from app.repositories.ledger import LedgerRepository
 from app.repositories.opportunities import OpportunityRepository
+from app.repositories.reviews import ReviewRepository
 
 
 @dataclass
@@ -37,6 +38,7 @@ class Repos:
     engine: EngineRepository
     ledger: LedgerRepository
     discovery: DiscoveryRepository
+    reviews: ReviewRepository
 
 
 def build_repos(conn) -> Repos:
@@ -51,6 +53,7 @@ def build_repos(conn) -> Repos:
         engine=EngineRepository(conn),
         ledger=LedgerRepository(conn),
         discovery=DiscoveryRepository(conn),
+        reviews=ReviewRepository(conn),
     )
 
 
@@ -69,4 +72,5 @@ __all__ = [
     "EngineRepository",
     "LedgerRepository",
     "DiscoveryRepository",
+    "ReviewRepository",
 ]

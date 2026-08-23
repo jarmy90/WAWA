@@ -91,6 +91,7 @@
           <div class="view-tabs">
             <button id="tab-opps" class="tab-btn active">Oportunidades <span id="count-badge" class="badge">0</span></button>
             <button id="tab-discovery" class="tab-btn">Descubrimiento <span id="disc-badge" class="badge">0</span></button>
+            <button id="tab-reviews" class="tab-btn">Laboratorio <span id="rev-badge" class="badge">0</span></button>
           </div>
         </div>
         <div id="view-opportunities">
@@ -107,6 +108,17 @@
           <div id="discovery" class="stack"></div>
           <div id="discovery-empty" class="empty hidden">
             <p>Sin campañas. Lanza una campaña abierta (Ruta B): el sistema genera territorios, lentes y arquetipos, filtra wrappers de IA y selecciona finalistas sin que tengas que proponer un negocio.</p>
+          </div>
+        </div>
+        <div id="view-reviews" class="hidden">
+          <div class="list-header sub">
+            <h2>Laboratorio de oportunidades <span class="tag tag-unverified">opinión de modelos ≠ evidencia</span></h2>
+            <button id="btn-reviews-demo" class="btn btn-ghost btn-sm" title="Crea una finalista SINTÉTICA y demuestra el comité de contraste">Demo del comité</button>
+          </div>
+          <div id="reviews-config" class="reviews-config"></div>
+          <div id="reviews-queue" class="stack"></div>
+          <div id="reviews-empty" class="empty hidden">
+            <p>Sin finalistas en revisión. Las oportunidades aprobadas con puntuación ≥ umbral entran aquí automáticamente; también puedes generarlas con la demo o promover conceptos desde Descubrimiento.</p>
           </div>
         </div>
       </section>
@@ -155,6 +167,35 @@
           </div>
           <button id="btn-campaign-create" class="btn btn-primary">Crear campaña</button>
           <div id="modal-campaign-msg" class="msg hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: importar revisión externa -->
+    <div id="modal-review" class="modal hidden">
+      <div class="modal-box">
+        <div class="modal-head"><h3>Importar revisión externa (TXT / Markdown)</h3><button class="modal-close" data-close="modal-review">×</button></div>
+        <div class="modal-body">
+          <p class="hint">Pega la respuesta de un modelo (GPT, Grok, Gemini...) o sube el archivo. El texto se guarda como <strong>dato</strong>: nunca se ejecuta y nunca modifica presupuesto, modos ni producción. El contenido se procesa con un parser con allowlist.</p>
+          <label class="field"><span>Archivo o pegar respuesta</span>
+            <input id="review-file" type="file" accept=".txt,.md,.markdown" />
+            <textarea id="review-content" rows="10" placeholder="recommendation: SMALL_EXPERIMENT&#10;confidence: 65&#10;primary_risk: ..."></textarea>
+          </label>
+          <div class="field-row">
+            <label class="field"><span>Proveedor</span><input id="review-provider" placeholder="gpt / grok / gemini / claude" /></label>
+            <label class="field"><span>Modelo</span><input id="review-model" placeholder="p. ej. gpt-4o" /></label>
+            <label class="field"><span>Modo de ejecución</span>
+              <select id="review-mode">
+                <option value="MANUAL_IMPORT">MANUAL_IMPORT</option>
+                <option value="API_AUTOMATIC">API_AUTOMATIC</option>
+                <option value="MOCK">MOCK</option>
+                <option value="HUMAN">HUMAN</option>
+                <option value="INTERNAL">INTERNAL</option>
+              </select>
+            </label>
+          </div>
+          <button id="btn-review-import" class="btn btn-primary">Importar revisión</button>
+          <div id="modal-review-msg" class="msg hidden"></div>
         </div>
       </div>
     </div>

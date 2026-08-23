@@ -26,6 +26,7 @@ EXCLUDED_DIRS = {
     "dist",
     "build",
     "packages",  # paquetes de iteraciones anteriores (dentro de deliverables/)
+    "external_reviews",  # expedientes generados en runtime (datos, no código)
     ".idea",
     ".vscode",
 }
