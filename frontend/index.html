@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Autonomous Business Lab — Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">ABL</span>
+        <div>
+          <h1>Autonomous Business Lab</h1>
+          <p class="brand-sub">Motor de investigación y selección de oportunidades</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="egg-wrap" id="egg-wrap" title="Estado del motor">
+          <div class="egg" id="egg"><span class="egg-core"></span><span class="egg-orbit o1"></span><span class="egg-orbit o2"></span><span class="egg-glow"></span></div>
+          <span class="egg-label" id="egg-label">motor</span>
+        </div>
+        <button id="btn-demo" class="btn btn-ghost" title="Cargar oportunidades de demostración (MQL5)">Cargar demo</button>
+        <div id="budget-chip" class="chip chip-neutral" title="Estado del BudgetGuard">—</div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar">
+        <div class="filters card">
+          <h3>Filtros</h3>
+          <label class="field">
+            <span>Estado</span>
+            <select id="filter-status">
+              <option value="">Todos</option>
+              <option value="draft">Borrador</option>
+              <option value="researching">En investigación</option>
+              <option value="evaluated">Evaluada</option>
+              <option value="approved">Aprobada</option>
+              <option value="needs_more_research">Necesita investigación</option>
+              <option value="deferred">Aplazada</option>
+              <option value="rejected">Rechazada</option>
+              <option value="blocked">Bloqueada</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Puntuación mínima</span>
+            <input id="filter-min-score" type="number" min="0" max="100" placeholder="0" />
+          </label>
+          <button id="btn-new" class="btn btn-primary btn-block">Nueva oportunidad</button>
+          <button id="btn-import" class="btn btn-secondary btn-block">Importar investigación (JSON)</button>
+        </div>
+        <div class="card legend">
+          <h3>Leyenda</h3>
+          <div class="legend-row"><span class="dot dot-evidence"></span> Basado en evidencia</div>
+          <div class="legend-row"><span class="dot dot-estimate"></span> Estimación</div>
+          <div class="legend-row"><span class="dot dot-unknown"></span> Desconocido</div>
+        </div>
+        <div class="card" id="engine-card">
+          <h3>Motor <span id="engine-mode-chip" class="chip chip-neutral">—</span></h3>
+          <div id="engine-info">—</div>
+          <div class="engine-actions">
+            <button id="btn-safe-pause" class="btn btn-ghost btn-sm">Pausa segura</button>
+            <button id="btn-resume-dev" class="btn btn-ghost btn-sm">Reanudar (dev)</button>
+          </div>
+        </div>
+        <div class="card" id="economy-card">
+          <h3>Economía <span class="tag tag-unverified">SIMULADA</span></h3>
+          <div id="economy-warning" class="eco-banner hidden">SIMULACIÓN — NO REPRESENTA DINERO REAL</div>
+          <div id="economy-info">—</div>
+          <div class="engine-actions">
+            <button id="btn-sim-start" class="btn btn-secondary btn-sm">Iniciar simulación</button>
+            <button id="btn-sim-income" class="btn btn-ghost btn-sm">Ingreso simulado</button>
+            <button id="btn-sim-expense" class="btn btn-ghost btn-sm">Gasto simulado</button>
+            <button id="btn-reconcile" class="btn btn-ghost btn-sm">Reconciliar</button>
+          </div>
+          <div id="economy-ledger" class="feed" style="margin-top:10px"></div>
+        </div>
+        <div class="card">
+          <h3>Actividad en vivo</h3>
+          <div id="engine-feed" class="feed">—</div>
+        </div>
+        <div class="card" id="providers-card">
+          <h3>Proveedor de IA</h3>
+          <div id="providers-info">—</div>
+        </div>
+      </aside>
+
+      <section class="content">
+        <div id="list-header" class="list-header">
+          <h2>Oportunidades <span id="count-badge" class="badge">0</span></h2>
+        </div>
+        <div id="opportunities" class="grid"></div>
+        <div id="empty-state" class="empty hidden">
+          <p>No hay oportunidades todavía. Crea una nueva, importa investigación o carga la demo.</p>
+        </div>
+      </section>
+
+      <section id="detail" class="detail hidden">
+        <div id="detail-content"></div>
+      </section>
+    </main>
+
+    <!-- Modal: nueva oportunidad -->
+    <div id="modal-new" class="modal hidden">
+      <div class="modal-box">
+        <div class="modal-head"><h3>Nueva oportunidad</h3><button class="modal-close" data-close="modal-new">×</button></div>
+        <div class="modal-body">
+          <p class="hint">Describe un <strong>problema</strong> y el Scout propondrá oportunidades. También puedes crear una oportunidad directamente con título y solución.</p>
+          <label class="field"><span>Problema (para Scout)</span>
+            <textarea id="new-problem" rows="4" placeholder="Ej.: los traders MQL5 no tienen forma de auditar sus EAs..."></textarea>
+          </label>
+          <button id="btn-discover" class="btn btn-primary">Descubrir con Scout</button>
+          <div class="divider"><span>o</span></div>
+          <label class="field"><span>Título</span><input id="new-title" placeholder="Título de la oportunidad" /></label>
+          <label class="field"><span>Descripción del problema</span><textarea id="new-desc" rows="3"></textarea></label>
+          <label class="field"><span>Solución propuesta</span><textarea id="new-solution" rows="2"></textarea></label>
+          <label class="field"><span>Cliente objetivo</span><input id="new-customer" placeholder="(opcional)" /></label>
+          <label class="field"><span>Sector</span><input id="new-sector" placeholder="(opcional)" /></label>
+          <button id="btn-create" class="btn btn-secondary">Crear oportunidad</button>
+          <div id="modal-new-msg" class="msg hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: importar investigación -->
+    <div id="modal-import" class="modal hidden">
+      <div class="modal-box">
+        <div class="modal-head"><h3>Importar investigación (JSON)</h3><button class="modal-close" data-close="modal-import">×</button></div>
+        <div class="modal-body">
+          <p class="hint">Pega un paquete de investigación. Puede adjuntar evidencias a una <code>opportunity_id</code> existente o crear una nueva con el objeto <code>opportunity</code>.</p>
+          <label class="field"><span>JSON</span><textarea id="import-json" rows="10" spellcheck="false"></textarea></label>
+          <button id="btn-import-go" class="btn btn-primary">Importar</button>
+          <div id="modal-import-msg" class="msg hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

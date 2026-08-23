@@ -1,0 +1,188 @@
+{
+  "_readme": "Datos de DEMOSTRACIÓN. Toda la evidencia está marcada verified=false y method=demo: es material ilustrativo para probar el pipeline, NO evidencia real de mercado. Antes de tomar decisiones reales, importa investigación verificada (data/manual_research/responses/).",
+  "opportunities": [
+    {
+      "opportunity": {
+        "title": "Auditoría automática de Expert Advisors MQL5",
+        "problem": "Los traders y desarrolladores MQL5 no tienen una forma rápida, sistemática y barata de auditar sus Expert Advisors (lógica, gestión de posiciones, reentradas, archivos SET) antes de ejecutarlos con dinero real. Las auditorías manuales son caras, lentas y poco reproducibles.",
+        "proposed_solution": "Servicio de auditoría automática de EAs que revisa código y configuración, detecta errores de reentrada, duplicidad y gestión de posiciones, y entrega un informe estructurado con trazabilidad de cada hallazgo. Análisis de software, sin asesoramiento financiero.",
+        "target_customer": "Desarrolladores de EAs MQL5 y traders que compran o heredan EAs y quieren validarlos antes de usarlos.",
+        "sector": "servicios técnicos para trading algorítmico / MQL5"
+      },
+      "evidences": [
+        {
+          "evidence_type": "demand_signal",
+          "source_name": "Foro MQL5.com (hilos sobre auditoría y revisión de EAs)",
+          "source_url": "https://www.mql5.com/en/forum",
+          "summary": "Ejemplo: en la comunidad MQL5 existen hilos recurrentes pidiendo revisión de EAs, opiniones sobre lógica de gestión de posiciones y errores de reentrada. Indicativo de dolor, sin cuantificar.",
+          "reliability_score": 0.7,
+          "independence_group": "forum",
+          "verified": false,
+          "verification_notes": "MUESTRA DE DEMO: verificar hilos concretos y fechas antes de usar como evidencia real.",
+          "method": "demo"
+        },
+        {
+          "evidence_type": "competitor",
+          "source_name": "MQL5 Freelance / Mercado MQL5",
+          "source_url": "https://www.mql5.com/en/freelance",
+          "summary": "Ejemplo: existen freelancers que ofrecen auditoría/revisión de EAs por encargo (servicio manual). Hay mercado de servicios técnicos alrededor de MQL5.",
+          "reliability_score": 0.7,
+          "independence_group": "marketplace",
+          "verified": false,
+          "verification_notes": "MUESTRA DE DEMO: verificar ofertas y precios reales.",
+          "method": "demo"
+        },
+        {
+          "evidence_type": "customer_profile",
+          "source_name": "Comunidad de desarrolladores MQL5 (foros y documentación)",
+          "source_url": "https://www.mql5.com/en/docs",
+          "summary": "Ejemplo: el perfil típico son desarrolladores individuales y traders técnicos que usan MetaTrader; canal de llegada plausible: foros MQL5, comunidades de trading y el propio Mercado MQL5.",
+          "reliability_score": 0.55,
+          "independence_group": "community",
+          "verified": false,
+          "verification_notes": "MUESTRA DE DEMO: perfil sin verificar.",
+          "method": "demo"
+        },
+        {
+          "evidence_type": "price",
+          "source_name": "Tarifas observadas de freelancers (ejemplo)",
+          "source_url": "https://www.mql5.com/en/freelance",
+          "summary": "Ejemplo: encargos de revisión/auditoría de EAs rondan decenas de dólares por tarea; un informe automático podría posicionarse por debajo.",
+          "reliability_score": 0.6,
+          "independence_group": "marketplace",
+          "verified": false,
+          "verification_notes": "MUESTRA DE DEMO: precios sin verificar.",
+          "method": "demo"
+        }
+      ],
+      "competitors": [
+        {
+          "name": "Auditores freelance de MQL5",
+          "url": "https://www.mql5.com/en/freelance",
+          "offer": "Revisión manual de EAs por encargo",
+          "observed_price": 150.0,
+          "strengths": "Conocimiento humano profundo, entregas a medida",
+          "weaknesses": "Manual, lento, caro, poco reproducible, sin trazabilidad sistemática"
+        },
+        {
+          "name": "Servicios de 'code review' genéricos",
+          "url": "https://www.mql5.com/en/code",
+          "offer": "Revisión de código MQL5 genérica",
+          "observed_price": 80.0,
+          "strengths": "Baratos",
+          "weaknesses": "No orientados a trading: no detectan errores de reentrada, duplicidad ni gestión de posiciones"
+        }
+      ]
+    },
+    {
+      "opportunity": {
+        "title": "Diagnóstico de discrepancias entre un EA y su backtest",
+        "problem": "Es habitual que un EA se comporte distinto en backtest que en demo o real; los traders no identifican si el problema es de datos, de lógica, de broker o de ejecución, y pierden tiempo y dinero sin un diagnóstico claro.",
+        "proposed_solution": "Herramienta de diagnóstico que compara operaciones esperadas vs ejecutadas a partir de los logs de MetaTrader y genera un informe de causas probables con evidencias trazables. Sin promesas de rentabilidad.",
+        "target_customer": "Traders algorítmicos que ejecutan EAs en MetaTrader y necesitan explicar diferencias entre backtest y real.",
+        "sector": "servicios técnicos para trading algorítmico / MQL5"
+      },
+      "evidences": [
+        {
+          "evidence_type": "demand_signal",
+          "source_name": "Preguntas recurrentes en foros MQL5 y Reddit r/algotrading",
+          "source_url": "https://www.mql5.com/en/forum",
+          "summary": "Ejemplo: preguntas recurrentes sobre diferencias backtest vs live, slippage, ticks faltantes y parámetros de broker. Dolor conocido, sin cuantificar.",
+          "reliability_score": 0.65,
+          "independence_group": "forum",
+          "verified": false,
+          "verification_notes": "MUESTRA DE DEMO: verificar hilos concretos.",
+          "method": "demo"
+        },
+        {
+          "evidence_type": "technical",
+          "source_name": "Documentación de MetaTrader (logs y trades)",
+          "source_url": "https://www.mql5.com/en/docs",
+          "summary": "Ejemplo: MetaTrader guarda logs y registros de operaciones que permiten comparar esperado vs ejecutado; la materia prima del diagnóstico existe y es accesible.",
+          "reliability_score": 0.7,
+          "independence_group": "docs",
+          "verified": false,
+          "verification_notes": "MUESTRA DE DEMO: verificar formatos reales de logs.",
+          "method": "demo"
+        },
+        {
+          "evidence_type": "customer_profile",
+          "source_name": "Comunidades de trading algorítmico",
+          "source_url": "https://www.mql5.com/en/forum",
+          "summary": "Ejemplo: canal de llegada plausible: foros de MQL5, grupos de traders algorítmicos y el propio Mercado MQL5.",
+          "reliability_score": 0.55,
+          "independence_group": "community",
+          "verified": false,
+          "verification_notes": "MUESTRA DE DEMO: perfil sin verificar.",
+          "method": "demo"
+        }
+      ],
+      "competitors": [
+        {
+          "name": "Análisis manual en foros (ayuda gratuita)",
+          "url": "https://www.mql5.com/en/forum",
+          "offer": "Ayuda comunitaria gratuita, lenta y no sistemática",
+          "observed_price": 0.0,
+          "strengths": "Gratis",
+          "weaknesses": "Lento, contradictorio, sin trazabilidad"
+        }
+      ]
+    },
+    {
+      "opportunity": {
+        "title": "Revisión de archivos SET y detección de errores de gestión de posiciones",
+        "problem": "Los archivos SET de MQL5 se configuran a mano, contienen parámetros inconsistentes y no hay forma automática de comprobar reentradas, duplicidad de órdenes ni límites de riesgo antes de ejecutar.",
+        "proposed_solution": "Validador de archivos SET y de lógica de gestión de posiciones que marca parámetros fuera de rango, conflictos y riesgos, con documentación técnica generada automáticamente.",
+        "target_customer": "Usuarios de EAs MQL5 (compradores del Mercado MQL5) y desarrolladores que entregan configuraciones.",
+        "sector": "servicios técnicos para trading algorítmico / MQL5"
+      },
+      "evidences": [
+        {
+          "evidence_type": "demand_signal",
+          "source_name": "Foros MQL5 (archivos SET y parámetros)",
+          "source_url": "https://www.mql5.com/en/forum",
+          "summary": "Ejemplo: dudas frecuentes sobre qué hace cada parámetro de un SET y por qué el EA no respeta la configuración.",
+          "reliability_score": 0.55,
+          "independence_group": "forum",
+          "verified": false,
+          "verification_notes": "MUESTRA DE DEMO: verificar hilos concretos.",
+          "method": "demo"
+        },
+        {
+          "evidence_type": "technical",
+          "source_name": "Formato de archivos .set de MetaTrader",
+          "source_url": "https://www.mql5.com/en/docs",
+          "summary": "Ejemplo: el formato .set es texto plano documentado; automatizable sin depender de APIs propietarias.",
+          "reliability_score": 0.7,
+          "independence_group": "docs",
+          "verified": false,
+          "verification_notes": "MUESTRA DE DEMO: verificar formato.",
+          "method": "demo"
+        },
+        {
+          "evidence_type": "customer_profile",
+          "source_name": "Compradores del Mercado MQL5",
+          "source_url": "https://www.mql5.com/en/market",
+          "summary": "Ejemplo: canal plausible: el Mercado MQL5 y foros de configuración de EAs, donde los usuarios piden ayuda con SETs.",
+          "reliability_score": 0.5,
+          "independence_group": "community",
+          "verified": false,
+          "verification_notes": "MUESTRA DE DEMO: perfil sin verificar.",
+          "method": "demo"
+        }
+      ],
+      "competitors": []
+    },
+    {
+      "opportunity": {
+        "title": "Bot de trading autónomo con rentabilidad garantizada",
+        "problem": "Muchos traders buscan un bot que genere ingresos garantizados sin intervención.",
+        "proposed_solution": "Bot que promete rentabilidad garantizada operando en MetaTrader automáticamente.",
+        "target_customer": "Inversores sin experiencia que buscan ingresos pasivos.",
+        "sector": "trading algorítmico"
+      },
+      "evidences": [],
+      "competitors": []
+    }
+  ]
+}

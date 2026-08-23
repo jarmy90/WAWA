@@ -1,0 +1,28 @@
+[project]
+name = "autonomous-business-lab"
+version = "0.1.0"
+description = "Motor autónomo de descubrimiento, investigación y selección de oportunidades de microproductos digitales. MVP local, sin APIs obligatorias."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+]
+
+[project.optional-dependencies]
+gemini = ["google-generativeai>=0.7.0"]
+dev = ["pytest>=8.0", "httpx>=0.27"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

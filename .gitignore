@@ -1,0 +1,30 @@
+# Secrets — never commit real keys
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# Test caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Runtime data (SQLite DBs, logs, manual research files)
+data/*.db
+data/*.db-*
+data/logs/
+data/manual_research/requests/
+data/manual_research/responses/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
