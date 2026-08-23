@@ -330,7 +330,32 @@ code { background: var(--slate-soft); padding: 1px 5px; border-radius: 4px; font
 /* ------------------------------------------------------------------ */
 /* Descubrimiento (iteración 004)                                       */
 /* ------------------------------------------------------------------ */
-.view-tabs { display: flex; gap: 6px; }
+.view-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* Franja de estado siempre visible (iteración 011) */
+.status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.25));
+  border-radius: var(--radius, 10px);
+  background: var(--surface, #0f172a);
+  font-size: 13px;
+}
+.status-item { color: var(--text, #e2e8f0); }
+.status-actions { margin-left: auto; display: flex; gap: 6px; }
+.version-warning {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius, 10px);
+  background: rgba(185, 28, 28, 0.15);
+  border: 1px solid #b91c1c;
+  color: #fecaca;
+  font-size: 13px;
+}
 .tab-btn {
   background: transparent;
   border: 1px solid transparent;

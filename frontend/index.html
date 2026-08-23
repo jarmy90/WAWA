@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-wawa-version="0.11.0">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Autonomous Business Lab — Dashboard</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/styles.css?v=011" />
   </head>
   <body>
     <header class="topbar">
@@ -20,7 +20,7 @@
           <div class="egg" id="egg"><span class="egg-core"></span><span class="egg-orbit o1"></span><span class="egg-orbit o2"></span><span class="egg-glow"></span></div>
           <span class="egg-label" id="egg-label">motor</span>
         </div>
-        <button id="btn-demo" class="btn btn-ghost" title="Cargar oportunidades de demostración (MQL5)">Cargar demo</button>
+        <span id="wawa-version" class="chip chip-neutral" title="Versión de esta interfaz. Si aparece un banner rojo de versión, recarga con Ctrl+F5.">v0.11</span>
         <div id="budget-chip" class="chip chip-neutral" title="Estado del BudgetGuard">—</div>
       </div>
     </header>
@@ -87,6 +87,18 @@
       </aside>
 
       <section class="content">
+        <div id="version-warning" class="version-warning hidden">
+          ⚠ Frontend desactualizado (HTML v0.11 pero servidor v0.0.0). Recarga con <strong>Ctrl+F5</strong> o reinicia WAWA con <code>sh start_wawa.sh</code>.
+        </div>
+        <div id="status-strip" class="status-strip">
+          <span class="status-item" id="st-cycle">Ciclo: —</span>
+          <span class="status-item" id="st-campaign">Campaña: —</span>
+          <span class="status-item" id="st-action">Próxima acción: —</span>
+          <span class="status-actions">
+            <button id="btn-st-campaign" class="btn btn-ghost btn-sm">Ir a Campaña real</button>
+            <button id="btn-st-csv" class="btn btn-ghost btn-sm">Descargar CSV</button>
+          </span>
+        </div>
         <div id="list-header" class="list-header">
           <div class="view-tabs">
             <button id="tab-opps" class="tab-btn active">Oportunidades <span id="count-badge" class="badge">0</span></button>
@@ -186,7 +198,7 @@
         <div class="modal-body">
           <p class="hint">Describe un <strong>problema</strong> y el Scout propondrá oportunidades. También puedes crear una oportunidad directamente con título y solución.</p>
           <label class="field"><span>Problema (para Scout)</span>
-            <textarea id="new-problem" rows="4" placeholder="Ej.: los traders MQL5 no tienen forma de auditar sus EAs..."></textarea>
+            <textarea id="new-problem" rows="4" placeholder="Ej.: los estudios de fotografía pierden horas reconciliando entregas con el cliente..."></textarea>
           </label>
           <button id="btn-discover" class="btn btn-primary">Descubrir con Scout</button>
           <div class="divider"><span>o</span></div>
@@ -269,6 +281,6 @@
       </div>
     </div>
 
-    <script src="/app.js"></script>
+    <script src="/app.js?v=011"></script>
   </body>
 </html>

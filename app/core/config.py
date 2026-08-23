@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     # --- Identidad -----------------------------------------------------
     app_name: str = "Autonomous Business Lab"
-    version: str = "0.1.0"
+    version: str = "0.11.0"
     log_level: str = "INFO"
 
     # --- Rutas ---------------------------------------------------------

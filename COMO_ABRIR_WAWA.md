@@ -10,7 +10,19 @@ propio ordenador en `http://127.0.0.1:8000`. Sigue estos pasos.
 1. Descarga el archivo `.zip.txt` más reciente de la carpeta
    `deliverables/packages/` del repositorio (o el que te haya pasado el
    supervisor).
-2. Guarda el archivo donde quieras, por ejemplo en `Documentos/WAWA`.
+2. **Importante**: el repositorio es **privado**, así que los enlaces RAW de
+   GitHub no funcionan. Descarga desde la interfaz web de GitHub (con tu
+   cuenta), desde el workspace de Freebuff, o por el canal que te indique el
+   supervisor.
+3. Guarda el archivo donde quieras, por ejemplo en `Documentos/WAWA`.
+
+> **¿Cómo saber que estás viendo la versión correcta?**
+> El topbar de la web muestra un chip con la versión (p. ej. `v0.11`).
+> Si aparece un **banner rojo** "Frontend desactualizado", pulsa
+> **Ctrl+F5** (recarga forzada) o reinicia WAWA. La interfaz de la
+> iteración 011 incluye las pestañas **Campaña real** e **Ideas**, el botón
+> **INICIAR CAMPAÑA REAL** y la franja de estado con **PRE_CYCLE** en la
+> parte superior.
 
 ## 2. Extraerlo
 

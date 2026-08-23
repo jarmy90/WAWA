@@ -11,6 +11,22 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
+from starlette.types import Scope
+
+
+class NoCacheStaticFiles(StaticFiles):
+    """Sirve el frontend SIN cabeceras de caché (iteración 011).
+
+    Elimina la caché heurística del navegador/proxy: el propietario veía la
+    interfaz de la iteración 009 porque el navegador reutilizaba el HTML y el
+    app.js antiguos (mismas URLs sin versión y sin Cache-Control).
+    """
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-store"
+        return response
 
 from app.api.routes import router as api_router
 from app.core.config import get_settings
@@ -64,8 +80,10 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
         )
 
     # Frontend estático: se monta al final para no sombrear /api/*.
+    # NoCacheStaticFiles: sin cabeceras de caché para que el navegador nunca
+    # sirva un frontend antiguo de iteraciones previas (iteración 011).
     if settings.frontend_dir.exists():
-        app.mount("/", StaticFiles(directory=str(settings.frontend_dir), html=True), name="frontend")
+        app.mount("/", NoCacheStaticFiles(directory=str(settings.frontend_dir), html=True), name="frontend")
 
     return app
 

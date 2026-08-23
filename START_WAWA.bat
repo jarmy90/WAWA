@@ -32,7 +32,7 @@ echo [3/5] Preparando datos locales...
 if not exist data mkdir data
 if not exist logs mkdir logs
 if not exist "data\abl.db" (
-  python -c "from app.repositories.db import init_db; from app.core.config import Settings; s=Settings(); init_db(s.database_path); print('SQLite inicializado')"
+  python -c "from app.repositories.db import init_db; from app.core.config import Settings; s=Settings(); init_db(s); print('SQLite inicializado')"
 )
 
 REM 4) Arrancar la API (solo local)

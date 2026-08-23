@@ -34,7 +34,7 @@ if [ ! -f "data/abl.db" ]; then
 from app.repositories.db import init_db
 from app.core.config import Settings
 s = Settings()
-init_db(s.database_path)
+init_db(s)  # init_db espera un objeto Settings (iteración 011: corregido)
 print("SQLite inicializado en", s.database_path)
 PY
 fi

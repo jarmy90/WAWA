@@ -49,6 +49,19 @@ async function api(path, options = {}) {
 async function loadHealth() {
   try {
     const health = await api("/api/health");
+    // Versión visible + detección de frontend obsoleto (iteración 011):
+    // si el HTML servido no coincide con la versión del servidor, el
+    // navegador está sirviendo una copia antigua → aviso con Ctrl+F5.
+    const htmlVersion = document.documentElement.dataset.wawaVersion || "";
+    const vChip = $("#wawa-version");
+    if (vChip) vChip.textContent = `v${health.version}`;
+    if (htmlVersion && health.version && htmlVersion !== health.version) {
+      const warn = $("#version-warning");
+      if (warn) {
+        warn.classList.remove("hidden");
+        warn.textContent = `⚠ Frontend desactualizado (HTML v${htmlVersion} pero servidor v${health.version}). Recarga con Ctrl+F5 o reinicia WAWA.`;
+      }
+    }
     const b = health.budget;
     const parts = [];
     if (b.free_mode) parts.push("modo gratuito");
@@ -659,16 +672,39 @@ $("#btn-resume-dev").addEventListener("click", async () => {
   }
 });
 
-$("#btn-demo").addEventListener("click", async () => {
-  if (!confirm("¿Cargar las oportunidades de demostración (MQL5)? Se crearán nuevas oportunidades de ejemplo.")) return;
+/* Franja de estado (iteración 011): PRE_CYCLE + campaña real siempre visibles. */
+async function loadStatus() {
   try {
-    const res = await api("/api/demo/load?evaluate=true", { method: "POST" });
-    alert(`Demo cargada: ${res.created} creadas, ${res.evaluated} evaluadas.`);
-    await loadList();
-    await loadHealth();
-  } catch (e) {
-    alert(`Error: ${e.message}`);
+    const cycle = await api("/api/economy/cycle");
+    const st = $("#st-cycle");
+    if (st) {
+      st.textContent = cycle.clock_running
+        ? `Ciclo: ACTIVO · ${cycle.days_remaining} días restantes · ${cycle.status}`
+        : `Ciclo: ${cycle.status} · 30 días · sin reloj (activación deliberada)`;
+    }
+  } catch (_) {
+    /* sin ciclo todavía */
   }
+  try {
+    const data = await api("/api/orchestrator/current");
+    const run = data.run;
+    const st = $("#st-campaign");
+    const act = $("#st-action");
+    if (run) {
+      if (st) st.textContent = `Campaña: ${run.state} · ${run.title || ""}`;
+      if (act) act.textContent = `Próxima acción: ${data.next_action || "—"}`;
+    } else if (st) {
+      st.textContent = "Campaña: sin iniciar — pulsa INICIAR CAMPAÑA REAL";
+      if (act) act.textContent = "Próxima acción: iniciar la PRIMERA CAMPAÑA REAL 001";
+    }
+  } catch (_) {
+    /* sin ejecución */
+  }
+}
+
+$("#btn-st-campaign")?.addEventListener("click", () => switchView("orchestrator"));
+$("#btn-st-csv")?.addEventListener("click", () => {
+  if (currentRun) location.href = exportHref(currentRun.id, "csv");
 });
 
 $("#filter-status").addEventListener("change", loadList);
@@ -1619,14 +1655,16 @@ function renderFreebuffCampaign(detail) {
     await loadEngine();
     await loadEconomy();
     await loadList();
+    await loadStatus();
   } catch (e) {
     $("#empty-state").textContent = `Error cargando datos: ${e.message}`;
     $("#empty-state").classList.remove("hidden");
   }
 })();
 
-// Refresco periódico del motor y la economía (timeline en vivo, ligero).
+// Refresco periódico del motor, la economía y la franja de estado.
 setInterval(() => {
   loadEngine();
   loadEconomy();
+  loadStatus();
 }, 15000);
