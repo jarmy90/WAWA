@@ -171,6 +171,15 @@ explícita del propietario). Reglas permanentes:
    límites diario/mensual, circuit breaker, reintentos acotados. Si falla o
    no hay clave, NO se fabrica una revisión (el mock nunca suplanta a un
    modelo real): la ausencia es neutral.
+10. **OmniRoute aislado y sin inventar slugs (iteración 008)**: OmniRoute es
+    un proveedor opcional desactivado por defecto (`OMNIROUTE_ENABLED=false`),
+    gateway local compatible OpenAI, nunca en la resolución automática del
+    manager ni sustituyendo el modelo fijo del comité OpenRouter. Sin
+    fabricación: fallo ⇒ ausencia neutral. Toda conexión upstream exige
+    allowlist (UNKNOWN ⇒ bloqueado en producción). No fijar un modelo
+    "Alpha 0" sin identificarlo en el catálogo real; `auto` es el
+    predeterminado provisional. El gateway corre como servicio separado
+    (perfil Docker opcional, solo 127.0.0.1), nunca dentro de WAWA.
 
 ## Qué NO hacer
 

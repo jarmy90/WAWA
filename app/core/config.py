@@ -78,6 +78,26 @@ class Settings(BaseSettings):
     openrouter_circuit_breaker_failures: int = 5
     openrouter_circuit_breaker_cooldown_seconds: int = 300
 
+    # --- OmniRoute (OPCIONAL, AISLADO, desactivado por defecto; iteración 008) -
+    # Gateway local OpenAI-compatible, servicio separado. NO sustituye a
+    # OpenRouter; nunca se usa para Discovery general hasta pasar un A/B.
+    omniroute_enabled: bool = False
+    omniroute_base_url: str = "http://127.0.0.1:20128/v1"
+    omniroute_api_key: str | None = None  # clave del gateway local (gestor de secretos)
+    omniroute_cli_token: str | None = None  # header x-omniroute-cli-token (authz local)
+    omniroute_review_model: str = "auto"
+    omniroute_discovery_model: str = "auto"
+    omniroute_fallback_model: str = "auto"
+    omniroute_timeout_seconds: float = 60.0
+    omniroute_max_retries: int = 1
+    omniroute_max_input_tokens: int | None = None
+    omniroute_max_output_tokens: int | None = None
+    omniroute_daily_request_limit: int = 20
+    omniroute_daily_cost_limit_usd: float = 0.0
+    omniroute_monthly_cost_limit_usd: float = 0.0
+    omniroute_allow_free_only: bool = True
+    omniroute_require_model_id: bool = True
+
     # --- BudgetGuard ----------------------------------------------------
     free_mode: bool = True
     simulation_mode: bool = True

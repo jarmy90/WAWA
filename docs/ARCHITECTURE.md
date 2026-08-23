@@ -52,10 +52,17 @@ Abstracción `BaseLLMProvider` con `LLMResponse` normalizado:
 | `MockProvider` | Por defecto / fallback | 0 (offline) | Nunca verifica: marca DESCONOCIDO |
 | `GeminiProvider` | Opcional (`GEMINI_API_KEY`) | Estimado por caracteres | No: salida sin verificar |
 | `ManualProvider` | Asistido por humano/Freebuff | 0 | Sí si el humano declara `verified: true` |
+| `OpenRouterProvider` (007) | Comité de contraste (Opción A) | Honesto en `llm_call_log` | No: opinión de modelo ≠ evidencia |
+| `OmniRouteProvider` (008) | 2º revisor opcional, aislado | Honesto en `llm_call_log` | No: opinión de modelo ≠ evidencia |
 
 `ProviderManager` resuelve el proveedor según `LLM_PROVIDER` (`auto|mock|gemini|manual`),
 aplica BudgetGuard y hace **fallback automático a mock** ante cualquier fallo
-(cuota 429, red, no configurado), registrando el error.
+(cuota 429, red, no configurado), registrando el error. **OmniRoute es un
+proveedor aislado**: nunca entra en la resolución automática del manager y
+solo se invoca explícitamente desde `ReviewService.auto_review_omniroute`
+(segundo revisor opcional) con guardas propias; el routing por tarea vive en
+`app/core/routing_policies.py` y la allowlist de conexiones en
+`app/core/omniroute_allowlist.py` (UNKNOWN ⇒ bloqueado para producción).
 
 ### `app/scoring`
 Funciones puras deterministas. Dos capas:
@@ -122,7 +129,11 @@ automáticamente al arrancar. `decision_log` y `costs` son append-only.
   `llm_call_log` append-only con coste honesto (`reported_cost` solo si el
   proveedor lo devuelve, `cost_source`, `billing_verified=false`) y
   `requested_model` vs `actual_model`; sin clave o con fallo NO se fabrica
-  revisión (la ausencia es neutral).
+  revisión (la ausencia es neutral). Desde la iteración 008 existe además
+  `auto_review_omniroute` (segundo revisor opcional vía el gateway local
+  OmniRoute, mismo contrato de no-fabricación y guardas; desactivado por
+  defecto; registra `actual_provider`, `routing_strategy`, `quota_state` y
+  `response_is_external/synthetic`).
 - **OpportunityService**: CRUD, detalle agregado, decisiones manuales.
 - **ImportService/ExportService**: importación de investigación (JSON) y
   exportación JSON/Markdown (oportunidades y misiones).

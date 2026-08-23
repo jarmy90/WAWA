@@ -498,11 +498,34 @@ CREATE TABLE IF NOT EXISTS llm_call_log (
     fallback_used INTEGER NOT NULL DEFAULT 0,
     response_status TEXT NOT NULL DEFAULT 'ok',
     notes TEXT,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    actual_provider TEXT,
+    routing_strategy TEXT,
+    fallback_reason TEXT,
+    response_is_external INTEGER NOT NULL DEFAULT 1,
+    response_is_synthetic INTEGER NOT NULL DEFAULT 0,
+    quota_state TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_llm_call_created ON llm_call_log(created_at);
 CREATE INDEX IF NOT EXISTS idx_llm_call_opp ON llm_call_log(opportunity_id);
 """
+
+
+def _ensure_llm_call_columns(conn: sqlite3.Connection) -> None:
+    """Migración idempotente para bases creadas antes de la iteración 008."""
+    existing = {row["name"] for row in conn.execute("PRAGMA table_info(llm_call_log)").fetchall()}
+    columns = {
+        "actual_provider": "TEXT",
+        "routing_strategy": "TEXT",
+        "fallback_reason": "TEXT",
+        "response_is_external": "INTEGER NOT NULL DEFAULT 1",
+        "response_is_synthetic": "INTEGER NOT NULL DEFAULT 0",
+        "quota_state": "TEXT",
+    }
+    for name, ddl in columns.items():
+        if name not in existing:
+            conn.execute(f"ALTER TABLE llm_call_log ADD COLUMN {name} {ddl}")
+    conn.commit()
 
 
 def connect(db_path: Path | str) -> sqlite3.Connection:
@@ -523,5 +546,6 @@ def init_db(settings: Settings) -> None:
     try:
         conn.executescript(SCHEMA)
         conn.commit()
+        _ensure_llm_call_columns(conn)
     finally:
         conn.close()

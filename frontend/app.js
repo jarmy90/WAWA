@@ -935,12 +935,28 @@ async function loadReviews() {
     } catch (e) {
       autoLine = `<div class="reviews-config-row auto-config">OpenRouter: estado no disponible (${esc(e.message)})</div>`;
     }
+    let omniLine = "";
+    try {
+      const om = await api("/api/providers/omniroute/status");
+      const h = om.health || {};
+      omniLine =
+        `<div class="reviews-config-row auto-config omni-config">OmniRoute (aislado): ` +
+        `${om.enabled ? "🟢 habilitado" : "⚪ desactivado (por defecto)"} · ` +
+        `endpoint ${esc(h.endpoint || "—")} · modelo ${esc(h.review_model || "auto")} · ` +
+        `heartbeat ${h.last_heartbeat_at ? esc(String(h.last_heartbeat_at)) : "—"} · ` +
+        `solicitudes hoy ${om.requests_today}/${om.daily_request_limit} · ` +
+        `allowlist ${om.allowlist_default.allowed ? "permitido (pruebas)" : om.allowlist_default.reason} · ` +
+        `última incidencia ${h.last_incident ? esc(String(h.last_incident)) : "ninguna"}</div>`;
+    } catch (e) {
+      omniLine = `<div class="reviews-config-row auto-config omni-config">OmniRoute: estado no disponible (${esc(e.message)})</div>`;
+    }
     $("#reviews-config").innerHTML =
       `<div class="reviews-config-row">Umbral interno: <strong>${data.threshold}</strong> · ` +
       `Máximo finalistas/semana: <strong>${data.max_per_week}</strong> · ` +
       `Ventana: <strong>${data.window_hours}h</strong> · ` +
       `Continuar sin revisión: <strong>${data.continue_without_review ? "sí (neutral)" : "no"}</strong></div>` +
-      autoLine;
+      autoLine +
+      omniLine;
     const container = $("#reviews-queue");
     $("#reviews-empty").classList.toggle("hidden", data.items.length > 0);
     container.innerHTML = "";

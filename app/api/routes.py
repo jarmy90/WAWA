@@ -438,6 +438,14 @@ def discovery_learning(request: Request, kind: str | None = None) -> dict:
 REVIEW_NOTICE = {"model_opinion_not_evidence": True, "real_money_moved": False}
 
 
+@router.post("/reviews/opportunities/{opportunity_id}/auto-review-omniroute")
+def reviews_auto_review_omniroute(request: Request, opportunity_id: str = Depends(valid_id)) -> dict:
+    """Segundo revisor OPCIONAL vía OmniRoute (aislado; desactivado por defecto)."""
+    container = get_container(request)
+    result = container.reviews.auto_review_omniroute(opportunity_id)
+    return {**REVIEW_NOTICE, **OMNIROUTE_NOTICE, **result, "provider": "omniroute"}
+
+
 @router.get("/reviews/auto-status")
 def reviews_auto_status(request: Request) -> dict:
     """Presupuesto de inferencia y circuit breaker (sin llamadas)."""
@@ -574,6 +582,80 @@ def reviews_auto_review(request: Request, opportunity_id: str = Depends(valid_id
 def llm_calls_list(request: Request, limit: int = Query(default=30, ge=1, le=200)) -> dict:
     """Log append-only de llamadas LLM (coste honesto por llamada)."""
     return {"items": get_container(request).repos.llm_calls.list_recent(limit=limit), "count": None}
+
+
+# ---------------------------------------------------------------------------
+# OmniRoute (OPCIONAL, AISLADO — iteración 008) y routing por tarea
+# ---------------------------------------------------------------------------
+OMNIROUTE_NOTICE = {"omniroute_isolated": True, "production_use_blocked": True}
+
+
+@router.get("/providers/omniroute/status")
+def omniroute_status(request: Request) -> dict:
+    """Estado del proveedor OmniRoute (sin claves) + uso + allowlist."""
+    container = get_container(request)
+    provider = container.providers.omniroute
+    today = __import__("datetime").date.today().isoformat()
+    from app.core.omniroute_allowlist import is_connection_allowed
+
+    allowed, reason = is_connection_allowed("omniroute-gateway", production=False)
+    return {
+        **OMNIROUTE_NOTICE,
+        "enabled": provider.available(),
+        "health": provider.health(),
+        "requests_today": container.repos.llm_calls.count_since(today, provider="omniroute"),
+        "daily_request_limit": container.settings.omniroute_daily_request_limit,
+        "cost_today_usd": container.repos.llm_calls.cost_since(today, provider="omniroute"),
+        "daily_cost_limit_usd": container.settings.omniroute_daily_cost_limit_usd,
+        "allowlist_default": {"allowed": allowed, "reason": reason},
+        "allow_free_only": container.settings.omniroute_allow_free_only,
+    }
+
+
+@router.get("/routing/policies")
+def routing_policies(request: Request) -> dict:
+    """Políticas de routing por tarea (deterministas, sin LLM)."""
+    from app.core.routing_policies import TASK_POLICIES
+
+    return {
+        "policies": [
+            {
+                "task": p.task,
+                "provider": p.provider,
+                "model": p.model,
+                "fallbacks": list(p.fallbacks),
+                "max_cost_usd": p.max_cost_usd,
+                "max_latency_ms": p.max_latency_ms,
+                "requires_json": p.requires_json,
+                "require_fixed_model": p.require_fixed_model,
+                "allow_free_random": p.allow_free_random,
+                "allow_continue_without_response": p.allow_continue_without_response,
+                "notes": p.notes,
+            }
+            for p in TASK_POLICIES.values()
+        ]
+    }
+
+
+@router.get("/omniroute/allowlist")
+def omniroute_allowlist(request: Request) -> dict:
+    """Allowlist de conexiones OmniRoute (sin secretos)."""
+    from app.core.omniroute_allowlist import OMNIROUTE_CONNECTIONS
+
+    return {
+        **OMNIROUTE_NOTICE,
+        "connections": [
+            {
+                "provider": c.provider,
+                "auth_method": c.auth_method,
+                "status": c.status,
+                "review_date": c.review_date,
+                "commercial_use_permitted": c.commercial_use_permitted,
+                "notes": c.notes,
+            }
+            for c in OMNIROUTE_CONNECTIONS.values()
+        ],
+    }
 
 
 # ---------------------------------------------------------------------------

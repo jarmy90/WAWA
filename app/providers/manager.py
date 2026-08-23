@@ -19,6 +19,7 @@ from app.providers.base import BaseLLMProvider, LLMResponse
 from app.providers.gemini import GeminiProvider
 from app.providers.manual import ManualProvider
 from app.providers.mock import MockProvider
+from app.providers.omniroute import OmniRouteProvider
 from app.providers.openrouter import OpenRouterProvider
 
 
@@ -47,6 +48,24 @@ class ProviderManager:
             max_retries=settings.openrouter_max_retries,
             max_input_tokens=settings.openrouter_max_input_tokens,
             max_output_tokens=settings.openrouter_max_output_tokens,
+        )
+        # OmniRoute: proveedor AISLADO. Nunca entra en la resolución automática;
+        # solo se usa cuando OMNIROUTE_ENABLED=true y una política de tarea lo
+        # permite explícitamente (p. ej. external_committee como 2º revisor).
+        self.omniroute = OmniRouteProvider(
+            enabled=settings.omniroute_enabled,
+            base_url=settings.omniroute_base_url,
+            api_key=settings.omniroute_api_key,
+            cli_token=settings.omniroute_cli_token,
+            review_model=settings.omniroute_review_model,
+            discovery_model=settings.omniroute_discovery_model,
+            fallback_model=settings.omniroute_fallback_model,
+            timeout=settings.omniroute_timeout_seconds,
+            max_retries=settings.omniroute_max_retries,
+            max_input_tokens=settings.omniroute_max_input_tokens,
+            max_output_tokens=settings.omniroute_max_output_tokens,
+            allow_free_only=settings.omniroute_allow_free_only,
+            require_model_id=settings.omniroute_require_model_id,
         )
 
     # ------------------------------------------------------------------
@@ -108,6 +127,7 @@ class ProviderManager:
             "mode": self.settings.llm_provider,
             "primary": primary.health(),
             "openrouter": self.openrouter.health(),
+            "omniroute": self.omniroute.health(),
             "gemini": self.gemini.health(),
             "mock": self.mock.health(),
             "manual": self.manual.health(),

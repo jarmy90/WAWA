@@ -50,4 +50,11 @@ class LLMCallRecord(BaseModel):
     fallback_used: bool = False
     response_status: str = Field(default="ok", max_length=50)
     notes: str | None = Field(default=None, max_length=2_000)
+    # --- Routing y procedencia (iteración 008) --------------------------------
+    actual_provider: str | None = Field(default=None, max_length=100)
+    routing_strategy: str | None = Field(default=None, max_length=100)
+    fallback_reason: str | None = Field(default=None, max_length=500)
+    response_is_external: bool = True  # ¿la respuesta vino de un servicio externo real?
+    response_is_synthetic: bool = False  # ¿fue generada por un simulador/mock?
+    quota_state: str | None = Field(default=None, max_length=100)
     created_at: str = Field(default_factory=_now)

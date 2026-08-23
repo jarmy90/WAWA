@@ -17,8 +17,10 @@ class LLMCallRepository:
                (id, provider, action, opportunity_id, requested_model, actual_model,
                 prompt_tokens, completion_tokens, total_tokens, reported_cost,
                 estimated_cost, cost_source, billing_verified, latency_ms, retry_count,
-                fallback_used, response_status, notes, created_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                fallback_used, response_status, notes, created_at, actual_provider,
+                routing_strategy, fallback_reason, response_is_external,
+                response_is_synthetic, quota_state)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 record.id,
                 record.provider,
@@ -39,6 +41,12 @@ class LLMCallRepository:
                 record.response_status,
                 record.notes,
                 record.created_at,
+                record.actual_provider,
+                record.routing_strategy,
+                record.fallback_reason,
+                1 if record.response_is_external else 0,
+                1 if record.response_is_synthetic else 0,
+                record.quota_state,
             ),
         )
         self.conn.commit()
@@ -99,4 +107,6 @@ class LLMCallRepository:
         d = dict(row)
         d["billing_verified"] = bool(d.get("billing_verified"))
         d["fallback_used"] = bool(d.get("fallback_used"))
+        d["response_is_external"] = bool(d.get("response_is_external"))
+        d["response_is_synthetic"] = bool(d.get("response_is_synthetic"))
         return d

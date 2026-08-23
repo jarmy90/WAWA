@@ -93,6 +93,28 @@ se tratan como **datos no confiables** (ver `docs/REVIEW_SECURITY.md`):
 - **La clave vive en el gestor de secretos** (`.env.local`/Settings → Keys),
   nunca en Git ni en `env.example`.
 
+## OmniRoute (iteración 008 — proveedor aislado)
+
+- **Aislado y desactivado por defecto** (`OMNIROUTE_ENABLED=false`); el
+  backend nunca depende de él para arrancar, testear o funcionar.
+- Solo local: `127.0.0.1:20128`, perfil Docker opcional con contenedor sin
+  privilegios, filesystem de solo lectura, health check, límites de
+  CPU/memoria, logs rotativos y sin Docker socket.
+- **Allowlist de conexiones** (`app/core/omniroute_allowlist.py`):
+  `UNKNOWN` ⇒ bloqueado para producción. Solo el gateway local está en
+  `TEST_ONLY`; ningún proveedor upstream está autorizado.
+- **Sin fabricación**: fallo ⇒ ausencia neutral (no hay revisión mock
+  presentada como real, no hay evidencia, no hay cambio de decisión).
+- Costes honestos en `llm_call_log` con las columnas OmniRoute
+  (`actual_provider`, `routing_strategy`, `fallback_reason`,
+  `response_is_external/synthetic`, `quota_state`).
+- Errores saneados (sin cabeceras de autenticación ni cuerpos con secretos);
+  la clave del gateway solo vive en el gestor de secretos.
+- No envía secretos, wallets, datos personales, credenciales ni información
+  financiera sensible a proveedores upstream.
+- No activa producción, no modifica presupuestos, no sustituye el modelo fijo
+  del comité OpenRouter.
+
 ## Si esto se expone a internet (futuro)
 
 - Añadir autenticación/authorization (Convex Auth u OIDC) y control de acceso.

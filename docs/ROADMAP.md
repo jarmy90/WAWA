@@ -39,6 +39,20 @@ y probados (207 tests). El siguiente paso es **usarlos en serio**:
 - Medir: ¿el protocolo ahorra contexto? ¿las misiones mejoran la evidencia?
 - Probar el API Readiness Gate sobre los finalistas reales.
 
+### 1b. Desplegar OmniRoute aislado y cerrar el benchmark A/B (iteración 008)
+La integración de OmniRoute (proveedor aislado, allowlist, routing por
+tarea, perfil Docker, 23 tests offline y benchmark A/B con 10 problemas
+sintéticos) está implementada, pero **el gateway no se pudo arrancar en el
+sandbox** (ENOSPC). Pendiente en un entorno con disco suficiente:
+- Arrancar con `docker compose -f infra/omniroute/docker-compose.omniroute.yml up -d`.
+- Health check, consultar catálogo de modelos y buscar "Alpha 0" (no existe
+  evidencia en el código; no inventar el slug).
+- Ejecutar las máx. 5 llamadas reales de la iteración (modelo auto,
+  structured output, reinicio, recuperación, fallback/ausencia).
+- Ejecutar `scripts/benchmark_ab.py` brazos B/C/D y comparar con A (offline).
+- Solo tras superar el A/B: considerar OmniRoute para Discovery (nunca
+  sustituyendo el modelo fijo del comité OpenRouter).
+
 ### 1. Poner a trabajar el comité de contraste con modelos reales (iteración 005 + 007)
 El **Laboratorio de oportunidades** funciona offline (`MANUAL_IMPORT` +
 `MOCK`) y desde la iteración 007 también con **revisión automática vía

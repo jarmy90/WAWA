@@ -351,6 +351,7 @@ class ReviewService:
     def _record_call(
         self,
         *,
+        provider: str = "openrouter",
         opportunity_id: str | None,
         requested_model: str,
         actual_model: str | None,
@@ -365,7 +366,7 @@ class ReviewService:
         notes: str | None,
     ) -> dict:
         record = LLMCallRecord(
-            provider="openrouter",
+            provider=provider,
             action="external_review",
             opportunity_id=opportunity_id,
             requested_model=requested_model,
@@ -581,6 +582,128 @@ class ReviewService:
             "cost_source": resp.cost_source,
             "billing_verified": False,
         }
+
+    def auto_review_omniroute(self, opportunity_id: str) -> dict:
+        """Segundo revisor OPCIONAL vía OmniRoute (iteración 008, aislado).
+
+        Mismas reglas que ``auto_review`` pero con el proveedor OmniRoute:
+        - Solo si ``OMNIROUTE_ENABLED=true`` y la conexión está permitida.
+        - Límites diario/mensual de peticiones y coste, máx. 1 revisión
+          automática de OmniRoute por oportunidad, circuit breaker.
+        - Si falla o no hay servicio: NO se fabrica revisión; la ausencia es
+          neutral y el error se registra con los metadatos de routing.
+        - Nunca sustituye al modelo fijo del comité OpenRouter.
+        """
+        from app.core.omniroute_allowlist import is_connection_allowed
+
+        if self.repos.opportunities.get(opportunity_id) is None:
+            raise NotFoundError("Oportunidad no encontrada.")
+        provider = self.providers.omniroute if self.providers is not None else None
+
+        def _blocked(reason: str, detail: str = "") -> dict:
+            return {"status": "blocked", "reason": reason, "detail": detail, "review_created": False}
+
+        if provider is None or not provider.available():
+            return {
+                "status": "skipped", "reason": "omniroute_disabled",
+                "detail": "OMNIROUTE_ENABLED=false: OmniRoute no se usa (aislado, por defecto).",
+                "review_created": False,
+            }
+        allowed, reason = is_connection_allowed("omniroute-gateway", production=False)
+        if not allowed:
+            return _blocked("connection_not_allowed", reason)
+        already = sum(
+            1 for r in self.repos.reviews.reviews_for(opportunity_id)
+            if r["provider"] == "omniroute" and r["execution_mode"] == "API_AUTOMATIC"
+        )
+        if already >= 1:
+            return _blocked("max_reviews_per_opportunity", "ya hay 1 revisión automática de OmniRoute.")
+        breaker = self._circuit_breaker()
+        if breaker["open"]:
+            return _blocked("circuit_breaker_open", str(breaker["failures_recent"]))
+        today = _now_dt().date().isoformat()
+        if self.repos.llm_calls.count_since(today, provider="omniroute") >= self.settings.omniroute_daily_request_limit:
+            return _blocked("daily_request_limit", "límite diario de peticiones OmniRoute.")
+        cost_today = self.repos.llm_calls.cost_since(today, provider="omniroute")
+        if self.settings.omniroute_daily_cost_limit_usd > 0 and cost_today >= self.settings.omniroute_daily_cost_limit_usd:
+            return _blocked("daily_cost_limit", f"{cost_today:.4f} USD")
+
+        packet = self.generate_review_packet(opportunity_id)
+        try:
+            resp = provider.generate(packet["content"], task="external_review", temperature=0.2)
+        except ProviderUnavailableError as exc:
+            self._record_call(
+                provider="omniroute",
+                opportunity_id=opportunity_id, requested_model=provider.review_model,
+                actual_model=None, usage=None, reported_cost=None, estimated_cost=None,
+                cost_source=CostSource.unknown.value, latency_ms=None, retry_count=0,
+                fallback_used=False, response_status="error",
+                notes=f"OmniRoute falló (sin fabricar revisión): {_sanitize_text(str(exc), 300)}",
+            )
+            self._log(agent="auto_review_omniroute", opportunity_id=opportunity_id,
+                      summary=f"OmniRoute FALLÓ; ausencia neutral: {str(exc)[:150]}",
+                      decision="failed_neutral", model_or_method="omniroute")
+            return {"status": "failed", "reason": "provider_error", "review_created": False,
+                    "neutral": True, "detail": str(exc)[:300]}
+        except Exception as exc:
+            self._record_call(
+                provider="omniroute",
+                opportunity_id=opportunity_id, requested_model=provider.review_model,
+                actual_model=None, usage=None, reported_cost=None, estimated_cost=None,
+                cost_source=CostSource.unknown.value, latency_ms=None, retry_count=0,
+                fallback_used=False, response_status="error",
+                notes=f"OmniRoute falló (sin fabricar revisión): {_sanitize_text(str(exc), 300)}",
+            )
+            return {"status": "failed", "reason": "provider_error", "review_created": False,
+                    "neutral": True, "detail": str(exc)[:300]}
+
+        actual_model = resp.actual_model or resp.model
+        parsed, errors, status = self.parse_review_response(resp.text)
+        review = ExternalReview(
+            opportunity_id=opportunity_id,
+            provider="omniroute",
+            model=_sanitize_text(actual_model, 200),
+            model_version=_sanitize_text(resp.model, 100),
+            execution_mode="API_AUTOMATIC",
+            raw_response=resp.text,
+            parsed_response=parsed,
+            recommendation=parsed.get("recommendation"),
+            confidence=parsed.get("confidence"),
+            strongest_evidence=parsed.get("strongest_evidence"),
+            weakest_assumption=parsed.get("weakest_assumption"),
+            missing_evidence=parsed.get("missing_evidence"),
+            primary_risk=parsed.get("primary_risk"),
+            suggested_improvement=parsed.get("suggested_improvement"),
+            cheaper_experiment=parsed.get("cheaper_experiment"),
+            kill_condition=parsed.get("kill_condition"),
+            cost=resp.reported_cost if resp.reported_cost is not None else (resp.cost_estimate_usd or 0.0),
+            status=status,
+            parse_errors=errors,
+            imported_by="auto-review-omniroute",
+            file_hash=_sha256(resp.text),
+        )
+        saved = self.repos.reviews.create_review(review)
+        self._record_call(
+            provider="omniroute",
+            opportunity_id=opportunity_id,
+            requested_model=resp.model,
+            actual_model=actual_model,
+            usage=resp.usage,
+            reported_cost=resp.reported_cost,
+            estimated_cost=resp.cost_estimate_usd or None,
+            cost_source=resp.cost_source,
+            latency_ms=resp.latency_ms,
+            retry_count=resp.retry_count,
+            fallback_used=False,
+            response_status="ok",
+            notes=resp.notes,
+        )
+        self._log(agent="auto_review_omniroute", opportunity_id=opportunity_id,
+                  summary=f"Revisión automática OmniRoute ({actual_model}) guardada; cost_source={resp.cost_source}.",
+                  decision=review.recommendation or "no_recommendation",
+                  model_or_method=f"omniroute:{actual_model}")
+        return {"status": "ok", "review_created": True, "review": saved,
+                "warnings": errors, "cost_source": resp.cost_source, "billing_verified": False}
 
     # ==================================================================
     # Expediente de revisión (idéntico para todos los revisores)

@@ -267,6 +267,27 @@ Freebuff. **Freebuff no es un runtime 24/7** y el proyecto no finge lo
 contrario (ver `docs/RUNTIME_STRATEGY.md`). El piloto sintético se lanza con
 `POST /api/campaigns/demo` (FREEBUFF-FIRST PILOT 001, 0 llamadas API).
 
+### OmniRoute (iteración 008 — evaluación aislada)
+
+**OmniRoute** es un gateway local opcional (MIT, compatible con la API de
+OpenAI) integrado como proveedor **aislado y desactivado por defecto**
+(`OMNIROUTE_ENABLED=false`). Sirve como segundo revisor opcional del comité
+de contraste; **no** sustituye a OpenRouter ni se usa para Discovery general
+hasta superar un benchmark A/B. Sin fabricación: si falla o no está
+configurado, no hay revisión (ausencia neutral). Cada llamada registra
+`requested_model` vs `actual_model`, `actual_provider`, `routing_strategy`,
+`cost_source` honesto y `quota_state`. La allowlist de conexiones
+(`app/core/omniroute_allowlist.py`) bloquea por defecto todo proveedor
+upstream (UNKNOWN ⇒ bloqueado en producción). Perfil Docker aislado en
+`infra/omniroute/docker-compose.omniroute.yml` (solo `127.0.0.1:20128`).
+
+**Hallazgo importante**: no existe evidencia de un modelo "Alpha 0" en el
+catálogo analizado (`release/v3.8.50`); no se inventa el slug y `auto` queda
+como predeterminado provisional (ver `docs/OMNIROUTE_MODEL_SELECTION.md`).
+El arranque real del gateway quedó pendiente (disco insuficiente en el
+sandbox); las máx. 5 llamadas reales de la iteración se reservan para un
+entorno con espacio.
+
 ## Decisiones técnicas clave
 
 - **SQLite con `sqlite3` de la stdlib** en lugar de SQLAlchemy: menos dependencias y suficiente para el MVP; los repositorios encapsulan la SQL para migrar fácilmente si hace falta.

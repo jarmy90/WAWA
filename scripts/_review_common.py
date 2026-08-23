@@ -28,6 +28,7 @@ EXCLUDED_DIRS = {
     "packages",  # paquetes de iteraciones anteriores (dentro de deliverables/)
     "external_reviews",  # expedientes generados en runtime (datos, no código)
     "freebuff_sessions",  # sesiones Freebuff generadas en runtime (datos, no código)
+    "benchmark",  # salidas del benchmark A/B generadas en runtime (datos, no código)
     ".idea",
     ".vscode",
 }

@@ -25,6 +25,9 @@ data/manual_research/requests/
 data/manual_research/responses/
 data/external_reviews/
 data/freebuff_sessions/
+data/benchmark/
+infra/omniroute/.env.omniroute
+.env.omniroute
 
 # OS / editor
 .DS_Store
