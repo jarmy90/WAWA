@@ -121,6 +121,21 @@ automáticamente al arrancar. `decision_log` y `costs` son append-only.
 - **OpportunityService**: CRUD, detalle agregado, decisiones manuales.
 - **ImportService/ExportService**: importación de investigación (JSON) y
   exportación JSON/Markdown (oportunidades y misiones).
+- **CampaignService** (iteración 006): CampaignRunner Freebuff-first —
+  máquina de estados persistente (CREATED → … → COMPLETED, con
+  PAUSED/BLOCKED/FAILED/CANCELLED), embudo con límites configurables e
+  inmutables, sesiones reanudables de 2-6 h (SESSION_PLAN/STATE/OUTPUT/REPORT
+  + NEXT_SESSION), importación de outputs con deduplicación y regla de
+  verificación (URL+fecha+fragmento), niveles de razonamiento registrados,
+  API Readiness Gate determinista (nunca activa claves) y piloto sintético
+  FREEBUFF-FIRST PILOT 001 (0 llamadas API).
+
+### `app/models/campaign.py` + `app/repositories/campaigns.py` (iteración 006)
+Contratos y persistencia del runner: `Campaign`, `CampaignTransition`,
+`FreebuffSession`, `SessionOutputIn` (validación estricta, `extra=forbid`),
+`APIReadinessGate`, `ReasoningRecord`. Tablas `ff_campaigns`, `ff_transitions`,
+`ff_sessions`, `ff_readiness`, `ff_reasoning_log` (creadas con `IF NOT
+EXISTS`, compatibles con bases anteriores).
 
 ### `app/core/libraries.py`
 Bibliotecas configurables del Business Discovery Engine: territorios de
@@ -144,8 +159,12 @@ ficha completa, desglose de puntuación con bases, evidencias, competidores,
 riesgos, crítica del Skeptic, experimento, log de decisiones y acciones
 (aprobar/aplazar/rechazar/reevaluar/exportar). Desde la iteración 004 incluye
 la pestaña **Descubrimiento**: campañas, fases ejecutables, conceptos con
-Venture Score y clasificación de sustitución, promoción a oportunidad y
-creación/exportación de misiones de investigación.
+venture scores y etiquetas, misiones. Desde la iteración 006 incluye la
+pestaña **Campañas** (sesiones Freebuff-first) con badges
+`FREEBUFF SESSION · NO 24/7 GUARANTEED · API COST 0`, preparación de sesiones
+(prompt breve) y piloto sintético. La vista de Descubrimiento muestra el
+Venture Score y la clasificación de sustitución de cada concepto, promoción a
+oportunidad y creación/exportación de misiones de investigación.
 
 ## Flujo de datos de una evaluación
 

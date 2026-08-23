@@ -24,6 +24,7 @@ data/logs/
 data/manual_research/requests/
 data/manual_research/responses/
 data/external_reviews/
+data/freebuff_sessions/
 
 # OS / editor
 .DS_Store

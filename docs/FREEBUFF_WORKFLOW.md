@@ -94,14 +94,42 @@ Freebuff" se convierta en "evidencia verificada".
   añadiría en `app/providers/` siguiendo `BaseLLMProvider`.
 - No poner claves reales en el repositorio ni en `env.example`.
 
+## Sesiones Freebuff-first (iteración 006)
+
+El proyecto opera campañas de descubrimiento en **sesiones reanudables de
+2-6 horas** sin consumir APIs. Ver `docs/FREEBUFF_SESSION_PROTOCOL.md` y
+`docs/CAMPAIGN_RUNNER.md`.
+
+```bash
+# Preparar una sesión (genera SESSION_PLAN.md, SESSION_STATE.json y el prompt breve)
+python3 scripts/continue_campaign.py --campaign <id> --hours 5
+
+# Finalizar la sesión (valida, importa, checkpoint y NEXT_SESSION.md)
+python3 scripts/finalize_session.py --session <session_id>
+```
+
+El prompt breve generado se pega directamente a Freebuff en la sesión; no hay
+que volver a pegar prompts enormes. Las evidencias sin URL+fecha+fragmento
+nunca se auto-verifican.
+
 ## Flujo recomendado por iteración
 
 1. Freebuff escribe/refina código y corre `pytest`.
-2. Freebuff lanza campañas de descubrimiento (`/api/discovery/*`), exporta
-   misiones, las investiga con fuentes reales y reimporta los resultados.
+2. Freebuff lanza campañas de descubrimiento (`/api/discovery/*` o el
+   CampaignRunner de `/api/campaigns/*`), prepara sesiones con
+   `continue_campaign.py`, exporta misiones de investigación
+   (`docs/FREEBUFF_RESEARCH_MISSIONS.md`), investiga con fuentes reales y
+   reimporta los resultados con `finalize_session.py`.
 3. Freebuff (o el humano) también puede investigar 1-3 oportunidades del
    pipeline clásico y depositar la respuesta en
    `data/manual_research/responses/` (formato anterior).
 4. Se reevalúa y se revisa el dashboard: ¿subió la confianza? ¿cambió la
    decisión?
 5. Se exportan las fichas y se decide el siguiente experimento.
+
+## No fingir que Freebuff es un runtime 24/7
+
+Freebuff trabaja por sesiones. Cada sesión deja checkpoint y `NEXT_SESSION.md`
+para reanudar; fuera de la sesión no hay proceso garantizado. La ejecución
+continua futura corresponde a un runtime económico (ver
+`docs/RUNTIME_STRATEGY.md`), no a Freebuff.

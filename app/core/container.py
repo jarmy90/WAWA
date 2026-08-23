@@ -14,6 +14,7 @@ from app.providers.manager import ProviderManager
 from app.repositories import Repos, build_repos, init_db, connect
 from app.repositories.costs import CostRepository
 from app.services.budget import BudgetGuard
+from app.services.campaign import CampaignService
 from app.services.discovery import DiscoveryService
 from app.services.engine import EngineService
 from app.services.economy import EconomyService
@@ -38,6 +39,7 @@ class AppContainer:
     exports: ExportService
     imports: ImportService
     reviews: ReviewService
+    campaigns: CampaignService
 
     def close(self) -> None:
         try:
@@ -64,6 +66,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     imports = ImportService(settings, repos, pipeline)
     reviews = ReviewService(settings, repos, engine=engine)
     pipeline.reviews = reviews  # cola automática de finalistas en el Judge
+    campaigns = CampaignService(settings, repos, discovery, reviews, engine=engine)
     return AppContainer(
         settings=settings,
         conn=conn,
@@ -78,4 +81,5 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         exports=exports,
         imports=imports,
         reviews=reviews,
+        campaigns=campaigns,
     )

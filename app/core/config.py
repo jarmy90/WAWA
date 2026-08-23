@@ -116,6 +116,8 @@ class Settings(BaseSettings):
     # Las revisiones de modelos son OPINIÓN, nunca evidencia. Los umbrales
     # son configurables y deterministas; la ausencia de revisión es NEUTRAL.
     external_reviews_dir: Path = PROJECT_ROOT / "data" / "external_reviews"
+    # Sesiones Freebuff-first (iteración 006): checkpoints persistentes.
+    freebuff_sessions_dir: Path = PROJECT_ROOT / "data" / "freebuff_sessions"
     review_min_internal_score: float = 72.0
     review_max_finalists_per_week: int = 3
     review_window_hours: int = 48
@@ -157,6 +159,7 @@ class Settings(BaseSettings):
             self.manual_research_dir / "responses",
             self.frontend_dir,
             self.external_reviews_dir,
+            self.freebuff_sessions_dir,
         ):
             d.mkdir(parents=True, exist_ok=True)
 

@@ -374,6 +374,110 @@ CREATE TABLE IF NOT EXISTS review_syntheses (
     score_change_reason TEXT,
     generated_at TEXT NOT NULL
 );
+
+-- CampaignRunner Freebuff-first (iteración 006): campañas reanudables por sesiones.
+CREATE TABLE IF NOT EXISTS ff_campaigns (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
+    stage TEXT NOT NULL DEFAULT 'CREATED',
+    discovery_campaign_id TEXT,
+    territory_keys TEXT NOT NULL DEFAULT '[]',
+    lens_keys TEXT NOT NULL DEFAULT '[]',
+    archetype_keys TEXT NOT NULL DEFAULT '[]',
+    time_budget_hours INTEGER NOT NULL DEFAULT 3,
+    api_budget_usd REAL NOT NULL DEFAULT 0,
+    experiment_budget_usd REAL NOT NULL DEFAULT 0,
+    external_review_slots INTEGER NOT NULL DEFAULT 3,
+    maximum_deep_research_candidates INTEGER NOT NULL DEFAULT 10,
+    funnel_limits TEXT NOT NULL DEFAULT '{}',
+    signals_count INTEGER NOT NULL DEFAULT 0,
+    concepts_count INTEGER NOT NULL DEFAULT 0,
+    concepts_rejected INTEGER NOT NULL DEFAULT 0,
+    finalists_count INTEGER NOT NULL DEFAULT 0,
+    missions_count INTEGER NOT NULL DEFAULT 0,
+    evidences_added INTEGER NOT NULL DEFAULT 0,
+    sessions_count INTEGER NOT NULL DEFAULT 0,
+    is_synthetic INTEGER NOT NULL DEFAULT 0,
+    closed_reason TEXT,
+    next_recommended_action TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ff_transitions (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES ff_campaigns(id) ON DELETE CASCADE,
+    from_stage TEXT NOT NULL,
+    to_stage TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    actor TEXT NOT NULL DEFAULT 'system',
+    reason TEXT,
+    inputs_used TEXT NOT NULL DEFAULT '[]',
+    outputs_generated TEXT NOT NULL DEFAULT '[]',
+    concepts_considered INTEGER NOT NULL DEFAULT 0,
+    concepts_rejected INTEGER NOT NULL DEFAULT 0,
+    costs_recorded TEXT NOT NULL DEFAULT '{}',
+    unknowns TEXT NOT NULL DEFAULT '[]',
+    errors TEXT NOT NULL DEFAULT '[]',
+    next_recommended_action TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_ff_transitions_camp ON ff_transitions(campaign_id);
+
+CREATE TABLE IF NOT EXISTS ff_sessions (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL UNIQUE,
+    campaign_id TEXT NOT NULL REFERENCES ff_campaigns(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'planned',
+    time_budget_hours INTEGER NOT NULL,
+    stage_start TEXT NOT NULL,
+    stage_end TEXT,
+    started_at TEXT NOT NULL,
+    completed_at TEXT,
+    tasks_planned TEXT NOT NULL DEFAULT '[]',
+    tasks_completed TEXT NOT NULL DEFAULT '[]',
+    tasks_pending TEXT NOT NULL DEFAULT '[]',
+    concepts_created INTEGER NOT NULL DEFAULT 0,
+    concepts_rejected INTEGER NOT NULL DEFAULT 0,
+    evidences_added INTEGER NOT NULL DEFAULT 0,
+    review_packets_created INTEGER NOT NULL DEFAULT 0,
+    blockers TEXT NOT NULL DEFAULT '[]',
+    errors TEXT NOT NULL DEFAULT '[]',
+    next_action TEXT,
+    repo_commit TEXT,
+    plan_path TEXT,
+    state_path TEXT,
+    output_path TEXT,
+    report_path TEXT,
+    next_session_path TEXT,
+    short_prompt TEXT,
+    is_synthetic INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_ff_sessions_camp ON ff_sessions(campaign_id);
+
+CREATE TABLE IF NOT EXISTS ff_readiness (
+    id TEXT PRIMARY KEY,
+    opportunity_id TEXT NOT NULL REFERENCES opportunities(id) ON DELETE CASCADE,
+    state TEXT NOT NULL,
+    criteria TEXT NOT NULL DEFAULT '{}',
+    unknown_criteria TEXT NOT NULL DEFAULT '[]',
+    missing TEXT NOT NULL DEFAULT '[]',
+    reasoning TEXT,
+    proposed_daily_limit_usd REAL,
+    estimated_cost_per_call_usd REAL,
+    estimated_value_per_call_usd REAL,
+    evaluated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ff_reasoning_log (
+    id TEXT PRIMARY KEY,
+    campaign_id TEXT NOT NULL REFERENCES ff_campaigns(id) ON DELETE CASCADE,
+    session_id TEXT,
+    level TEXT NOT NULL,
+    action TEXT NOT NULL,
+    reason TEXT,
+    created_at TEXT NOT NULL
+);
 """
 
 

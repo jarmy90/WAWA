@@ -124,7 +124,36 @@ explícita del propietario). Reglas permanentes:
    `docs/REVIEW_SECURITY.md` (las opiniones de modelos NUNCA son evidencia ni
    modifican puntuaciones/modos/presupuesto; el raw se conserva; el parsing es
    con allowlist; la ausencia de revisión es neutral) y añade pruebas.
+8b. Si tocas las campañas Freebuff-first (`app/services/campaign.py`,
+   `app/models/campaign.py`, `app/repositories/campaigns.py`,
+   `scripts/continue_campaign.py`, `scripts/finalize_session.py`): respeta
+   `docs/FREEBUFF_SESSION_PROTOCOL.md`, `docs/CAMPAIGN_RUNNER.md` y
+   `docs/API_READINESS_GATE.md` (estados con entregables obligatorios, embudo
+   con límites inmutables, `api_budget_usd=0`, readiness que nunca activa
+   claves) y añade pruebas.
 9. No declares que algo funciona sin ejecutarlo.
+
+### Reglas permanentes del workflow Freebuff-first (iteración 006)
+
+1. **No gastar tokens de API en descubrimiento** mientras las tareas puedan
+   realizarse mediante sesiones Freebuff (`api_budget_usd=0`; un
+   `SESSION_OUTPUT` con llamadas o coste > 0 se rechaza).
+2. **No fingir que Freebuff es un runtime 24/7**: no existe API de Freebuff;
+   el trabajo se ejecuta en sesiones reanudables de 2-6 h (ver
+   `docs/FREEBUFF_SESSION_PROTOCOL.md` y `docs/RUNTIME_STRATEGY.md`).
+3. **Toda sesión debe dejar checkpoint y `NEXT_SESSION.md`** antes de
+   finalizar; sin entregables, `finalize_session.py` bloquea.
+4. **Ninguna campaña está obligada a producir una finalista**: `maximum_finalists`
+   puede ser 0 y el fracaso se conserva como aprendizaje.
+5. **Las APIs se incorporan únicamente tras superar el API Readiness Gate**
+   (`docs/API_READINESS_GATE.md`); por defecto `API_PREMATURE`/`API_NOT_NEEDED`
+   y nunca se configuran claves en esta fase.
+6. **El consenso de modelos no es evidencia de mercado** (iteración 005):
+   no modifica puntuaciones, presupuestos ni modos; el falso consenso se
+   etiqueta (`OPINION_CONSENSUS`).
+7. **La calidad del Discovery Engine prevalece sobre nueva infraestructura**:
+   no añadir capas (workers, schedulers, integraciones) sin justificar que
+   mejoran la selección de ideas.
 
 ## Qué NO hacer
 

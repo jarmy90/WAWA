@@ -92,6 +92,7 @@
             <button id="tab-opps" class="tab-btn active">Oportunidades <span id="count-badge" class="badge">0</span></button>
             <button id="tab-discovery" class="tab-btn">Descubrimiento <span id="disc-badge" class="badge">0</span></button>
             <button id="tab-reviews" class="tab-btn">Laboratorio <span id="rev-badge" class="badge">0</span></button>
+            <button id="tab-campaigns" class="tab-btn">Campañas <span id="camp-badge" class="badge">0</span></button>
           </div>
         </div>
         <div id="view-opportunities">
@@ -119,6 +120,17 @@
           <div id="reviews-queue" class="stack"></div>
           <div id="reviews-empty" class="empty hidden">
             <p>Sin finalistas en revisión. Las oportunidades aprobadas con puntuación ≥ umbral entran aquí automáticamente; también puedes generarlas con la demo o promover conceptos desde Descubrimiento.</p>
+          </div>
+        </div>
+        <div id="view-campaigns" class="hidden">
+          <div class="list-header sub">
+            <h2>Sesiones Freebuff <span class="tag tag-unverified">FREEBUFF SESSION · NO 24/7 GUARANTEED · API COST 0</span></h2>
+            <button id="btn-campaigns-demo" class="btn btn-ghost btn-sm" title="Crea el piloto SINTÉTICO FREEBUFF-FIRST PILOT 001: campaña, 2 sesiones, comité y readiness">Piloto sintético</button>
+          </div>
+          <p class="hint">Campañas reanudables ejecutadas por sesiones de Freebuff (2-6 h). Sin API LLM en descubrimiento: 0 llamadas, 0 coste. Cada sesión deja SESSION_PLAN.md, SESSION_STATE.json, SESSION_REPORT.md y NEXT_SESSION.md para reanudar sin repetir trabajo.</p>
+          <div id="campaigns" class="stack"></div>
+          <div id="campaigns-empty" class="empty hidden">
+            <p>Sin campañas Freebuff-first. Lanza el piloto sintético o crea una campaña desde <code>scripts/continue_campaign.py</code>.</p>
           </div>
         </div>
       </section>

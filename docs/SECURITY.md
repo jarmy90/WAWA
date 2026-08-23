@@ -63,6 +63,20 @@ se tratan como **datos no confiables** (ver `docs/REVIEW_SECURITY.md`):
                     [ Salida (dashboard/export) ] ← escape HTML en frontend
 ```
 
+## Campañas Freebuff-first (iteración 006)
+
+- **Sin API runtime de Freebuff**: no se finge un endpoint que no existe; el
+  trabajo se ejecuta por sesiones reanudables y cada sesión deja checkpoint.
+- **Coste API 0**: `api_budget_usd=0` en descubrimiento; un `SESSION_OUTPUT`
+  con llamadas o coste > 0 se rechaza (política permanente, probada).
+- **Outputs como datos no confiables**: `SESSION_OUTPUT.json` se valida con
+  Pydantic (`extra=forbid`, tamaños, no negativos); los conceptos se
+  deduplican; las evidencias exigen URL+fecha+fragmento para `verified=true`.
+- **API Readiness Gate**: nunca configura claves ni consume nada; solo
+  produce una propuesta determinista y auditable.
+- **No inventar capacidades**: ver `docs/FREEBUFF_WORKFLOW.md` (qué puede y
+  qué no puede garantizar Freebuff fuera de la sesión).
+
 ## Si esto se expone a internet (futuro)
 
 - Añadir autenticación/authorization (Convex Auth u OIDC) y control de acceso.

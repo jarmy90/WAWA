@@ -114,7 +114,7 @@ app/
 ├── workflows/    # Pipeline de 13 pasos + datos de demo
 └── main.py
 frontend/         # Dashboard (HTML/CSS/JS vanilla, servido por FastAPI)
-tests/            # 149 tests pytest
+tests/            # 207 tests pytest
 data/             # SQLite, demo, research manual
 docs/             # Arquitectura, scoring, discovery, seguridad, roadmap...
 scripts/          # run.sh, seed_demo.py, empaquetado/verificación
@@ -139,6 +139,12 @@ La base de datos SQLite se crea automáticamente en `data/abl.db` al arrancar.
 | [docs/ITERATION_HISTORY.md](docs/ITERATION_HISTORY.md) | Historial de iteraciones y entregas |
 | [docs/SECURITY.md](docs/SECURITY.md) | Modelo de amenazas y mitigaciones |
 | [docs/FREEBUFF_WORKFLOW.md](docs/FREEBUFF_WORKFLOW.md) | Cómo usar Freebuff para construir y operar |
+| [docs/FREEBUFF_SESSION_PROTOCOL.md](docs/FREEBUFF_SESSION_PROTOCOL.md) | Sesiones reanudables de 2-6 h: plan, estado, output, report, NEXT_SESSION |
+| [docs/CAMPAIGN_RUNNER.md](docs/CAMPAIGN_RUNNER.md) | Máquina de estados de campañas y embudo con límites inmutables |
+| [docs/REASONING_BUDGET.md](docs/REASONING_BUDGET.md) | Niveles de profundidad de razonamiento (0-4) y política de coste 0 |
+| [docs/API_READINESS_GATE.md](docs/API_READINESS_GATE.md) | Cuándo empieza a tener sentido gastar tokens (por defecto: no) |
+| [docs/RUNTIME_STRATEGY.md](docs/RUNTIME_STRATEGY.md) | Escenarios de runtime final (FREEBUFF_SESSION_ONLY / CHEAP / HYBRID) |
+| [docs/FREEBUFF_RESEARCH_MISSIONS.md](docs/FREEBUFF_RESEARCH_MISSIONS.md) | Las 10 misiones de investigación para Freebuff y su verificación |
 | [docs/EXTERNAL_MODEL_REVIEW.md](docs/EXTERNAL_MODEL_REVIEW.md) | Comité de contraste: revisiones de modelos independientes para finalistas |
 | [docs/REVIEW_PACKET_FORMAT.md](docs/REVIEW_PACKET_FORMAT.md) | Formato del expediente de revisión y prompt normalizado |
 | [docs/REVIEW_SYNTHESIS.md](docs/REVIEW_SYNTHESIS.md) | Parsing estructurado y síntesis agregada |
@@ -228,6 +234,27 @@ El **Venture Quality Score** (11 criterios, 100 puntos) valora la calidad
 empresarial y estratégica sin sustituir al Opportunity Score de la iteración
 001. En offline, `proven_demand=0`: la demanda nunca se inventa.
 Documentación: `docs/DISCOVERY.md`, `docs/VENTURE_SCORING.md`.
+
+### Sesiones Freebuff-first (iteración 006)
+
+El sistema ejecuta campañas de descubrimiento en **sesiones reanudables de
+2-6 horas** sin consumir APIs LLM (pestaña **Campañas** del dashboard y API
+`/api/campaigns/*`). El `CampaignRunner` persiste estados
+(CREATED → … → COMPLETED con PAUSED/BLOCKED/FAILED/CANCELLED), embudo con
+límites configurables que nunca aumentan en silencio, niveles de
+razonamiento registrados, y un **API Readiness Gate** determinista que decide
+si gastar tokens empieza a tener sentido (por defecto: no).
+
+```bash
+python3 scripts/continue_campaign.py --campaign <id> --hours 5   # prepara sesión + prompt breve
+python3 scripts/finalize_session.py --session <session_id>        # valida, importa, checkpoint
+```
+
+Cada sesión deja `SESSION_PLAN.md`, `SESSION_STATE.json`, `SESSION_REPORT.md`
+y `NEXT_SESSION.md`; el prompt breve generado se pega directamente a
+Freebuff. **Freebuff no es un runtime 24/7** y el proyecto no finge lo
+contrario (ver `docs/RUNTIME_STRATEGY.md`). El piloto sintético se lanza con
+`POST /api/campaigns/demo` (FREEBUFF-FIRST PILOT 001, 0 llamadas API).
 
 ## Decisiones técnicas clave
 

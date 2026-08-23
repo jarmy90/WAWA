@@ -497,3 +497,12 @@ code { background: var(--slate-soft); padding: 1px 5px; border-radius: 4px; font
   margin-top: 12px;
   flex-wrap: wrap;
 }
+
+/* Campañas Freebuff-first */
+.camp-badges { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.chip-ok { background: var(--green-soft, #d9f2e3); color: var(--green, #0f7a3d); }
+.chip-danger { background: var(--red-soft, #fbe4e4); color: var(--red, #b3261e); }
+.session-list { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
+.session-row { font-size: 0.8rem; color: var(--slate); padding: 4px 8px; background: var(--bg-soft); border-radius: 6px; }
+.session-row.dim { opacity: 0.6; }
+.campaign-note { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }

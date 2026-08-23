@@ -37,7 +37,22 @@ from app.scoring.venture import (
 
 PHASES = ("created", "phase1", "phase2", "phase3", "shortlist", "tournament", "finalists", "done")
 
-MISSION_KINDS = ("campaign", "signal", "candidate", "tournament", "competitors", "buyer", "substitution", "equivalents")
+
+def _normalize_key(text: str) -> str:
+    """Normaliza un título para deduplicación (acentos, mayúsculas, signos)."""
+    import re
+    import unicodedata
+
+    t = unicodedata.normalize("NFKD", str(text).lower())
+    t = "".join(c for c in t if not unicodedata.combining(c))
+    return re.sub(r"[^a-z0-9]+", " ", t).strip()
+
+MISSION_KINDS = (
+    "campaign", "signal", "candidate", "tournament", "competitors", "buyer", "substitution", "equivalents",
+    "DEMAND_REALITY_CHECK", "BUYER_BUDGET_CHECK", "CURRENT_ALTERNATIVE_CHECK", "GENERAL_AI_SUBSTITUTION_CHECK",
+    "COMPETITOR_EQUIVALENT_SEARCH", "DISTRIBUTION_ACCESS_CHECK", "MOAT_REALITY_CHECK", "DATA_AVAILABILITY_CHECK",
+    "TOS_AND_LEGAL_CHECK", "EXPERIMENT_FEASIBILITY_CHECK",
+)
 
 # Campos que una evidencia DEBE traer para poder marcarse verified (regla de
 # no auto-verificación: Freebuff u otra fuente no basta por sí misma).
@@ -491,8 +506,52 @@ class DiscoveryService:
         self._log("discovery.mission", f"Misión creada: {kind} ({mission.mission_id}).", model="manual")
         return mission
 
+    def import_concept(self, campaign_id: str, item: dict[str, Any], *, source: str = "session") -> dict[str, Any] | None:
+        """Importa un concepto de sesión Freebuff con deduplicación por título.
+
+        Devuelve None si es duplicado (título normalizado ya existente en la
+        campaña). Los conceptos se evalúan deterministamente (substitution +
+        venture) como HIPÓTESIS, nunca como demanda verificada.
+        """
+        title = str(item.get("title") or "").strip()
+        if not title:
+            return None
+        normalized = _normalize_key(title)
+        for existing in self.repos.discovery.concepts_by_campaign(campaign_id):
+            if _normalize_key(existing["title"]) == normalized:
+                return None
+        try:
+            return self._save_concept(campaign_id, item, phase="session", source=source)
+        except ValidationError:
+            return None
+
     def _build_mission(self, kind: str, target: dict[str, Any]) -> MissionExport:
         mission_id = new_id()
+        from app.core.mission_templates import get_mission_template
+
+        template = get_mission_template(kind)
+        if template:
+            return MissionExport(
+                mission_id=mission_id,
+                kind=kind,
+                target=target,
+                objective=template["objective"],
+                questions=template["questions"],
+                suggested_queries=template["suggested_queries"],
+                output_format="JSON conforme al esquema json_import_schema (nunca inventar datos).",
+                required_evidence_fields=list(VERIFIED_REQUIRED_FIELDS),
+                no_invention_rule=(
+                    "NO inventar demanda, precios, competidores, clientes, estadísticas ni resultados. "
+                    "Si no hay dato, escribir null y marcar el dato como desconocido."
+                ),
+                reliability_criteria=[
+                    "Fuente primaria > secundaria.",
+                    "URL concreta y fecha de consulta.",
+                    "Fragmento textual relevante.",
+                    "Notas de incertidumbre cuando aplique.",
+                ],
+                json_import_schema=template["json_schema"],
+            )
         base_questions: dict[str, list[str]] = {
             "campaign": [
                 "¿Qué problemas reales existen en este territorio que la gente paga por resolver?",

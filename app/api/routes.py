@@ -10,7 +10,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.errors import ValidationError
 from app.core.security import validate_extension, validate_payload_size, validate_uuid
-from app.models.discovery import CampaignCreate, MissionIn
+from app.models.campaign import CampaignCreate, ReasoningIn, SessionOutputIn, SessionPrepareIn, StageChangeIn
+from app.models.discovery import CampaignCreate as DiscoveryCampaignCreate, MissionIn
 from app.models.enums import Decision, OpportunityStatus, OperatingMode
 from app.models.external_review import QueueOpportunityIn, ReviewImportIn
 from app.models.ledger import ExpenseRequestIn, IncomeIn, ReverseIn, SimulationStartIn
@@ -320,7 +321,7 @@ def discovery_list_campaigns(request: Request) -> dict:
 
 
 @router.post("/discovery/campaigns")
-def discovery_create_campaign(payload: CampaignCreate, request: Request) -> dict:
+def discovery_create_campaign(payload: DiscoveryCampaignCreate, request: Request) -> dict:
     container = get_container(request)
     campaign = container.discovery.create_campaign(payload.model_dump())
     return {"campaign": campaign}
@@ -543,6 +544,93 @@ def reviews_demo(request: Request) -> dict:
     container = get_container(request)
     result = container.reviews.run_review_demo(container.pipeline)
     return {**REVIEW_NOTICE, **result}
+
+
+# ---------------------------------------------------------------------------
+# Campañas Freebuff-first (sesiones reanudables, sin API runtime)
+# ---------------------------------------------------------------------------
+CAMPAIGN_NOTICE = {"freebuff_session": True, "no_24_7_guarantee": True, "api_cost_usd": 0.0}
+
+
+@router.get("/campaigns")
+def campaigns_list(request: Request) -> dict:
+    return get_container(request).campaigns.list_campaigns()
+
+
+@router.post("/campaigns")
+def campaigns_create(payload: CampaignCreate, request: Request) -> dict:
+    return {**CAMPAIGN_NOTICE, **get_container(request).campaigns.create_campaign(payload.model_dump())}
+
+
+@router.get("/campaigns/{campaign_id}")
+def campaigns_detail(request: Request, campaign_id: str = Depends(valid_campaign_id)) -> dict:
+    return get_container(request).campaigns.campaign_detail(campaign_id)
+
+
+@router.post("/campaigns/{campaign_id}/stage")
+def campaigns_stage(request: Request, payload: StageChangeIn, campaign_id: str = Depends(valid_campaign_id)) -> dict:
+    return get_container(request).campaigns.transition(
+        campaign_id, payload.to_stage, actor=payload.actor, reason=payload.reason, next_action=payload.next_action
+    )
+
+
+@router.get("/campaigns/{campaign_id}/prompt")
+def campaigns_prompt(request: Request, campaign_id: str = Depends(valid_campaign_id)) -> dict:
+    return {**CAMPAIGN_NOTICE, "short_prompt": get_container(request).campaigns.short_prompt(campaign_id)}
+
+
+@router.get("/campaigns/{campaign_id}/sessions")
+def campaigns_sessions(request: Request, campaign_id: str = Depends(valid_campaign_id)) -> dict:
+    return {"sessions": get_container(request).repos.campaigns.sessions_for(campaign_id)}
+
+
+@router.post("/campaigns/{campaign_id}/sessions")
+def campaigns_prepare_session(payload: SessionPrepareIn, request: Request, campaign_id: str = Depends(valid_campaign_id)) -> dict:
+    session = get_container(request).campaigns.prepare_session(campaign_id, payload.hours, actor=payload.actor)
+    return {**CAMPAIGN_NOTICE, "session": session}
+
+
+@router.get("/campaigns/{campaign_id}/reasoning")
+def campaigns_reasoning(request: Request, campaign_id: str = Depends(valid_campaign_id)) -> dict:
+    return {"reasoning_log": get_container(request).repos.campaigns.reasoning_for(campaign_id)}
+
+
+@router.post("/campaigns/{campaign_id}/readiness/{opportunity_id}")
+def campaigns_readiness(request: Request, campaign_id: str = Depends(valid_campaign_id), opportunity_id: str = Depends(valid_id)) -> dict:
+    return {**CAMPAIGN_NOTICE, "gate": get_container(request).campaigns.evaluate_api_readiness(opportunity_id)}
+
+
+@router.post("/campaigns/{campaign_id}/reasoning")
+def campaigns_record_reasoning(payload: ReasoningIn, request: Request, campaign_id: str = Depends(valid_campaign_id)) -> dict:
+    return get_container(request).campaigns.record_reasoning(
+        campaign_id, payload.level, payload.action, payload.reason, session_id=payload.session_id
+    )
+
+
+@router.post("/campaigns/demo")
+def campaigns_demo(request: Request) -> dict:
+    """Piloto SINTÉTICO FREEBUFF-FIRST PILOT 001 (0 llamadas API, etiquetado)."""
+    container = get_container(request)
+    result = container.campaigns.run_demo(container.pipeline)
+    return {**CAMPAIGN_NOTICE, **result}
+
+
+# ---------------------------------------------------------------------------
+# Sesiones Freebuff
+# ---------------------------------------------------------------------------
+@router.post("/sessions/{session_id}/import")
+def sessions_import(payload: SessionOutputIn, request: Request, session_id: str) -> dict:
+    return get_container(request).campaigns.import_session_output(session_id, payload)
+
+
+@router.post("/sessions/{session_id}/finalize")
+def sessions_finalize(request: Request, session_id: str) -> dict:
+    return get_container(request).campaigns.finalize_session(session_id)
+
+
+@router.get("/sessions")
+def sessions_list(request: Request, limit: int = Query(default=20, ge=1, le=100)) -> dict:
+    return {"sessions": get_container(request).repos.campaigns.list_sessions(limit=limit)}
 
 
 # ---------------------------------------------------------------------------

@@ -30,6 +30,15 @@
 
 ## Próximos pasos recomendados (por prioridad)
 
+### 0. Ejecutar campañas Freebuff-first reales (iteración 006)
+El CampaignRunner y el protocolo de sesiones reanudables están implementados
+y probados (207 tests). El siguiente paso es **usarlos en serio**:
+- Lanzar una campaña real con `scripts/continue_campaign.py --campaign <id> --hours 5`.
+- Ejecutar una sesión de 2-6 h de Freebuff investigando misiones reales.
+- Finalizar con `finalize_session.py`, revisar `NEXT_SESSION.md` y reanudar.
+- Medir: ¿el protocolo ahorra contexto? ¿las misiones mejoran la evidencia?
+- Probar el API Readiness Gate sobre los finalistas reales.
+
 ### 1. Poner a trabajar el comité de contraste con modelos reales (iteración 005)
 El **Laboratorio de oportunidades** ya funciona offline (`MANUAL_IMPORT` +
 `MOCK`): expediente idéntico, importación TXT/MD, síntesis con etiqueta de

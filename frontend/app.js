@@ -694,18 +694,36 @@ let campaigns = [];
 function switchView(name) {
   const showOpps = name === "opps";
   $("#view-opportunities").classList.toggle("hidden", !showOpps);
-  $("#view-discovery").classList.toggle("hidden", showOpps || name === "reviews");
-  $("#view-reviews").classList.toggle("hidden", name !== "reviews");
+  $("#view-discovery").classList.toggle("hidden", !(name === "discovery"));
+  $("#view-reviews").classList.toggle("hidden", !(name === "reviews"));
+  $("#view-campaigns").classList.toggle("hidden", !(name === "campaigns"));
   $("#tab-opps").classList.toggle("active", showOpps);
   $("#tab-discovery").classList.toggle("active", name === "discovery");
   $("#tab-reviews").classList.toggle("active", name === "reviews");
+  $("#tab-campaigns").classList.toggle("active", name === "campaigns");
   if (name === "discovery") loadDiscovery();
   if (name === "reviews") loadReviews();
+  if (name === "campaigns") loadCampaigns();
 }
 
 $("#tab-opps").addEventListener("click", () => switchView("opps"));
 $("#tab-discovery").addEventListener("click", () => switchView("discovery"));
 $("#tab-reviews").addEventListener("click", () => switchView("reviews"));
+$("#tab-campaigns").addEventListener("click", () => switchView("campaigns"));
+
+$("#btn-campaigns-demo").addEventListener("click", async () => {
+  const btn = $("#btn-campaigns-demo");
+  btn.disabled = true;
+  try {
+    const res = await api("/api/campaigns/demo", { method: "POST" });
+    alert(res.note || "Piloto sintético creado.");
+    loadCampaigns();
+  } catch (e) {
+    alert("Error: " + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 $("#btn-campaign-new").addEventListener("click", () => openModal("campaign"));
 
@@ -1064,6 +1082,92 @@ function debounce(fn, ms) {
     clearTimeout(t);
     t = setTimeout(() => fn(...args), ms);
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* Campañas Freebuff-first (sesiones reanudables)                      */
+/* ------------------------------------------------------------------ */
+async function loadCampaigns() {
+  try {
+    const data = await api("/api/campaigns");
+    const items = data.items || [];
+    $("#camp-badge").textContent = items.length;
+    const container = $("#campaigns");
+    $("#campaigns-empty").classList.toggle("hidden", items.length > 0);
+    container.innerHTML = "";
+    for (const camp of items) {
+      const detail = await api(`/api/campaigns/${camp.id}`);
+      container.appendChild(renderFreebuffCampaign(detail));
+    }
+  } catch (e) {
+    $("#campaigns-empty").textContent = `Error: ${e.message}`;
+    $("#campaigns-empty").classList.remove("hidden");
+  }
+}
+
+function renderFreebuffCampaign(detail) {
+  const camp = detail.campaign || {};
+  const card = document.createElement("div");
+  card.className = "campaign-card";
+  const sessions = (detail.sessions || []).slice(0, 3);
+  const sessionRows = sessions.length
+    ? sessions
+        .map((s) => {
+          const status = s.status === "completed" ? "✅" : s.status === "active" ? "⏳" : "○";
+          return `<div class="session-row">${status} ${esc(s.session_id.slice(0, 8))} · ${s.time_budget_hours}h · ${esc(s.stage_start || "")}${s.stage_end ? " → " + esc(s.stage_end) : ""}</div>`;
+        })
+        .join("")
+    : '<div class="session-row dim">sin sesiones</div>';
+  card.innerHTML = `
+    <div class="campaign-head">
+      <div>
+        <h3>${esc(camp.title || camp.id)}</h3>
+        <div class="campaign-meta">
+          ${camp.time_budget_hours}h/sesión · finalistas máx ${camp.maximum_finalists} ·
+          ideas ${camp.concepts_count || 0} · rechazadas ${camp.concepts_rejected || 0} ·
+          ${(camp.is_synthetic ? "SINTÉTICA" : "real")}
+        </div>
+      </div>
+      <div class="camp-badges">
+        <span class="chip chip-${camp.status === "completed" ? "ok" : camp.status === "blocked" ? "danger" : "neutral"}">${esc(camp.status || "")}</span>
+        <span class="chip chip-neutral">${esc(camp.stage || "")}</span>
+      </div>
+    </div>
+    <div class="session-list">${sessionRows}</div>
+    <div class="campaign-actions">
+      <button class="btn btn-ghost btn-sm btn-session" data-id="${esc(camp.id)}">Preparar sesión (2-6 h)</button>
+      <button class="btn btn-ghost btn-sm btn-camp-prompt" data-id="${esc(camp.id)}">Prompt breve</button>
+      ${camp.next_recommended_action ? `<span class="hint">${esc(camp.next_recommended_action)}</span>` : ""}
+    </div>
+    <div class="campaign-note">
+      <span class="tag tag-unverified">FREEBUFF SESSION</span>
+      <span class="tag tag-unverified">NO 24/7 GUARANTEED</span>
+      <span class="tag tag-ok">API COST 0</span>
+    </div>
+  `;
+  card.querySelector(".btn-session").addEventListener("click", async () => {
+    const hours = prompt("Horas objetivo de la sesión (2-6):", "3");
+    if (!hours) return;
+    try {
+      const res = await api(`/api/campaigns/${camp.id}/sessions`, {
+        method: "POST",
+        body: JSON.stringify({ hours: parseInt(hours, 10), actor: "human" }),
+      });
+      alert(`Sesión preparada: ${res.session.session_id}\n\n${res.session.short_prompt}`);
+      await loadCampaigns();
+    } catch (e) {
+      alert(`Error: ${e.message}`);
+    }
+  });
+  card.querySelector(".btn-camp-prompt").addEventListener("click", async () => {
+    try {
+      const res = await api(`/api/campaigns/${camp.id}/prompt`);
+      alert(res.short_prompt);
+    } catch (e) {
+      alert(`Error: ${e.message}`);
+    }
+  });
+  return card;
 }
 
 /* ------------------------------------------------------------------ */

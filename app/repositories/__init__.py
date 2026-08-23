@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.repositories.competitors import CompetitorRepository
+from app.repositories.campaigns import CampaignRepository
 from app.repositories.costs import CostRepository
 from app.repositories.db import connect, init_db
 from app.repositories.decision_log import DecisionLogRepository
@@ -39,6 +40,7 @@ class Repos:
     ledger: LedgerRepository
     discovery: DiscoveryRepository
     reviews: ReviewRepository
+    campaigns: CampaignRepository
 
 
 def build_repos(conn) -> Repos:
@@ -54,6 +56,7 @@ def build_repos(conn) -> Repos:
         ledger=LedgerRepository(conn),
         discovery=DiscoveryRepository(conn),
         reviews=ReviewRepository(conn),
+        campaigns=CampaignRepository(conn),
     )
 
 
@@ -73,4 +76,5 @@ __all__ = [
     "LedgerRepository",
     "DiscoveryRepository",
     "ReviewRepository",
+    "CampaignRepository",
 ]
