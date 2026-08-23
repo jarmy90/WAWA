@@ -140,8 +140,11 @@
 
 ## Git
 
-- **Commit actual**: ver sección Git del informe de la iteración.
-- **Estado del repositorio**: los cambios de esta iteración se commitean al
-  final; ver informe.
-- **git diff --stat**: ver informe de la iteración.
+- **Commit actual**: `88d04c8` (Iteración 004: Business Discovery Engine),
+  sobre `450e589` (Iteración 003).
+- **Estado del repositorio**: limpio tras el commit; el push no se ejecutó
+  porque la iteración 004 no lo solicitó explícitamente (se hará desde el
+  panel de Changes de Freebuff si se desea).
+- **git diff --stat**: 28 archivos cambiados, 4006 inserciones, 53
+  eliminaciones.
 - **Archivos cambiados**: todos los listados arriba.
