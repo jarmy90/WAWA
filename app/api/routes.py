@@ -240,21 +240,77 @@ def orchestrator_import_research(
 
 @router.get("/orchestrator/runs/{run_id}/missions")
 def orchestrator_missions(request: Request, run_id: str = Depends(valid_run_id)) -> dict:
-    """Misiones pendientes de investigación de la ejecución (para copiar)."""
+    """Misiones pendientes de investigación de la ejecución (para copiar).
+
+    Iteración 016: si no hay misiones, explica HONESTAMENTE el motivo (p. ej.
+    cero candidatas concretas) en lugar de devolver una lista vacía silenciosa;
+    cada misión lleva su contexto completo trazable y hay recuento de estados
+    de conceptos para que los contadores del frontend coincidan con el backend.
+    """
     container = get_container(request)
     run = container.orchestrator._get(run_id)
     rows = container.repos.orchestrator.transitions_for(run_id)
     missions: list[dict] = []
+    explanation: str | None = None
+    status_counts: dict = {}
     for t in rows:
         if t.get("to_state") == "RESEARCH_PLANNED":
-            missions = list((t.get("outputs") or {}).get("missions") or [])
+            outs = t.get("outputs") or {}
+            missions = list(outs.get("missions") or [])
             break
+        if t.get("to_state") == "RESEARCH_PENDING":
+            outs = t.get("outputs") or {}
+            explanation = outs.get("no_mission_explanation")
+            status_counts = dict(outs.get("concept_status_counts") or {})
+    if not missions and run.get("discovery_campaign_id"):
+        # Fallback robusto: misiones activas persistidas (nunca superseded).
+        try:
+            active = [
+                m for m in container.repos.discovery.missions_by_campaign(run["discovery_campaign_id"])
+                if m.get("status") not in ("SUPERSEDED_BY_SEMANTIC_QUALITY_GATE", "CANCELLED")
+            ]
+            missions = [
+                {
+                    "mission_id": m["mission_id"],
+                    "kind": (m.get("target") or {}).get("kind") or "MISSION",
+                    "concept_id": (m.get("target") or {}).get("concept_id"),
+                    "opportunity_id": None,
+                }
+                for m in active
+            ]
+        except Exception:
+            pass
     for m in missions:
         try:
             m["markdown"] = container.discovery.export_mission_markdown(m["mission_id"])
         except Exception:
             m["markdown"] = None
-    return {"run_id": run_id, "state": run["state"], "missions": missions, "count": len(missions)}
+        # Contexto trazable de la candidata asociada.
+        title = None
+        cid = m.get("concept_id")
+        if cid and run.get("discovery_campaign_id"):
+            try:
+                det = container.discovery.campaign_detail(run["discovery_campaign_id"])
+                for c in det.get("concepts") or []:
+                    if c.get("id") == cid:
+                        title = c.get("title")
+                        break
+            except Exception:
+                title = None
+        m["concept_title"] = title
+    if not missions and explanation is None:
+        explanation = (
+            f"No hay misiones pendientes en el estado {run['state']}: todavía no se ha "
+            f"planificado ninguna investigación o todas están importadas/superseded."
+        )
+    return {
+        "run_id": run_id,
+        "state": run["state"],
+        "missions": missions,
+        "count": len(missions),
+        "explanation": explanation,
+        "status_counts": status_counts,
+    }
 
 
 @router.get("/orchestrator/runs/{run_id}/exports/{fmt}")
@@ -846,6 +902,59 @@ def omniroute_status(request: Request) -> dict:
         "allowlist_default": {"allowed": allowed, "reason": reason},
         "allow_free_only": container.settings.omniroute_allow_free_only,
     }
+
+
+# ---------------------------------------------------------------------------
+# Ventana prioritaria OX Alpha (iteración 015) — OPCIONAL, AISLADO, NO EVIDENCIA
+# ---------------------------------------------------------------------------
+OX_ALPHA_NOTICE = {
+    "ox_alpha_is_evidence": False,
+    "production_use_blocked": True,
+    "real_money_moved": False,
+}
+
+
+class DeepTaskIn(BaseModel):
+    """Petición de tarea profunda (P0) por la ventana OX Alpha."""
+
+    model_config = ConfigDict(extra="forbid")
+    task: str = Field(min_length=1, max_length=40)
+    concept: dict = Field(default_factory=dict)
+    concepts_for_comparison: list[dict] = Field(default_factory=list, max_length=20)
+    opportunity_id: str | None = Field(default=None, max_length=64)
+
+
+@router.get("/oxalpha/status")
+def oxalpha_status(request: Request) -> dict:
+    """Estado de la ventana gratuita (identidad verificada, expiración, límites).
+    Sin claves ni secretos. La identidad es OX_ALPHA_UNVERIFIED hasta que el
+    propietario fije el slug EXACTO tras verificarlo en el catálogo real."""
+    container = get_container(request)
+    return {**OX_ALPHA_NOTICE, **container.deep_reasoning.status()}
+
+
+@router.post("/oxalpha/catalog-check")
+def oxalpha_catalog_check(request: Request) -> dict:
+    """Consulta el catálogo REAL del gateway para verificar el slug.
+    Nunca inventa slugs; sin coincidencia inequívoca => OX_ALPHA_UNVERIFIED."""
+    return {**OX_ALPHA_NOTICE, **get_container(request).deep_reasoning.catalog_check()}
+
+
+@router.post("/oxalpha/task")
+def oxalpha_task(payload: DeepTaskIn, request: Request) -> dict:
+    """Ejecuta una tarea P0 reservada (reformulation | coherence_check |
+    red_team | variation_comparison). Fallo/bloqueo => ausencia NEUTRAL;
+    nunca salida sintética presentada como OX Alpha. El resultado es
+    razonamiento de modelo: NUNCA evidencia y requiere validación
+    determinista posterior."""
+    container = get_container(request)
+    result = container.deep_reasoning.run_deep_task(
+        payload.task,
+        payload.concept,
+        opportunity_id=payload.opportunity_id,
+        concepts_for_comparison=payload.concepts_for_comparison,
+    )
+    return {**OX_ALPHA_NOTICE, **result}
 
 
 @router.get("/routing/policies")

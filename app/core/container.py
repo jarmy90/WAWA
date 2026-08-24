@@ -17,6 +17,7 @@ from app.services.budget import BudgetGuard
 from app.services.campaign import CampaignService
 from app.services.cycle import CycleEvaluator
 from app.services.discovery import DiscoveryService
+from app.services.deep_reasoning import DeepReasoningService
 from app.services.engine import EngineService
 from app.services.economy import EconomyService
 from app.services.import_export import ExportService, ImportService
@@ -44,6 +45,7 @@ class AppContainer:
     campaigns: CampaignService
     cycle: CycleEvaluator
     orchestrator: CampaignOrchestrator
+    deep_reasoning: DeepReasoningService
 
     def close(self) -> None:
         try:
@@ -75,6 +77,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         settings, repos, repos.orchestrator, discovery, pipeline, reviews, opportunities
     )
     cycle = CycleEvaluator(settings, conn, repos=repos, orchestrator=orchestrator)
+    deep_reasoning = DeepReasoningService(settings, providers, repos.llm_calls)
     return AppContainer(
         settings=settings,
         conn=conn,
@@ -92,4 +95,5 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         campaigns=campaigns,
         cycle=cycle,
         orchestrator=orchestrator,
+        deep_reasoning=deep_reasoning,
     )

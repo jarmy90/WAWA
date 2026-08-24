@@ -1,4 +1,4 @@
-/* Autonomous Business Lab — dashboard (vanilla JS, sin dependencias). */
+/* Autonomous Business Lab — dashboard (vanilla JS, sin dependencias). Iteración 014: E2E flow. */
 "use strict";
 
 const $ = (sel) => document.querySelector(sel);
@@ -733,14 +733,24 @@ async function loadResearch() {
   try {
     const data = await api(`/api/orchestrator/runs/${currentRun.id}/missions`);
     if (!data.missions?.length) {
-      box.innerHTML = `<p class="hint">Sin misiones planificadas todavía (la campaña está en ${esc(data.state)}).</p>`;
+      // Iteración 016: explicación honesta del backend (por qué no hay misiones)
+      // en vez de un mensaje genérico; sin caja de pegado cuando no hay misión.
+      const exp = data.explanation || `Sin misiones planificadas todavía (la campaña está en ${data.state}).`;
+      box.innerHTML = `<p class="hint"><span class="tag tag-neutral">SIN MISIÓN DISPONIBLE</span> ${esc(exp)}</p>`;
       return;
     }
     box.innerHTML = data.missions.map((m) => `
       <div class="feed-item">
-        <strong>${esc(m.title || m.mission_id)}</strong> <span class="tag tag-unverified">${esc(m.kind || "MISSION")}</span>
-        <div class="row"><button class="btn btn-secondary btn-sm btn-copy-mission" data-md="${esc(m.markdown || "")}">Copiar misión</button></div>
+        <strong>${esc(m.concept_title || m.title || m.mission_id)}</strong> <span class="tag tag-unverified">${esc(m.kind || "MISSION")}</span>
+        <p class="small muted">mission_id: <code>${esc(m.mission_id)}</code>${m.concept_id ? ` · concept_id: <code>${esc(m.concept_id)}</code>` : ""}</p>
+        <div class="row"><button class="btn btn-secondary btn-sm btn-copy-mission" data-md="${esc(m.markdown || "")}">COPIAR MISIÓN PARA FREEBUFF</button></div>
       </div>`).join("");
+    // Iteración 014: populate the mission selector dropdown
+    const selEl = document.getElementById("orc-mission-select");
+    if (selEl) {
+      selEl.innerHTML = '<option value="__first__">Primera misión pendiente (automático)</option>' +
+        data.missions.map(m => '<option value="' + m.mission_id + '">' + (m.kind || 'MISSION') + ' — ' + (m.title || m.mission_id).slice(0, 60) + '</option>').join('');
+    }
     box.querySelectorAll(".btn-copy-mission").forEach((b) => {
       b.addEventListener("click", async () => {
         try {
@@ -1441,12 +1451,21 @@ function renderOrchestrator(data) {
   if (!run) {
     panel.innerHTML = "";
     empty.classList.remove("hidden");
-    if (btnStart) btnStart.classList.remove("hidden");
+    if (btnStart) {
+      btnStart.classList.remove("hidden");
+      btnStart.textContent = "INICIAR CAMPAÑA REAL";
+      delete btnStart.dataset.mode;
+    }
     [btnAdvance, btnPause, btnResume, btnCancel].forEach((b) => b.classList.add("hidden"));
     return;
   }
   empty.classList.add("hidden");
-  if (btnStart) btnStart.classList.add("hidden");
+  // Iteración 016: si la campaña ya existe, el botón de portada NO desaparece
+  // ni invita a crearla otra vez: pasa a modo "continuar" (idempotente).
+  if (btnStart && btnStart.dataset.mode !== "continue") {
+    btnStart.textContent = "CONTINUAR CAMPAÑA REAL";
+    btnStart.dataset.mode = "continue";
+  }
   btnAdvance.classList.toggle("hidden", !["RESEARCH_PENDING", "RESEARCH_IMPORTED", "COMMITTEE_COMPLETED", "CANDIDATES_READY"].includes(run.state) && !data.research_pending);
   btnPause.classList.toggle("hidden", run.state === "PAUSED" || ["COMPLETED", "FAILED", "CANCELLED"].includes(run.state));
   btnResume.classList.toggle("hidden", run.state !== "PAUSED");
@@ -1502,14 +1521,24 @@ async function loadOrchestratorMissions(runId) {
     const box = $("#orc-missions");
     if (!box) return;
     if (!data.missions?.length) {
-      box.innerHTML = `<p class="hint">Sin misiones planificadas todavía.</p>`;
+      // Iteración 016: explicación honesta del backend (por qué no hay misión)
+      // en vez de un mensaje genérico; nunca "COPIAR MISIÓN" sin misión.
+      const exp = data.explanation || `Sin misiones planificadas todavía (la campaña está en ${data.state}).`;
+      box.innerHTML = `<p class="hint"><span class="tag tag-neutral">SIN MISIÓN DISPONIBLE</span> ${esc(exp)}</p>`;
       return;
     }
     box.innerHTML = data.missions.map((m) => `
       <div class="feed-item">
-        <strong>${esc(m.title || m.mission_id)}</strong> <span class="tag tag-unverified">${esc(m.kind || "MISSION")}</span>
-        <div class="row"><button class="btn btn-secondary btn-sm btn-copy-mission" data-md="${esc(m.markdown || "")}">Copiar misión</button></div>
+        <strong>${esc(m.concept_title || m.title || m.mission_id)}</strong> <span class="tag tag-unverified">${esc(m.kind || "MISSION")}</span>
+        <p class="small muted">mission_id: <code>${esc(m.mission_id)}</code>${m.concept_id ? ` · concept_id: <code>${esc(m.concept_id)}</code>` : ""}</p>
+        <div class="row"><button class="btn btn-secondary btn-sm btn-copy-mission" data-md="${esc(m.markdown || "")}">COPIAR MISIÓN PARA FREEBUFF</button></div>
       </div>`).join("");
+    // Iteración 014: populate the mission selector dropdown
+    const selEl = document.getElementById("orc-mission-select");
+    if (selEl) {
+      selEl.innerHTML = '<option value="__first__">Primera misión pendiente (automático)</option>' +
+        data.missions.map(m => '<option value="' + m.mission_id + '">' + (m.kind || 'MISSION') + ' — ' + (m.title || m.mission_id).slice(0, 60) + '</option>').join('');
+    }
     box.querySelectorAll(".btn-copy-mission").forEach((b) => {
       b.addEventListener("click", async () => {
         try {
@@ -1548,7 +1577,12 @@ async function orchestratorAction(path, btnId, after) {
   }
 }
 
-$("#btn-hero-start").addEventListener("click", () => orchestratorAction("/api/orchestrator/start", "#btn-hero-start", () => switchView("campaign")));
+$("#btn-hero-start").addEventListener("click", () => {
+  // Iteración 016: idempotente - si la campaña ya existe, continuar NO crea otra.
+  const btn = $("#btn-hero-start");
+  if (btn && btn.dataset.mode === "continue") { switchView("campaign"); return; }
+  orchestratorAction("/api/orchestrator/start", "#btn-hero-start", () => switchView("campaign"));
+});
 $("#btn-orc-advance").addEventListener("click", () => {
   if (!currentRun) return;
   orchestratorAction(`/api/orchestrator/runs/${currentRun.id}/advance`, "#btn-orc-advance");
@@ -1574,17 +1608,22 @@ document.addEventListener("click", (ev) => {
   if (!text) return alert("Pega primero la respuesta de la misión.");
   (async () => {
     try {
-      // Asocia la respuesta pegada a la primera misión pendiente.
+      // Iteración 014: asocia la respuesta a la misión seleccionada o a la primera pendiente.
       const missions = await api(`/api/orchestrator/runs/${currentRun.id}/missions`);
-      const first = missions.missions?.[0];
-      if (!first) return alert("No hay misiones pendientes a las que asociar la respuesta.");
-      let payload = { mission_id: first.mission_id, evidences: [], notes: text.slice(0, 4000) };
+      const selEl = document.getElementById("orc-mission-select");
+      const selVal = selEl ? selEl.value : "__first__";
+      let targetMission = missions.missions && missions.missions[0];
+      if (selVal !== "__first__" && missions.missions) {
+        targetMission = missions.missions.find(m => m.mission_id === selVal) || targetMission;
+      }
+      if (!targetMission) return alert("No hay misiones pendientes a las que asociar la respuesta.");
+      let payload = { mission_id: targetMission.mission_id, evidences: [], notes: text.slice(0, 4000) };
       // Si la respuesta es el JSON estructurado que pedía la misión, pasa tal cual.
       try {
         const parsed = JSON.parse(text);
         if (parsed && typeof parsed === "object") {
           payload = {
-            mission_id: first.mission_id,
+            mission_id: targetMission.mission_id,
             evidences: Array.isArray(parsed.evidences) ? parsed.evidences : [],
             competitors: Array.isArray(parsed.competitors) ? parsed.competitors : [],
             buyer_confirmed: parsed.buyer_confirmed || null,
@@ -1600,6 +1639,7 @@ document.addEventListener("click", (ev) => {
       });
       alert(res.note || "Investigación importada.");
       await loadOrchestrator();
+      await loadOrchestratorMissions(currentRun.id);
     } catch (e) {
       alert("Error: " + e.message);
     }
@@ -1677,6 +1717,9 @@ async function loadIdeas() {
     return true;
   });
   empty.classList.toggle("hidden", filtered.length > 0);
+  // Iteración 014: actualizar badge de Ideas con el total de conceptos
+  const ideasBadge = document.getElementById("ideas-badge");
+  if (ideasBadge) ideasBadge.textContent = concepts.length;
   grid.innerHTML = filtered.map((c) => {
     const status = c.status || "GENERATED_HYPOTHESIS";
     const label = STATUS_LABELS[status] || status;

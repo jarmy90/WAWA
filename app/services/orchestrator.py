@@ -132,8 +132,25 @@ class CampaignOrchestrator:
                 "reason": "Investigación externa REAL necesaria (no hay investigación web automática en este entorno).",
                 "next_action": "COPIAR MISIÓN PARA FREEBUFF y pegar la respuesta en el panel.",
             }
-        if state in ("RESEARCH_PENDING", "RESEARCH_IMPORTED"):
-            return {"to": "REEVALUATING", "op": "reevaluate"} if state == "RESEARCH_IMPORTED" else None
+        if state == "RESEARCH_IMPORTED":
+            return {"to": "REEVALUATING", "op": "reevaluate"}
+        if state == "RESEARCH_PENDING":
+            # Iteración 016: si el propietario completó Opportunity Briefs DESPUÉS
+            # de la parada (reformulación → investigación), re-planifica de forma
+            # determinista SOLO cuando existen candidatas concretas sin misión.
+            # Sin candidatas o con misiones activas: parada honesta (None).
+            candidates = [
+                c for c in (self.discovery.campaign_detail(dcid).get("concepts") or [])
+                if c.get("status") in ("RESEARCH_CANDIDATE", "FINALIST", "SHORTLISTED_WITH_EVIDENCE")
+            ] if dcid else []
+            active_missions = (
+                [m for m in self.repos.discovery.missions_by_campaign(dcid)
+                 if m.get("status") not in ("SUPERSEDED_BY_SEMANTIC_QUALITY_GATE", "CANCELLED")]
+                if dcid else []
+            )
+            if candidates and not active_missions:
+                return {"to": "RESEARCH_PLANNED", "op": "promote_and_plan_research"}
+            return None
         if state == "REEVALUATING":
             return {"to": "CANDIDATES_READY", "op": "finalize_candidates"}
         if state == "CANDIDATES_READY":
@@ -220,8 +237,38 @@ class CampaignOrchestrator:
             if op == "promote_and_plan_research":
                 return self._promote_and_plan_research(run)
             if op == "stop_for_research":
-                return self._transition(run_id, to, step["reason"],
-                                        owner_action_required=True, next_action=step["next_action"], synthetic=False)
+                # Iteración 016: la parada es CONTEXTO-CONSCIENTE. Si no existen
+                # misiones activas (p. ej. cero candidatas concretas), se explica
+                # honestamente en vez de ordenar copiar una misión inexistente.
+                active_missions = [
+                    m for m in self.repos.discovery.missions_by_campaign(dcid or "")
+                    if m.get("status") not in ("SUPERSEDED_BY_SEMANTIC_QUALITY_GATE", "CANCELLED")
+                ] if dcid else []
+                if active_missions:
+                    reason = step["reason"]
+                    next_action = step["next_action"]
+                else:
+                    counts: dict[str, int] = {}
+                    try:
+                        for c in (self.discovery.campaign_detail(dcid).get("concepts") or []):
+                            st = c.get("status") or "GENERATED_HYPOTHESIS"
+                            counts[st] = counts.get(st, 0) + 1
+                    except Exception:
+                        counts = {}
+                    reason = (
+                        f"Sin investigación planificable: RESEARCH_CANDIDATE=0 "
+                        f"({counts.get('NEEDS_REFORMULATION', 0)} conceptos necesitan reformulación y "
+                        f"{counts.get('RECOMBINATION_INCOHERENT', 0)} recombinaciones son incoherentes). "
+                        f"Nada se investiga hasta existir un negocio concreto (regla iteración 013)."
+                    )
+                    next_action = (
+                        "REFORMULAR las direcciones abstractas hasta convertirlas en negocios "
+                        "concretos (todavía NO hay misión que copiar)."
+                    )
+                return self._transition(run_id, to, reason,
+                                        owner_action_required=True, next_action=next_action, synthetic=False,
+                                        outputs={"concept_status_counts": counts,
+                                                 "no_mission_explanation": reason} if not active_missions else None)
             if op == "reevaluate":
                 return self._reevaluate(run)
             if op == "finalize_candidates":
@@ -283,13 +330,36 @@ class CampaignOrchestrator:
             for kind in RESEARCH_PHASE1_KINDS:
                 mission = self.discovery.create_mission(kind=kind, campaign_id=dcid, concept_id=concept["id"])
                 missions.append({"mission_id": mission.mission_id, "kind": kind, "concept_id": concept["id"], "opportunity_id": opp.id})
+
+        if not candidates:
+            detail_all = detail.get("concepts") or []
+            counts: dict[str, int] = {}
+            for c in detail_all:
+                st = c.get("status") or "GENERATED_HYPOTHESIS"
+                counts[st] = counts.get(st, 0) + 1
+            explanation = (
+                f"No existen misiones porque no hay ninguna candidata concreta "
+                f"(RESEARCH_CANDIDATE=0): {counts.get('NEEDS_REFORMULATION', 0)} conceptos "
+                f"necesitan reformulación y {counts.get('RECOMBINATION_INCOHERENT', 0)} "
+                f"recombinaciones son incoherentes."
+            )
+        else:
+            counts, explanation = {}, None
+
         self.orr.update_run(run_id, selected_opportunity_id=promoted[0] if promoted else None)
         outputs = {"promoted": promoted, "missions": missions}
+        if explanation:
+            outputs["no_mission_explanation"] = explanation
+            outputs["concept_status_counts"] = counts
+        reason = (
+            explanation or f"{len(promoted)} candidatas concretas promovidas; "
+            f"{len(missions)} misiones de Fase 1 creadas (6 por candidata, progresivas)."
+        )
         return self._transition(
             run_id, "RESEARCH_PLANNED",
-            f"{len(promoted)} candidatas concretas promovidas; {len(missions)} misiones de Fase 1 creadas (6 por candidata, progresivas).",
+            reason,
             inputs={"config": cfg}, outputs=outputs, concepts_considered=len(candidates), synthetic=False,
-            next_action="COPIAR MISIÓN PARA FREEBUFF (investigación externa real).",
+            next_action="COPIAR MISIÓN PARA FREEBUFF (investigación externa real)." if missions else None,
         )
 
     def import_research(self, run_id: str, payloads: list[dict]) -> dict:

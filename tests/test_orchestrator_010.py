@@ -42,7 +42,10 @@ def test_create_real_campaign_advances_to_research_pending(container):
     assert detail["run"]["state"] == "RESEARCH_PENDING"
     assert detail["research_pending"] is True
     assert detail["owner_action_required"] is True
-    assert "COPIAR MISIÓN" in (detail["next_action"] or "")
+    # Iteración 016: con cero candidatas concretas (flujo por defecto), la parada
+    # explica honestamente que NO hay misión que copiar y pide REFORMULAR.
+    assert "REFORMULAR" in (detail["next_action"] or "")
+    assert "COPIAR MISIÓN" not in (detail["next_action"] or "")
 
 
 def test_orchestrator_does_not_repeat_phases(container):

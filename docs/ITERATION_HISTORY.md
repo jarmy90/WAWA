@@ -19,8 +19,45 @@
 | 011 | 2026-08-23 | Corrección de entrega del frontend obsoleto: causa raíz identificada (caché heurística del navegador sin Cache-Control + URLs sin versión + repositorio PRIVADO con enlaces RAW 404 + bug de arranque en start_wawa.sh/START_WAWA.bat que dejaba vivo un servidor antiguo). NoCacheStaticFiles (no-store), assets versionados (?v=011), marcador de versión visible con autochequeo vs /api/health (banner si diverge), eliminado el botón demo MQL5, franja de estado siempre visible (PRE_CYCLE + campaña + próxima acción), pestañas con flex-wrap, versión 0.11.0, y prueba de aceptación de 8 pasos superada en carpeta limpia. | entregado | autonomous-business-lab_iteracion-011_2026-08-23.zip.txt | 517c84b0af2501fe78c7cf6e831c21f0408cc00ef2a8ebb98a0ec34cd1b8e01d (canónico) |
 | 012 | 2026-08-23 | Corrección EXCLUSIVA de la interfaz entregada (v0.11.1): causa raíz confirmada con navegador real — el layout colapsaba a una columna ≤1100 px con el sidebar primero, dejando toda la navegación bajo el pliegue. Portada hero-first con navegación estática (Inicio/Campaña real/Ideas/Investigación/Comité/Experimento/Economía/Actividad/Configuración), PRE_CYCLE e INICIAR CAMPAÑA REAL visibles sin JS ni scroll, bloque noscript, diagnóstico visible (Backend/Frontend/Iteración/JS/Paquete), franja roja CSS si el init falla, panel antiguo movido a sub-vistas, sin textos MQL5/demo, y aceptación de navegador real (1440/390, clic INICIAR → RESEARCH_PENDING, Ideas 66, descargas CSV/MD/zip, body.innerText) superada sobre el paquete en carpeta limpia. | entregado | autonomous-business-lab_iteracion-012_2026-08-23.zip.txt | d08aecf7990094a71351ec25158cb1b30243af12e4329d782d679e8281e04852 (canónico) |
 | 013 | 2026-08-23 | Calidad semántica, estados honestos y reformulación ANTES de investigar (v0.12.0): sustitución de etiquetas ambiguas (passed/promoted/blocked/eliminated/clone) por 15 estados inequívocos en español con significado visible (GENERATED_HYPOTHESIS…EXPERIMENT_READY, incl. NEEDS_REFORMULATION, RECOMBINATION_INCOHERENT, RESEARCH_CANDIDATE, RESEARCH_PENDING, FINALIST); ventajas sin evidencia mostradas como HIPÓTESIS (HYPOTHESIS_DEFENSIBLE_WORKFLOW…); dos puntuaciones separadas — estructural (pre-evidencia) y con evidencia (0 sin evidencia, tope 40 con <3 grupos, real con ≥3); Quality Gate del Opportunity Brief de 19 campos (bloquea 'profesional o pequeña organización' y frases genéricas; sin brief concreto no hay candidata); detector determinista de coherencia semántica (3 frases incoherentes reales de la campaña como casos); reformulaciones concretas (3-5 por familia regulatorio/intermediarios/incertidumbre) + torneo de reformulaciones (máx. 3, 0 válido); misiones PROGRESIVAS (solo 6 de Fase 1 por candidata, nunca las 10); reproceso de la campaña real conservando las 66 ideas y superseding las 30 misiones antiguas (SUPERSEDED_BY_SEMANTIC_QUALITY_GATE); PRE_CYCLE permanece detenido; exportaciones CSV con puntuación estructural/evidencia y motivo; tarjetas de Ideas corregidas (Estado/Qué significa/Filtro/Evidencia/Comprador/Problema/Entrega/Canal/Estructura/Con evidencia/Motivo/Qué falta/Próxima acción). Aceptación real: 66 conceptos reprocesados → 61 reformulación + 5 incoherentes + 3 candidatas concretas seleccionadas + 18 misiones de Fase 1, capturas de navegador y CSV/MD descargados. | entregado | autonomous-business-lab_iteracion-013_2026-08-23.zip.txt | 263e0021ef27b132cdf34136312a37df66554bec03122368a91ff4a7ed40b18a (canónico) |
+| 014 | 2026-08-23 | Flujo E2E: selector de misión para importar investigación, badge de Ideas actualizado, versión v0.13.0 sincronizada. | en curso | _pendiente_ | — |
+| 016 | 2026-08-24 | Continuidad tras primera instalación real (v0.15.0): parada contextual honesta del orquestador (nunca ordena COPIAR MISIÓN sin misiones; explica RESEARCH_CANDIDATE=0), re-planificación determinista post-parada tras Opportunity Brief válido sin duplicar misiones, endpoint de misiones trazable (mission_id/concept_id/markdown/explanation), tarjeta Campaña real honesta, portada idempotente CONTINUAR CAMPAÑA REAL, raw_excerpt obligatorio para evidencia verificada. Demostrado: el '6' observado eran NEEDS_REFORMULATION. Suite: 328 passed. | entregado | autonomous-business-lab_iteracion-016_2026-08-24.zip.txt | 1d32a9f772f76262cb3d4770f7fff3298b7641b5afff6ee21a524f21d6f03d38 (canónico) |
+
+## Iteración 016 — Continuidad tras primera instalación real (v0.15.0) — 2026-08-24
+
+**Contexto**: el propietario instaló el paquete 013 en un ordenador nuevo y observó
+RESEARCH_PENDING con "Próxima acción: COPIAR MISIÓN PARA FREEBUFF" y, a la vez,
+"Sin misiones planificadas todavía"; además el contador de Ideas mostraba 0 y la
+portada seguía ofreciendo INICIAR CAMPAÑA REAL con campaña ya creada.
+
+**Significado exacto del número 6 (demostrado con datos reales)**: de los 66
+conceptos: 51 DIVERSITY_ELIMINATED + 3 COMMODITY_BLOCKED + **6 NEEDS_REFORMULATION**
++ 6 RECOMBINATION_INCOHERENT. El "6" eran direcciones abstractas que necesitan
+REFORMULACIÓN (no 6 misiones ni 6 candidatas): RESEARCH_CANDIDATE=0 ⇒ 0 misiones es
+el comportamiento CORRECTO. El defecto era de interfaz/orquestación, no de datos.
+
+**Causa raíz (triple)**:
+1. `_next_step` devolvía next_action fijo "COPIAR MISIÓN PARA FREEBUFF" desde
+   RESEARCH_PENDING aunque no existiera ninguna misión (sin explicar por qué).
+2. `/api/orchestrator/runs/{id}/missions` devolvía lista vacía sin motivo.
+3. `loadOrchestratorMissions` (tarjeta Campaña real) mostraba un mensaje genérico,
+   desconectado de la explicación del backend; la vista Investigación era correcta.
+
+**Corrección mínima**: parada contextual del orquestador (con misiones ⇒ COPIAR
+MISIÓN; sin ellas ⇒ razón honesta + no_mission_explanation + concept_status_counts +
+next_action REFORMULAR); re-planificación determinista post-parada (brief válido sin
+misión activa ⇒ promote_and_plan_research; nunca duplica misiones); endpoint de
+misiones con fallback a BD, explanation y trazabilidad completa por misión; frontend
+con explicación honesta SIN MISIÓN DISPONIBLE, mission_id/concept_id visibles y
+botón de copia solo con misión real; portada idempotente (CONTINUAR CAMPAÑA REAL);
+raw_excerpt obligatorio para verified=true junto a URL+fecha.
+
+**Verificación**: servidor real aislado (DATABASE_PATH temporal) — start idempotente,
+Caso B honesto, brief válido ⇒ 6 misiones Fase 1 copiables, importación sin fragmento
+⇒ verified=false, PRE_CYCLE intacto (started_at NULL), reinicio conserva estado.
+Suite completa: **328 passed**.
 
 ## Registro de entregas (lo completa `scripts/package_for_review.py`)
+- **Iteración 16** · paquete: `autonomous-business-lab_iteracion-016_2026-08-24.zip.txt` · SHA-256 (canónico): `1d32a9f772f76262cb3d4770f7fff3298b7641b5afff6ee21a524f21d6f03d38`
 
 - **Iteración 002** · 2026-08-23T09:40:05+00:00 · paquete:
   `autonomous-business-lab_iteracion-002_2026-08-23.zip.txt` · tamaño:
@@ -67,3 +104,14 @@ borrar el historial previo.
 - **Iteración 13** · 2026-08-23T15:25:09.816481+00:00 · paquete: `autonomous-business-lab_iteracion-013_2026-08-23.zip.txt` · tamaño: 6653840 bytes · SHA-256 (canónico): `658df1dfd7c7d986f807ea6c82ce2ac3ef57059ded87abd874bbe808b45fb460`
 - **Iteración 13** · 2026-08-23T15:25:35.651711+00:00 · paquete: `autonomous-business-lab_iteracion-013_2026-08-23.zip.txt` · tamaño: 6653908 bytes · SHA-256 (canónico): `d6064e9a445c9fecebe3a5eaf3ee34069d80da7fbd9cb8eb53ad3cda58d77519`
 - **Iteración 13** · 2026-08-23T15:25:45.711480+00:00 · paquete: `autonomous-business-lab_iteracion-013_2026-08-23.zip.txt` · tamaño: 6653968 bytes · SHA-256 (canónico): `263e0021ef27b132cdf34136312a37df66554bec03122368a91ff4a7ed40b18a`
+
+## Iteración 015 — Ventana prioritaria OX Alpha (v0.14.0) — 2026-08-23
+
+- Puerta determinista `app/core/ox_alpha.py`: identidad OX_ALPHA_UNVERIFIED hasta que el propietario verifique el slug real contra el catálogo de OmniRoute; la ventana expira sola el 2026-08-27; límite diario y recorte de entrada.
+- Servicio `app/services/deep_reasoning.py`: tareas reformulation / coherence / red_team / variation_comparison con registro honesto por llamada en llm_call_log, ausencia NEUTRAL ante fallo (nunca mock silencioso ni salida sintética como OX Alpha).
+- La salida del modelo NUNCA es evidencia: no toca proven_demand, grupos de evidencia, finalistas ni PRE_CYCLE.
+- API: GET /api/oxalpha/status · POST /api/oxalpha/catalog-check · POST /api/oxalpha/task.
+- Docs: docs/OX_ALPHA_WINDOW.md + env.example (OX_ALPHA_*). Benchmark A/B/C/D obligatorio antes de preferir OX Alpha.
+- 14 tests nuevos offline → total **314 passed**.
+- **Iteración 16** · 2026-08-24T16:33:27.296509+00:00 · paquete: `autonomous-business-lab_iteracion-016_2026-08-24.zip.txt` · tamaño: 6804465 bytes · SHA-256 (canónico): `1d32a9f772f76262cb3d4770f7fff3298b7641b5afff6ee21a524f21d6f03d38`
+- **Iteración 16** · 2026-08-24T16:43:01.840024+00:00 · paquete: `autonomous-business-lab_iteracion-016_2026-08-24.zip.txt` · tamaño: 6692081 bytes · SHA-256 (canónico): `1d32a9f772f76262cb3d4770f7fff3298b7641b5afff6ee21a524f21d6f03d38`

@@ -29,6 +29,7 @@ EXCLUDED_DIRS = {
     "external_reviews",  # expedientes generados en runtime (datos, no código)
     "freebuff_sessions",  # sesiones Freebuff generadas en runtime (datos, no código)
     "benchmark",  # salidas del benchmark A/B generadas en runtime (datos, no código)
+    "logs",  # logs privados en runtime (data/logs), incluidos rotados *.log.N
     ".idea",
     ".vscode",
 }

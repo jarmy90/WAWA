@@ -155,20 +155,24 @@ class OmniRouteProvider(BaseLLMProvider):
         task: str | None = None,
         output_schema: dict[str, Any] | None = None,
         temperature: float | None = None,
+        model: str | None = None,
     ) -> LLMResponse:
+        """Genera una respuesta. ``model`` permite fijar un slug EXACTO ya
+        verificado en el catálogo (ventana OX Alpha, iteración 015); nunca se
+        inventa aquí: si llega vacío se usa el routing por tarea habitual."""
         if not self.available():
             raise_unavailable(self.name, ValueError("OMNIROUTE_ENABLED=false o base_url vacía"))
-        model = self._resolve_model(task, None)
+        resolved = self._resolve_model(task, model)
         messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": self._truncate_prompt(prompt)})
 
         started = time.monotonic()
-        payload, retries = self._chat(messages, temperature, model, output_schema)
+        payload, retries = self._chat(messages, temperature, resolved, output_schema)
         latency_ms = int((time.monotonic() - started) * 1000)
 
-        actual_model = payload.get("model") or model
+        actual_model = payload.get("model") or resolved
         actual_provider = payload.get("provider") or payload.get("_provider") \
             or (payload.get("usage") or {}).get("provider") or None
         try:
@@ -187,7 +191,7 @@ class OmniRouteProvider(BaseLLMProvider):
                 reported_cost = float(raw)
                 cost_source = "PROVIDER_RESPONSE"
                 break
-        if reported_cost is None and (model.lower().endswith(":free") or "free" in model.lower()):
+        if reported_cost is None and (resolved.lower().endswith(":free") or "free" in resolved.lower()):
             cost_source = "FREE_TIER"
         estimated = round(len(text) * _RATE_PER_CHAR, 6) if text else None
         structured = extract_json(text) if output_schema else None
@@ -195,7 +199,7 @@ class OmniRouteProvider(BaseLLMProvider):
         return LLMResponse(
             text=text,
             structured=structured,
-            model=model,  # solicitado
+            model=resolved,  # solicitado
             method="omniroute (OpenAI-compatible)",
             cost_estimate_usd=estimated or 0.0,
             cost_method="estimated_api",

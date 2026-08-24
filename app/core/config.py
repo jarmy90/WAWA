@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     # --- Identidad -----------------------------------------------------
     app_name: str = "Autonomous Business Lab"
-    version: str = "0.12.0"
+    version: str = "0.15.0"
     log_level: str = "INFO"
 
     # --- Rutas ---------------------------------------------------------
@@ -97,6 +97,23 @@ class Settings(BaseSettings):
     omniroute_monthly_cost_limit_usd: float = 0.0
     omniroute_allow_free_only: bool = True
     omniroute_require_model_id: bool = True
+
+    # --- Ventana prioritaria OX Alpha (iteración 015) ---------------------
+    # El propietario dispone de acceso gratuito TEMPORAL al modelo que denomina
+    # "OX Alpha" HASTA 2026-08-27 (inclusive). Reglas inmutables:
+    #   1. NO se inventa el slug: ox_alpha_slug SOLO se fija tras verificar el
+    #      catálogo real del gateway (GET /models). Vacío => OX_ALPHA_UNVERIFIED
+    #      y NUNCA se declara que se ha usado OX Alpha.
+    #   2. Tras la fecha de expiración la puerta se cierra sola (sin flujos
+    #      dependientes) y OmniRoute vuelve a su routing coordinado habitual.
+    #   3. Las respuestas son MODEL_REASONING/HYPOTHESIS/CRITIQUE/REFORMULATION:
+    #      jamás evidencia, jamás suben proven_demand ni aprueban finalistas.
+    #   4. Fallo => ausencia NEUTRAL registrada; nunca sustitución silenciosa
+    #      por mock ni salida sintética presentada como OX Alpha.
+    ox_alpha_slug: str = ""  # slug EXACTO verificado en el catálogo; vacío = sin verificar
+    ox_alpha_expires_at: str = "2026-08-27"  # último día (inclusive) de la ventana gratuita
+    ox_alpha_daily_task_limit: int = 40  # tope diario de tareas profundas (anti-gasto)
+    ox_alpha_max_input_chars: int = 24_000  # recorte defensivo del expediente enviado
 
     # --- BudgetGuard ----------------------------------------------------
     free_mode: bool = True

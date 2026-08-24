@@ -76,7 +76,9 @@ SUPERSEDED_BY_SEMANTIC_GATE = "SUPERSEDED_BY_SEMANTIC_QUALITY_GATE"
 
 # Campos que una evidencia DEBE traer para poder marcarse verified (regla de
 # no auto-verificación: Freebuff u otra fuente no basta por sí misma).
-VERIFIED_REQUIRED_FIELDS = ("source_url", "captured_at", "summary")
+# Iteración 016: el fragmento original (raw_excerpt) es obligatorio junto a
+# URL y fecha, conforme a docs/FREEBUFF_RESEARCH_MISSIONS.md.
+VERIFIED_REQUIRED_FIELDS = ("source_url", "captured_at", "summary", "raw_excerpt")
 
 
 class DiscoveryService:
@@ -885,7 +887,9 @@ class DiscoveryService:
             summary = str(raw.get("summary") or "").strip()
             url = str(raw.get("source_url") or "").strip()
             captured = str(raw.get("captured_at") or "").strip()
-            has_fields = all([summary, url, captured])
+            excerpt = str(raw.get("raw_excerpt") or "").strip()
+            # Iteración 016: sin URL + fecha + fragmento NUNCA hay verificación.
+            has_fields = all([summary, url, captured, excerpt])
             verified = bool(raw.get("verified")) and has_fields
             verification_notes = str(raw.get("verification_notes") or "")
             if verified:
