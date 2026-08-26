@@ -135,6 +135,16 @@ def command_center(request: Request) -> dict:
     return container.command_center.snapshot()
 
 
+@router.get("/agent-telemetry")
+def agent_telemetry(request: Request) -> dict:
+    """Telemetría de agentes (iteración 020): estados derivados SOLO de datos
+    persistidos (run, misiones, evidencias, comité, costes LLM, proveedores,
+    decisiones y eventos). Nunca inventa actividad: sin datos el estado es
+    NO_DATA/IDLE, no ACTIVE. Modo demo (?demo=1) es exclusivamente cliente."""
+    container = get_container(request)
+    return container.command_center.agent_telemetry()
+
+
 # ---------------------------------------------------------------------------
 # Motor de operación
 # ---------------------------------------------------------------------------

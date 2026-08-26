@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es" data-wawa-version="0.19.0" data-iteration="020" data-build="020-agent-mission-control">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>WAWA — Mission Control</title>
+    <link rel="stylesheet" href="/mission-control.css?v=0200" />
+  </head>
+  <body>
+    <noscript>
+      <div class="nojs">JavaScript no está activo. Esta vista requiere JavaScript para cargar la telemetría real de WAWA. Alternativa textual: <a href="/api/agent-telemetry">/api/agent-telemetry</a> (JSON real).</div>
+    </noscript>
+    <div class="mc-view" id="mc-view">
+      <div class="wrap">
+        <!-- Cabecera WAWA Core -->
+        <header class="mc-topbar">
+          <div class="mc-brand">
+            <span class="mc-brand-mark" aria-hidden="true">WA</span>
+            <div>
+              <h1>WAWA AUTONOMOUS BUSINESS COMMAND</h1>
+              <p>Mission Control · telemetría real persistida · sin actividad inventada</p>
+            </div>
+          </div>
+          <div class="mc-topbar-right">
+            <span id="mc-mode" class="chip chip-info" title="Modo de datos">REAL</span>
+            <span id="mc-health" class="chip" title="Salud del sistema">SALUD: SIN DATOS</span>
+            <span id="mc-prod" class="chip" title="Capacidad de producción">PRODUCCIÓN: SIN DATOS</span>
+            <span id="mc-snapshot" class="chip" title="Timestamp del snapshot">SNAPSHOT: —</span>
+          </div>
+        </header>
+
+        <div id="mc-demo-banner" class="demo-banner hidden">DEMO DATA · NOT REAL ACTIVITY</div>
+        <div id="mc-error" class="mc-error hidden" role="alert"></div>
+
+        <!-- Controles -->
+        <div class="mc-controls">
+          <button id="btn-mc-refresh" class="mc-btn primary" type="button">⟳ REFRESCAR</button>
+          <button id="btn-mc-auto" class="mc-btn active" type="button" aria-pressed="true">AUTO · 10s</button>
+          <button id="btn-mc-demo" class="mc-btn" type="button">MODO DEMO</button>
+          <button id="btn-mc-fullscreen" class="mc-btn" type="button">⛶ PANTALLA COMPLETA</button>
+          <span id="mc-conn" class="mc-conn"><span class="dot" aria-hidden="true"></span><span id="mc-conn-label">CONECTANDO…</span></span>
+          <a class="mc-home" href="/">← Volver al panel principal</a>
+          <a class="mc-home" href="/agents-viz">Sistema Solar →</a>
+        </div>
+
+        <!-- 1-4. Salud, producción, campaña, proyecto -->
+        <div class="mc-grid">
+          <section class="panel" aria-label="Salud del sistema">
+            <h3>Salud del sistema</h3>
+            <div class="mc-value" id="mc-health-val">SIN DATOS</div>
+            <div class="mc-sub" id="mc-health-sub">—</div>
+          </section>
+          <section class="panel" aria-label="Capacidad de producción">
+            <h3>Capacidad de producción</h3>
+            <div class="mc-value" id="mc-prod-val">SIN DATOS</div>
+            <div class="mc-sub" id="mc-prod-sub">—</div>
+          </section>
+          <section class="panel" aria-label="Campaña y proyecto activo">
+            <h3>Campaña y proyecto</h3>
+            <ul class="mc-list">
+              <li><span class="k">Proyecto</span><span class="v" id="mc-project">SIN DATOS</span></li>
+              <li><span class="k">Campaña</span><span class="v" id="mc-campaign">SIN DATOS</span></li>
+              <li><span class="k">Run</span><span class="v" id="mc-run">SIN DATOS</span></li>
+            </ul>
+          </section>
+
+          <!-- 5-6. Roster y acción actual -->
+          <section class="panel wide" aria-label="Roster de agentes">
+            <h3>Roster de agentes <span class="hint">clic en un agente para inspeccionarlo</span></h3>
+            <div class="roster" id="mc-roster"><p class="mc-empty">Cargando…</p></div>
+          </section>
+          <section class="panel wide" aria-label="Acción actual y misiones">
+            <h3>Acción actual</h3>
+            <div id="mc-actions" class="mc-list"><p class="mc-empty">Cargando…</p></div>
+          </section>
+
+          <!-- 7-8. Misiones programadas y cola -->
+          <section class="panel" aria-label="Misiones programadas">
+            <h3>Misiones programadas</h3>
+            <ul class="mc-list" id="mc-scheduled"><li class="mc-empty">SIN DATOS</li></ul>
+          </section>
+          <section class="panel" aria-label="Cola de trabajo">
+            <h3>Cola de trabajo <span class="hint" id="mc-queue-count"></span></h3>
+            <ul class="mc-list" id="mc-queue"><li class="mc-empty">SIN DATOS</li></ul>
+          </section>
+
+          <!-- 9. Bloqueadores -->
+          <section class="panel" aria-label="Bloqueadores">
+            <h3>Bloqueadores</h3>
+            <ul class="mc-list" id="mc-blockers"><li class="mc-empty">SIN DATOS</li></ul>
+          </section>
+
+          <!-- 10-12. Evidencias, comité, costes -->
+          <section class="panel" aria-label="Evidencias">
+            <h3>Evidencias</h3>
+            <div class="mc-value small" id="mc-evidence">SIN DATOS</div>
+            <div class="mc-sub" id="mc-evidence-sub">—</div>
+          </section>
+          <section class="panel" aria-label="Comité">
+            <h3>Comité de contraste</h3>
+            <div class="mc-value small" id="mc-committee">SIN DATOS</div>
+            <div class="mc-sub" id="mc-committee-sub">—</div>
+          </section>
+          <section class="panel" aria-label="Costes">
+            <h3>Costes LLM</h3>
+            <ul class="mc-list" id="mc-costs"><li class="mc-empty">SIN DATOS</li></ul>
+          </section>
+
+          <!-- 13-15. Presupuesto, timeline, métricas -->
+          <section class="panel" aria-label="Presupuesto">
+            <h3>Presupuesto</h3>
+            <div class="mc-value small" id="mc-budget">SIN DATOS</div>
+            <div class="mc-sub" id="mc-budget-sub">—</div>
+          </section>
+          <section class="panel" aria-label="Timeline">
+            <h3>Timeline reciente</h3>
+            <div class="mc-feed" id="mc-timeline"><p class="mc-empty">SIN DATOS</p></div>
+          </section>
+          <section class="panel" aria-label="Métricas comerciales">
+            <h3>Métricas comerciales</h3>
+            <ul class="mc-list" id="mc-commercial"><li class="mc-empty">NO CONECTADO</li></ul>
+          </section>
+
+          <!-- 16-19. Estado del experimento y conexión -->
+          <section class="panel wide" aria-label="Estado del experimento">
+            <h3>Estado del experimento (readiness)</h3>
+            <div id="mc-experiment"><p class="mc-empty">SIN DATOS</p></div>
+          </section>
+          <section class="panel wide" aria-label="Relaciones de agentes">
+            <h3>Relaciones de agentes</h3>
+            <div id="mc-relations"><p class="mc-empty">SIN DATOS</p></div>
+          </section>
+        </div>
+
+        <p class="mc-sub" id="mc-footnote" style="margin-top:14px">—</p>
+      </div>
+    </div>
+
+    <!-- Detail drawer -->
+    <div class="mc-drawer" id="mc-drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" hidden>
+      <div class="mc-drawer-box">
+        <button class="close" id="btn-drawer-close" type="button" aria-label="Cerrar inspector">×</button>
+        <h2 id="drawer-title">Agente</h2>
+        <div class="role" id="drawer-role">—</div>
+        <ul class="dl" id="drawer-body"></ul>
+      </div>
+    </div>
+
+    <script src="/viz-core.js?v=0200"></script>
+    <script src="/mission-control.js?v=0200"></script>
+  </body>
+</html>

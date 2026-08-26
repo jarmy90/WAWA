@@ -172,3 +172,4 @@ borrar el historial previo.
 - **Iteración 17** · 2026-08-26T10:28:29.165722+00:00 · paquete: `autonomous-business-lab_iteracion-017_2026-08-26.zip.txt` · tamaño: 6764871 bytes · SHA-256 (canónico): `91d1c229b119d0406c480537aea0fc166f46d42982b56cd73ea0125e10e475d2`
 - **Iteración 18** · 2026-08-26T14:37:16.598823+00:00 · paquete: `autonomous-business-lab_iteracion-018_2026-08-26.zip.txt` · tamaño: 6824166 bytes · SHA-256 (canónico): `d44dccbd229895067b6ba508c7be46613a8cbf6f7d1f03f98298317fffd8388e`
 - **Iteración 19** · 2026-08-26T18:19:12.180563+00:00 · paquete: `autonomous-business-lab_iteracion-019_2026-08-26.zip.txt` · tamaño: 6834827 bytes · SHA-256 (canónico): `431dfafc4e40c8ab5729e887fc22fe1d433a8bd23bdbda9f5dc6304fdebc9818`
+- **Iteración 20** · 2026-08-26T18:31:01.537951+00:00 · paquete: `autonomous-business-lab_iteracion-020_2026-08-26.zip.txt` · tamaño: 6879637 bytes · SHA-256 (canónico): `76dfb286bfb78c9d61571b2f609c8c39dfc1133d8ed56ed9d64649210db687f2`

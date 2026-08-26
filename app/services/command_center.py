@@ -68,8 +68,8 @@ class CommandCenterService:
         return {
             "generated_at": generated_at,
             "version": self.c.settings.version,
-            "iteration": "019",
-            "build": "019-command-center-contract",
+            "iteration": "020",
+            "build": "020-agent-mission-control",
             "simulated": True,
             "real_money_moved": False,
             "autonomous_launch": readiness,
@@ -439,6 +439,317 @@ class CommandCenterService:
                            + ("Faltan precondiciones explícitas." if missing or blockers else "Todas las precondiciones locales están demostradas; faltan conectar/verificar servicios para lanzar."),
             "conditions": {"production_remains_blocked": True, "services_connected": False, "owner_authorized": False},
             "note": "READY_TO_LAUNCH sigue bloqueado hasta conexión, verificación y autorización única del propietario.",
+        }
+
+    # ------------------------------------------------------------------
+    # Telemetría de agentes (iteración 020) — SOLO actividad real persistida
+    # ------------------------------------------------------------------
+    def agent_telemetry(self) -> dict:
+        """Telemetría de agentes para las vistas visuales premium.
+
+        NUNCA inventa actividad: cada agente deriva su estado de datos
+        persistidos (run del orquestador, misiones, evidencias, comité, costes
+        LLM, proveedores, decisiones y eventos). Sin datos suficientes el
+        estado es ``NO_DATA``/``IDLE``, no ``ACTIVE``. El estado ``ACTIVE``
+        solo se emite cuando hay llamadas/decisiones recientes que lo
+        respalden.
+        """
+        generated_at = _now_iso()
+        engine = _safe(lambda: self.c.engine.status(), {}) or {}
+        run = _safe(lambda: self.c.orchestrator.current_run(), None)
+        budget = _safe(lambda: self.c.budget.status(), {}) or {}
+        economy_metrics = _safe(lambda: self.c.economy.metrics(), {}) or {}
+        cycle = _safe(lambda: self.c.cycle.evaluate(), {}) or {}
+        missions = self._missions_summary(run)
+        evidence = self._evidence_summary()
+        reviews = self._reviews_summary()
+        llm = self._llm_summary()
+        readiness = self._launch_readiness(run, None, missions, cycle, engine)
+        health = self._system_health(engine, {}, generated_at)
+        providers_health = _safe(lambda: self.c.providers.health(), {}) or {}
+        decisions = _safe(lambda: self.c.repos.decision_log.recent(limit=100), []) or []
+        events = _safe(lambda: self.c.engine.events(limit=100), []) or []
+        calls = _safe(lambda: self.c.repos.llm_calls.list_recent(limit=100), []) or []
+        blockers = _safe(lambda: self.c.repos.discovery.list_campaigns(), []) and self._collect_blockers(
+            [], engine, budget, {}, cycle
+        )
+
+        def decision_count(agent_key: str) -> int:
+            key = agent_key.lower()
+            return sum(1 for d in decisions if key in str(getattr(d, "agent", "")).lower())
+
+        def event_count_for(agent_key: str) -> int:
+            key = agent_key.lower()
+            return sum(1 for e in events if key in str(getattr(e, "summary", "")).lower())
+
+        def error_count_for(agent_key: str) -> int:
+            key = agent_key.lower()
+            return sum(1 for e in events if str(getattr(e, "event_type", "")) == "error" and key in str(getattr(e, "summary", "")).lower())
+
+        def last_event_at(agent_key: str) -> str | None:
+            key = agent_key.lower()
+            for e in events:
+                if key in str(getattr(e, "summary", "")).lower():
+                    return getattr(e, "timestamp", None)
+            for d in reversed(decisions):
+                if key in str(getattr(d, "agent", "")).lower():
+                    return getattr(d, "timestamp", None)
+            return None
+
+        run_state = (run or {}).get("state") or "NO_RUN"
+        safe_pause = str(engine.get("engine_state", "")).lower() == "safe_pause" or str(engine.get("mode", "")).lower() == "safe_pause"
+
+        agents: list[dict] = []
+
+        def add_agent(agent_id: str, name: str, role: str, status: str, current_action: str, *, priority: int,
+                      tools: list[str], missions: list[str] | None = None, parent: str | None = None,
+                      blocked_reason: str | None = None, last_event_at: str | None = None,
+                      activity_level: int = 0, event_count: int = 0, error_count: int = 0,
+                      cost: float | None = None) -> None:
+            agents.append({
+                "id": agent_id, "name": name, "role": role, "status": status,
+                "current_action": current_action, "last_event_at": last_event_at,
+                "activity_level": activity_level, "priority": priority, "tools": tools,
+                "missions": missions or [], "parent_agent_id": parent, "blocked_reason": blocked_reason,
+                "event_count": event_count, "error_count": error_count, "cost": cost,
+                "data_nature": "REAL",
+            })
+
+        # --- CampaignOrchestrator (sol central) ---------------------------
+        if run is None:
+            add_agent("orchestrator", "CampaignOrchestrator", "Coordinación", "NO_DATA",
+                      "Sin campaña activa", priority=1, tools=["orquestador", "transiciones"])
+        elif safe_pause:
+            add_agent("orchestrator", "CampaignOrchestrator", "Coordinación", "BLOCKED",
+                      "Motor en SAFE_PAUSE", priority=1, tools=["orquestador", "transiciones"],
+                      blocked_reason="SAFE_PAUSE — configuración inconsistente o pausa deliberada",
+                      last_event_at=engine.get("heartbeat_at"), event_count=event_count_for("orchestrat"))
+        elif run_state in ("PAUSED", "CANCELLED", "FAILED"):
+            add_agent("orchestrator", "CampaignOrchestrator", "Coordinación", "BLOCKED",
+                      f"Ejecución {run_state}", priority=1, tools=["orquestador", "transiciones"],
+                      blocked_reason=f"Run en estado {run_state}",
+                      last_event_at=run.get("updated_at") or run.get("created_at"),
+                      event_count=event_count_for("orchestrat"))
+        elif run_state in ("RESEARCH_PENDING", "COMMITTEE_PENDING", "EXPERIMENT_BLOCKED", "BLOCKED"):
+            add_agent("orchestrator", "CampaignOrchestrator", "Coordinación", "WAITING",
+                      f"Run en {run_state}: esperando investigación externa o intervención", priority=1,
+                      tools=["orquestador", "transiciones"], last_event_at=run.get("updated_at") or run.get("created_at"),
+                      event_count=event_count_for("orchestrat"))
+        elif run_state == "COMPLETED":
+            add_agent("orchestrator", "CampaignOrchestrator", "Coordinación", "IDLE",
+                      "Campaña completada", priority=1, tools=["orquestador", "transiciones"],
+                      last_event_at=run.get("updated_at"), event_count=event_count_for("orchestrat"))
+        else:
+            working = bool(last_event_at("orchestrat")) or decision_count("orchestrat") > 0
+            add_agent("orchestrator", "CampaignOrchestrator", "Coordinación",
+                      "WORKING" if working else "WAITING",
+                      f"Run en {run_state}", priority=1, tools=["orquestador", "transiciones"],
+                      last_event_at=run.get("updated_at") or run.get("created_at"),
+                      activity_level=1 if working else 0, event_count=event_count_for("orchestrat"))
+
+        # --- Scout ---------------------------------------------------------
+        concepts = []
+        campaign_id = None
+        if run and run.get("discovery_campaign_id"):
+            campaign_id = run["discovery_campaign_id"]
+            detail = _safe(lambda: self.c.discovery.campaign_detail(run["discovery_campaign_id"]), None)
+            concepts = (detail or {}).get("concepts") or []
+        elif self.c.repos.discovery.list_campaigns():
+            first = _safe(lambda: self.c.repos.discovery.list_campaigns()[0], None)
+            if first:
+                campaign_id = first.get("id")
+                detail = _safe(lambda: self.c.discovery.campaign_detail(first["id"]), None)
+                concepts = (detail or {}).get("concepts") or []
+        if not concepts:
+            add_agent("scout", "Scout", "Descubrimiento", "NO_DATA",
+                      "Sin conceptos generados", priority=2, tools=["territorios", "lentes", "arquetipos", "fase-1"],
+                      event_count=decision_count("scout"))
+        else:
+            last = max((c.get("updated_at") or c.get("created_at") or "" for c in concepts), default=None)
+            add_agent("scout", "Scout", "Descubrimiento", "IDLE",
+                      f"Fase 1: {len(concepts)} conceptos generados", priority=2,
+                      tools=["territorios", "lentes", "arquetipos", "fase-1"], last_event_at=last,
+                      activity_level=1, event_count=len(concepts) + decision_count("scout"))
+
+        # --- Researcher ----------------------------------------------------
+        pending = (missions or {}).get("pending") or 0
+        imported = (missions or {}).get("imported") or 0
+        if pending or imported:
+            add_agent("researcher", "Researcher", "Investigación", "WAITING" if pending else "IDLE",
+                      f"{pending} misiones pendientes · {imported} importadas" if pending else f"{imported} misiones importadas",
+                      priority=3, tools=["misiones", "import-research", "paquetes"],
+                      missions=[m.get("mission_id") for m in (missions.get("items") or [])][:20],
+                      parent="orchestrator", last_event_at=last_event_at("research"),
+                      activity_level=1 if pending else 0, event_count=pending + imported + event_count_for("research"))
+        else:
+            add_agent("researcher", "Researcher", "Investigación", "NO_DATA",
+                      "Sin misiones de investigación", priority=3, tools=["misiones", "import-research", "paquetes"],
+                      parent="orchestrator", event_count=event_count_for("research"))
+
+        # --- Skeptic -------------------------------------------------------
+        review_total = (reviews or {}).get("review_count") or 0
+        if review_total:
+            add_agent("skeptic", "Skeptic", "Contraste", "IDLE",
+                      f"{review_total} revisiones · {(reviews or {}).get('synthesis_count') or 0} síntesis",
+                      priority=4, tools=["revisiones", "red-team", "comité"], parent="orchestrator",
+                      last_event_at=(reviews or {}).get("latest_synthesis_at"),
+                      activity_level=1, event_count=review_total + event_count_for("skeptic"))
+        else:
+            add_agent("skeptic", "Skeptic", "Contraste", "NO_DATA",
+                      "Sin revisiones de contraste", priority=4, tools=["revisiones", "red-team", "comité"],
+                      parent="orchestrator", event_count=event_count_for("skeptic"))
+
+        # --- Economist -----------------------------------------------------
+        cycle_status = (cycle or {}).get("status") or "UNKNOWN"
+        survival = (economy_metrics or {}).get("survival_status")
+        econ_action = f"Ciclo {cycle_status} · supervivencia {survival or 'DESCONOCIDA'}"
+        add_agent("economist", "Economist", "Economía simulada", "WAITING" if cycle_status in ("PRE_CYCLE", "NOT_STARTED") else "IDLE",
+                  econ_action, priority=5, tools=["ledger", "ciclo", "presupuesto", "reconciliación"],
+                  parent="orchestrator", last_event_at=last_event_at("econom"),
+                  activity_level=0, event_count=decision_count("econom") + event_count_for("econom"))
+
+        # --- Builder -------------------------------------------------------
+        experiment_id = (readiness or {}).get("experiment_id")
+        selected = (run or {}).get("selected_opportunity_id")
+        if experiment_id:
+            add_agent("builder", "Builder", "Construcción", "IDLE",
+                      f"Plan de experimento definido ({experiment_id[:8]})", priority=6,
+                      tools=["experimento", "capacidades", "dependencias"], parent="orchestrator",
+                      activity_level=1, event_count=decision_count("builder"))
+        elif selected:
+            add_agent("builder", "Builder", "Construcción", "WAITING",
+                      "Oportunidad seleccionada sin plan de experimento", priority=6,
+                      tools=["experimento", "capacidades", "dependencias"], parent="orchestrator",
+                      blocked_reason="Falta plan de experimento", event_count=decision_count("builder"))
+        else:
+            add_agent("builder", "Builder", "Construcción", "NO_DATA",
+                      "Sin experimento definido", priority=6, tools=["experimento", "capacidades", "dependencias"],
+                      parent="orchestrator", event_count=decision_count("builder"))
+
+        # --- Compliance ----------------------------------------------------
+        real_blockers = [b for b in blockers if b.get("severity") == "block" and b.get("kind") != "NINGUNO"]
+        if real_blockers:
+            add_agent("compliance", "Compliance", "Riesgos", "BLOCKED",
+                      f"{len(real_blockers)} bloqueador(es) activo(s)", priority=7,
+                      tools=["bloqueadores", "TOS", "privacidad", "legales"], parent="orchestrator",
+                      blocked_reason=real_blockers[0].get("detail"),
+                      event_count=len(real_blockers) + event_count_for("compliance"))
+        else:
+            add_agent("compliance", "Compliance", "Riesgos", "IDLE",
+                      "Sin bloqueadores críticos", priority=7, tools=["bloqueadores", "TOS", "privacidad", "legales"],
+                      parent="orchestrator", event_count=event_count_for("compliance"))
+
+        # --- Judge ---------------------------------------------------------
+        ev_total = (evidence or {}).get("total") or 0
+        verified = (evidence or {}).get("verified") or 0
+        add_agent("judge", "Judge", "Puntuación determinista", "IDLE" if ev_total or decision_count("judge") else "NO_DATA",
+                  f"{verified}/{ev_total} evidencias verificadas · tope {evidence.get('max_evidence_score')}" if ev_total else "Sin evidencias puntuables",
+                  priority=8, tools=["venture-score", "torneo", "fingerprint", "quality-gate"], parent="orchestrator",
+                  last_event_at=last_event_at("judge"), activity_level=1 if verified else 0,
+                  event_count=decision_count("judge") + event_count_for("judge"))
+
+        # --- Proveedores ---------------------------------------------------
+        provider_specs = [
+            ("gemini", "Gemini (opcional)", "generación", "gemini"),
+            ("openrouter", "OpenRouter (comité)", "revisión", "openrouter"),
+            ("omniroute", "OmniRoute (gateway local)", "gateway", "omniroute"),
+            ("mock", "MockProvider", "offline determinista", "mock"),
+        ]
+        for agent_id, name, role, key in provider_specs:
+            h = (providers_health or {}).get(key) or {}
+            configured = bool(h.get("configured") or h.get("enabled") or h.get("available") is True)
+            provider_calls = [c for c in calls if key in str(c.get("provider") or "").lower()]
+            if provider_calls:
+                add_agent(agent_id, name, role, "WORKING" if len(provider_calls) <= 20 else "ACTIVE",
+                          f"{len(provider_calls)} llamadas recientes", priority=9,
+                          tools=["llm_call_log"], parent="orchestrator",
+                          last_event_at=provider_calls[-1].get("created_at"), activity_level=1,
+                          event_count=len(provider_calls))
+            elif configured:
+                add_agent(agent_id, name, role, "IDLE",
+                          "Configurado, sin llamadas recientes", priority=9, tools=["llm_call_log"],
+                          parent="orchestrator")
+            else:
+                add_agent(agent_id, name, role, "OFFLINE" if (providers_health or {}).get(key) is not None else "NO_DATA",
+                          "Sin configuración — ausencia neutral", priority=9, tools=["llm_call_log"],
+                          parent="orchestrator")
+
+        mission_queue = [
+            {"mission_id": m.get("mission_id"), "kind": m.get("kind"), "status": m.get("status"),
+             "opportunity_id": m.get("opportunity_id")}
+            for m in (missions.get("items") or []) if m.get("status") != "imported"
+        ]
+        scheduled = []
+        if (cycle or {}).get("status") in ("PRE_CYCLE", "NOT_STARTED"):
+            scheduled.append({"task": "Iniciar ciclo económico (30 días / 50 USD)", "state": "PRE_CYCLE", "nature": "REAL"})
+        if (readiness or {}).get("readiness_missing"):
+            scheduled.append({"task": "Resolver precondiciones de readiness", "state": "NOT_READY", "nature": "REAL"})
+        if (run or {}).get("state") == "RESEARCH_PENDING":
+            scheduled.append({"task": "Importar investigación de misiones (URL+fecha+fragmento)", "state": "RESEARCH_PENDING", "nature": "REAL"})
+
+        recent_events = []
+        for e in events[:15]:
+            data = _safe(lambda e=e: e.model_dump(), None) or {}
+            recent_events.append({"timestamp": data.get("timestamp"), "kind": data.get("event_type"),
+                                  "summary": data.get("summary"), "nature": "REAL"})
+        for d in reversed(decisions[-15:]):
+            recent_events.append({"timestamp": getattr(d, "timestamp", None), "kind": "DECISION",
+                                  "summary": f"{getattr(d, 'agent', '?')}: {getattr(d, 'decision', '') or getattr(d, 'output_summary', '')[:120]}",
+                                  "nature": "REAL"})
+        recent_events = sorted(recent_events, key=lambda x: x.get("timestamp") or "", reverse=True)[:30]
+
+        readiness_missing = (readiness or {}).get("readiness_missing") or []
+        experiment_state = {
+            "state": "EXPERIMENT_READY" if experiment_id else ("NEEDS_EXPERIMENT" if selected else "NO_EXPERIMENT"),
+            "experiment_id": experiment_id, "candidate_id": (readiness or {}).get("candidate_id"),
+            "opportunity_id": (readiness or {}).get("opportunity_id"),
+            "readiness_state": (readiness or {}).get("readiness_state"),
+            "readiness_missing": readiness_missing, "readiness_blockers": (readiness or {}).get("readiness_blockers"),
+        }
+
+        return {
+            "snapshot_at": generated_at,
+            "version": self.c.settings.version, "iteration": "020", "build": "020-agent-mission-control",
+            "system_health": health,
+            "production_capability": self._production_capability(engine),
+            "campaign_id": campaign_id,
+            "active_project": "Autonomous Business Lab" if run else None,
+            "run": {"state": run_state, "id": (run or {}).get("id"), "title": (run or {}).get("title")},
+            "agents": agents,
+            "agent_relationships": [
+                {"parent": "orchestrator", "child": a["id"]}
+                for a in agents if a.get("parent_agent_id") == "orchestrator"
+            ],
+            "scheduled_tasks": scheduled,
+            "mission_queue": mission_queue,
+            "recent_events": recent_events,
+            "blockers": [{"kind": b.get("kind"), "detail": b.get("detail"), "severity": b.get("severity")} for b in blockers if b.get("kind") != "NINGUNO"],
+            "provider_states": [
+                {"id": a["id"], "status": a["status"], "current_action": a["current_action"]}
+                for a in agents if a["id"] in ("gemini", "openrouter", "omniroute", "mock")
+            ],
+            "costs": {
+                "reported_total": llm.get("reported_cost_total"), "estimated_total": llm.get("estimated_cost_total"),
+                "unknown_cost_calls": llm.get("unknown_cost_calls"), "zero_cost_calls": llm.get("zero_cost_calls"),
+                "display_status": llm.get("display_status"), "billing_verified": llm.get("billing_verified"),
+                "nature": llm.get("nature"),
+            },
+            "evidence": {
+                "verified": evidence.get("verified"), "total": evidence.get("total"),
+                "unverified": evidence.get("unverified"), "rejected": evidence.get("rejected"),
+                "independent_verified_groups": evidence.get("independent_verified_groups"),
+                "max_evidence_score": evidence.get("max_evidence_score"), "nature": evidence.get("nature"),
+            },
+            "reviews": {
+                "review_count": reviews.get("review_count"), "synthesis_count": reviews.get("synthesis_count"),
+                "committee_status": reviews.get("committee_status"), "nature": reviews.get("nature"),
+            },
+            "budget": {"daily_reached": (budget.get("daily") or {}).get("reached"), "limit_usd": (budget.get("daily") or {}).get("limit_usd")},
+            "experiment_state": experiment_state,
+            "commercial_metrics": {"visits": "NO CONECTADO", "leads": "NO CONECTADO", "payments": "NO CONECTADO",
+                                   "nature": "NO CONECTADO"},
+            "data_nature": "REAL",
+            "note": "Telemetría derivada exclusivamente de datos persistidos; sin actividad inventada. Modo demo es solo cliente (?demo=1) y se etiqueta DEMO DATA · NOT REAL ACTIVITY.",
         }
 
     def _system_health(self, engine, economy_status, snapshot_at) -> dict:

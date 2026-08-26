@@ -17,6 +17,9 @@ build/
 .coverage
 htmlcov/
 
+# Referencias temporales para estudio (iteración 020: tmp/references/)
+tmp/
+
 # Runtime data (SQLite DBs, logs, manual research files, review packets)
 data/*.db
 data/*.db-*

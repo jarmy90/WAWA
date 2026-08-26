@@ -9,7 +9,7 @@ import traceback
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import Response
 from starlette.types import Scope
@@ -79,10 +79,17 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
             content={"error": {"code": "internal_error", "message": "Error interno del servidor."}},
         )
 
-    # Frontend estático: se monta al final para no sombrear /api/*.
-    # NoCacheStaticFiles: sin cabeceras de caché para que el navegador nunca
-    # sirva un frontend antiguo de iteraciones previas (iteración 011).
+    # Vistas premium (iteración 020): rutas limpias /mission-control y
+    # /agents-viz que funcionan directamente y tras refrescar el navegador.
     if settings.frontend_dir.exists():
+        for route, filename in (("/mission-control", "mission-control.html"), ("/agents-viz", "agents-viz.html")):
+            path = settings.frontend_dir / filename
+            if path.exists():
+                app.get(route)(lambda path=path: FileResponse(path, media_type="text/html"))
+
+        # Frontend estático: se monta al final para no sombrear /api/*.
+        # NoCacheStaticFiles: sin cabeceras de caché para que el navegador nunca
+        # sirva un frontend antiguo de iteraciones previas (iteración 011).
         app.mount("/", NoCacheStaticFiles(directory=str(settings.frontend_dir), html=True), name="frontend")
 
     return app

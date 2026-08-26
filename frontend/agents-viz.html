@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es" data-wawa-version="0.19.0" data-iteration="020" data-build="020-agent-mission-control">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>WAWA — Sistema Solar de Agentes</title>
+    <link rel="stylesheet" href="/mission-control.css?v=0200" />
+  </head>
+  <body>
+    <noscript>
+      <div class="nojs">JavaScript no está activo. Alternativa textual a esta vista: <a href="/api/agent-telemetry">/api/agent-telemetry</a> (JSON real) o <a href="/mission-control">/mission-control</a>.</div>
+    </noscript>
+    <div class="mc-view" id="sv-view">
+      <div class="wrap" style="max-width:1600px">
+        <header class="mc-topbar">
+          <div class="mc-brand">
+            <span class="mc-brand-mark" aria-hidden="true">WA</span>
+            <div>
+              <h1>WAWA AUTONOMOUS BUSINESS COMMAND</h1>
+              <p>Sistema Solar de agentes · Canvas 2D · datos reales persistidos</p>
+            </div>
+          </div>
+          <div class="mc-topbar-right">
+            <span id="sv-mode" class="chip chip-info" title="Modo de datos">REAL</span>
+            <span id="sv-health" class="chip" title="Salud del sistema">SALUD: SIN DATOS</span>
+            <span id="sv-snapshot" class="chip" title="Timestamp del snapshot">SNAPSHOT: —</span>
+          </div>
+        </header>
+
+        <div id="sv-demo-banner" class="demo-banner hidden">DEMO DATA · NOT REAL ACTIVITY</div>
+        <div id="sv-error" class="mc-error hidden" role="alert"></div>
+
+        <div class="mc-controls">
+          <button id="btn-sv-refresh" class="mc-btn primary" type="button">⟳ REFRESCAR</button>
+          <button id="btn-sv-pause" class="mc-btn" type="button" aria-pressed="false">⏸ PAUSAR MOVIMIENTO</button>
+          <button id="btn-sv-demo" class="mc-btn" type="button">MODO DEMO</button>
+          <button id="btn-sv-focus" class="mc-btn" type="button">◎ FOCUS MODE</button>
+          <button id="btn-sv-fullscreen" class="mc-btn" type="button">⛶ PANTALLA COMPLETA</button>
+          <label class="mc-btn" for="sv-filter" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+            FILTRO
+            <select id="sv-filter" style="background:transparent;border:none;color:var(--mc-cyan);font:600 11px var(--mc-mono);outline:none">
+              <option value="ALL">TODOS</option>
+              <option value="WORKING">ACTIVOS/TRABAJANDO</option>
+              <option value="WAITING">ESPERANDO</option>
+              <option value="BLOCKED">BLOQUEADOS</option>
+              <option value="IDLE">EN REPOSO</option>
+              <option value="NO_DATA">SIN DATOS</option>
+            </select>
+          </label>
+          <a class="mc-home" href="/">← Panel principal</a>
+          <a class="mc-home" href="/mission-control">Mission Control →</a>
+        </div>
+
+        <!-- Lienzo: alternativa textual obligatoria (accesibilidad). -->
+        <div class="sv-canvas-wrap" role="img" aria-label="Sistema Solar de agentes WAWA: el Sol central es CampaignOrchestrator y cada planeta es un agente cuyo color representa su estado. A continuación, lista textual de agentes y estados.">
+          <canvas id="sv-canvas" width="1200" height="720" tabindex="0" aria-describedby="sv-fallback">
+            Tu navegador no soporta Canvas 2D. Consulta la lista textual debajo del lienzo.
+          </canvas>
+          <div id="sv-fallback" class="panel full" style="grid-column:span 12;margin-top:12px">
+            <h3>Agentes y estados (alternativa textual)</h3>
+            <div id="sv-agents-text"><p class="mc-empty">Cargando…</p></div>
+          </div>
+        </div>
+
+        <div class="mc-grid" style="margin-top:14px">
+          <section class="panel wide" aria-label="Panel del agente seleccionado">
+            <h3>Agente seleccionado</h3>
+            <div id="sv-agent-panel"><p class="mc-empty">Haz clic o usa las flechas ← → sobre el lienzo para seleccionar un planeta.</p></div>
+          </section>
+          <section class="panel" aria-label="Leyenda de estados">
+            <h3>Leyenda de estados</h3>
+            <ul class="mc-list" id="sv-legend"><li class="mc-empty">SIN DATOS</li></ul>
+          </section>
+        </div>
+        <p class="mc-sub" id="sv-footnote" style="margin-top:12px">—</p>
+      </div>
+    </div>
+
+    <script src="/viz-core.js?v=0200"></script>
+    <script src="/agents-viz.js?v=0200"></script>
+  </body>
+</html>

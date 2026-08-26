@@ -289,8 +289,8 @@ def test_command_center_no_invented_numbers(container):
     snap = container.command_center.snapshot()
     assert snap["real_money_moved"] is False
     assert snap["simulated"] is True
-    assert snap["version"] == "0.18.0"  # iteración 019 (contrato del centro de mando)
-    assert snap["iteration"] == "019"
+    assert snap["version"] == "0.19.0"  # iteración 020 (mission control premium)
+    assert snap["iteration"] == "020"
     assert snap["permissions"]["autonomous_production"] is False
     assert snap["permissions"]["api_budget_usd"] == 0
     # Autonomous Launch: estado determinista; READY_TO_LAUNCH nunca sin autorización.
@@ -391,15 +391,15 @@ def test_tests_init_present():
 def test_frontend_backend_version_synced(tmp_path):
     from tests.conftest import FRONTEND_DIR
     index = (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")
-    assert 'data-wawa-version="0.18.0"' in index
-    assert 'data-iteration="019"' in index
-    assert 'data-build="019-command-center-contract"' in index
+    assert 'data-wawa-version="0.19.0"' in index
+    assert 'data-iteration="020"' in index
+    assert 'data-build="020-agent-mission-control"' in index
     assert "ops18.js" in index
     assert (FRONTEND_DIR / "ops18.js").exists()
     ops18 = (FRONTEND_DIR / "ops18.js").read_text(encoding="utf-8")
     assert "api/command-center" in ops18
     settings = Settings()
-    assert settings.version == "0.18.0"
+    assert settings.version == "0.19.0"
 
 
 # ---------------------------------------------------------------------------
