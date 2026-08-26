@@ -316,6 +316,13 @@ class DiscoveryRepository:
         )
         self.conn.commit()
 
+    def update_mission_target(self, mission_id: str, target: dict[str, Any]) -> None:
+        self.conn.execute(
+            "UPDATE research_missions SET target = ? WHERE mission_id = ?",
+            (json.dumps(target, ensure_ascii=False), mission_id),
+        )
+        self.conn.commit()
+
     def update_mission_status(self, mission_id: str, status: str) -> None:
         self.conn.execute(
             "UPDATE research_missions SET status = ? WHERE mission_id = ?", (status, mission_id)

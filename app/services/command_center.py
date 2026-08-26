@@ -68,8 +68,8 @@ class CommandCenterService:
         return {
             "generated_at": generated_at,
             "version": self.c.settings.version,
-            "iteration": "020",
-            "build": "020-agent-mission-control",
+            "iteration": "021",
+            "build": "021-commercial-activation",
             "simulated": True,
             "real_money_moved": False,
             "autonomous_launch": readiness,
@@ -707,9 +707,74 @@ class CommandCenterService:
             "readiness_missing": readiness_missing, "readiness_blockers": (readiness or {}).get("readiness_blockers"),
         }
 
+        # --- Iteración 021: ganadora, servicios pendientes y mandato ----------
+        launch_winner = None
+        if selected and experiment_id:
+            plan = _safe(lambda: self.c.repos.orchestrator.experiment_plan_for_opportunity(selected), None)
+            opp = _safe(lambda: self.c.repos.opportunities.get(selected), None)
+            launch_winner = {
+                "candidate_id": selected, "opportunity_id": selected, "experiment_id": experiment_id,
+                "title": getattr(opp, "title", None) if opp else None,
+                "offer": (plan or {}).get("offer"),
+                "price_usd": (plan or {}).get("price_usd"),
+                "readiness_state": (readiness or {}).get("readiness_state"),
+                "evidence_verified": evidence.get("verified"),
+                "evidence_groups": evidence.get("independent_verified_groups"),
+                "nature": "REAL",
+            }
+        # Servicios que exige la oportunidad ganadora (nunca secretos: solo
+        # nombres de variable y estado; la conexión la hace el propietario).
+        services_required = [
+            {"name": "Stripe (cobro)", "env_var": "STRIPE_SECRET_KEY", "status": "MISSING",
+             "purpose": "Primer pago real (checkout, precio hipótesis 60 EUR)", "nature": "NO CONECTADO"},
+            {"name": "Email transaccional", "env_var": "EMAIL_API_KEY", "status": "MISSING",
+             "purpose": "Confirmación de pedido y entrega del informe", "nature": "NO CONECTADO"},
+            {"name": "Hosting", "env_var": "HOSTING_*", "status": "MISSING",
+             "purpose": "Despliegue de landing y checkout", "nature": "NO CONECTADO"},
+            {"name": "Dominio / subdominio", "env_var": "DOMAIN", "status": "MISSING",
+             "purpose": "URL pública del producto", "nature": "NO CONECTADO"},
+            {"name": "Analytics", "env_var": "ANALYTICS_*", "status": "MISSING",
+             "purpose": "Eventos visits/leads/checkouts/payments", "nature": "NO CONECTADO"},
+            {"name": "GitHub (repositorio)", "env_var": "—", "status": "CONNECTED",
+             "purpose": "Repositorio actual WAWA (los artefactos de producto viven en product/)", "nature": "REAL"},
+        ]
+        authorization_mandate = {
+            "opportunity": (launch_winner or {}).get("title"),
+            "offer": (launch_winner or {}).get("offer"),
+            "price_usd": (launch_winner or {}).get("price_usd"),
+            "duration_days": 30,
+            "max_budget_usd": 0.0,
+            "max_daily_spend_usd": 0.0,
+            "allowed_channels": [
+                "Contacto directo autorizado a 20 clínicas identificadas (sin spam)",
+                "Colegios y directorios oficiales",
+                "LinkedIn profesional",
+            ],
+            "automatic_actions": [
+                "Seguimiento de contactos y recordatorios",
+                "Generación del informe (plantilla + percentiles)",
+                "Informes diarios y heartbeat",
+                "Registro de eventos de analytics",
+            ],
+            "blocked_actions": [
+                "Gasto real sin autorización", "Publicaciones automáticas", "Mensajería masiva",
+                "Creación de cuentas", "Trading/compras", "Acciones irreversibles",
+            ],
+            "price_optimization_range_usd": [30, 90],
+            "success_condition": "1 pago real confirmado (30-90 EUR) por un comprador real",
+            "pivot_condition": "Interés sin pago tras 14 días: pivotar a aseguradoras/software dental o ampliar especialidades",
+            "close_condition": "Sin señal de pago en 30 días y sin pivote viable",
+            "human_intervention_cases": [
+                "Credenciales ausentes", "Login/OAuth/CAPTCHA", "Permisos externos", "Gasto real",
+                "Decisión irreversible", "Conflicto legal/ToS material", "Bloqueo técnico real",
+            ],
+            "state": "PENDING_OWNER_AUTHORIZATION",
+            "nature": "REAL",
+        }
+
         return {
             "snapshot_at": generated_at,
-            "version": self.c.settings.version, "iteration": "020", "build": "020-agent-mission-control",
+            "version": self.c.settings.version, "iteration": "021", "build": "021-commercial-activation",
             "system_health": health,
             "production_capability": self._production_capability(engine),
             "campaign_id": campaign_id,
@@ -746,6 +811,9 @@ class CommandCenterService:
             },
             "budget": {"daily_reached": (budget.get("daily") or {}).get("reached"), "limit_usd": (budget.get("daily") or {}).get("limit_usd")},
             "experiment_state": experiment_state,
+            "launch_winner": launch_winner,
+            "services_required": services_required,
+            "authorization_mandate": authorization_mandate,
             "commercial_metrics": {"visits": "NO CONECTADO", "leads": "NO CONECTADO", "payments": "NO CONECTADO",
                                    "nature": "NO CONECTADO"},
             "data_nature": "REAL",

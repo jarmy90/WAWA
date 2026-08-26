@@ -80,6 +80,27 @@ class OpportunityRepository:
             rows = self.conn.execute("SELECT * FROM opportunities ORDER BY created_at DESC").fetchall()
         return [_row_to_model(r) for r in rows]
 
+    def get_by_concept(self, concept_id: str) -> Opportunity | None:
+        """Localiza la oportunidad promovida para un concepto (mismo título
+        normalizado dentro de la misma campaña de discovery).
+
+        El vínculo concepto→oportunidad se resuelve por título porque las
+        oportunidades promovidas copian el título del concepto; nunca se
+        insertan identificadores foráneos en esta dirección.
+        """
+        row = self.conn.execute(
+            "SELECT title, campaign_id FROM discovery_concepts WHERE id = ?", (concept_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        title, campaign_id = row["title"], row["campaign_id"]
+        norm = _normalize(title)
+        rows = self.conn.execute("SELECT * FROM opportunities").fetchall()
+        for o in (_row_to_model(r) for r in rows):
+            if _normalize(o.title) == norm and o.source == f"discovery:{campaign_id}":
+                return o
+        return None
+
     def find_similar_title(self, title: str) -> list[Opportunity]:
         """Detección simple de duplicados por título normalizado."""
         norm = _normalize(title)

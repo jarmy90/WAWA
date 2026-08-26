@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tarifas Ortodoncia · Benchmark anónimo por provincia</title>
+<meta name="description" content="Decide tu tarifa de ortodoncia con datos reales de tu provincia, no con guías genéricas. Informe de benchmark anónimo para clínicas dentales.">
+<style>
+  :root {
+    --bg: #0b1020; --panel: #111a30; --panel2: #16203a; --line: rgba(120,180,255,.16);
+    --text: #e8eefc; --muted: #93a4c4; --teal: #35e0c8; --gold: #f4c95d; --red: #ff6b7a;
+    --cyan: #5cc8ff;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    background: radial-gradient(1200px 600px at 80% -10%, rgba(53,224,200,.10), transparent 60%),
+                radial-gradient(900px 500px at -10% 110%, rgba(92,200,255,.08), transparent 55%), var(--bg);
+    color: var(--text); line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 22px; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; border-bottom: 1px solid var(--line); }
+  .logo { font-weight: 800; letter-spacing: .12em; font-size: 14px; color: var(--teal); }
+  .logo small { color: var(--muted); font-weight: 500; letter-spacing: .04em; margin-left: 8px; }
+  nav a { color: var(--muted); text-decoration: none; font-size: 13px; margin-left: 20px; }
+  nav a:hover { color: var(--text); }
+  .hero { padding: 84px 0 56px; text-align: center; }
+  .eyebrow { display: inline-block; color: var(--teal); border: 1px solid rgba(53,224,200,.4); border-radius: 999px; padding: 5px 14px; font-size: 12px; letter-spacing: .08em; }
+  h1 { font-size: clamp(30px, 5.4vw, 54px); line-height: 1.12; margin: 22px 0 18px; font-weight: 800; letter-spacing: -.02em; }
+  h1 em { font-style: normal; color: var(--teal); }
+  .lede { max-width: 640px; margin: 0 auto 30px; color: var(--muted); font-size: 17px; }
+  .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn { display: inline-block; padding: 13px 26px; border-radius: 10px; font-weight: 700; font-size: 15px; text-decoration: none; }
+  .btn-primary { background: linear-gradient(135deg, var(--teal), #19b8a3); color: #06231f; }
+  .btn-ghost { border: 1px solid var(--line); color: var(--text); }
+  .btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+  .proof { margin-top: 26px; color: var(--muted); font-size: 13px; }
+  .proof b { color: var(--gold); }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; padding: 26px 0 10px; }
+  .fact { background: linear-gradient(180deg, var(--panel), var(--panel2)); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+  .fact .n { font-size: 30px; font-weight: 800; color: var(--cyan); }
+  .fact .t { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  section { padding: 46px 0; }
+  h2 { font-size: 26px; letter-spacing: -.01em; margin-bottom: 18px; }
+  h2 span { color: var(--muted); font-size: 15px; font-weight: 500; margin-left: 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+  .card h3 { font-size: 15px; color: var(--teal); margin-bottom: 8px; }
+  .card p { color: var(--muted); font-size: 14px; }
+  .price { background: linear-gradient(135deg, rgba(53,224,200,.14), rgba(92,200,255,.08)); border: 1px solid rgba(53,224,200,.35); border-radius: 16px; padding: 26px; display: flex; flex-wrap: wrap; gap: 26px; align-items: center; justify-content: space-between; }
+  .price .big { font-size: 42px; font-weight: 800; color: var(--teal); }
+  .price .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .price ul { list-style: none; padding: 0; color: var(--muted); font-size: 14px; }
+  .price li { padding: 3px 0; }
+  .price li::before { content: "✓ "; color: var(--teal); font-weight: 700; }
+  .disclaimer { color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--line); margin-top: 40px; padding-top: 18px; }
+  footer { padding: 30px 0 50px; color: var(--muted); font-size: 13px; text-align: center; }
+  .tag { display: inline-block; background: rgba(244,201,93,.12); color: var(--gold); border: 1px solid rgba(244,201,93,.4); font-size: 11px; padding: 3px 10px; border-radius: 999px; margin-right: 8px; }
+  @media (max-width: 640px) { nav a { margin-left: 12px; } .hero { padding: 56px 0 34px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">TARIFAS ORTODONCIA <small>· WAWA AUTONOMOUS BUSINESS COMMAND</small></div>
+    <nav><a href="#que">Qué es</a><a href="#precio">Precio</a><a href="#privacidad">Privacidad</a></nav>
+  </header>
+
+  <section class="hero">
+    <span class="eyebrow">BENCHMARK ANÓNIMO · DATOS REALES DE TU PROVINCIA</span>
+    <h1>Decide tu tarifa de ortodoncia<br>con <em>datos de mercado</em>, no con guías genéricas.</h1>
+    <p class="lede">Informe de tarifas de ortodoncia por provincia (rangos y percentiles) para clínicas dentales de 2-5 dentistas que quieren fijar precio con información real y perder menos margen.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#precio">Pedir informe de mi provincia</a>
+      <a class="btn btn-ghost" href="#que">Cómo funciona</a>
+    </div>
+    <p class="proof">Estado: <b>preparado para lanzamiento</b> · sin gasto real · checkout pendiente de conectar (Stripe)</p>
+  </section>
+
+  <div class="facts">
+    <div class="fact"><div class="n">2.900–8.100 €</div><div class="t">rango público documentado de ortodoncia en España</div></div>
+    <div class="fact"><div class="n">7 grupos</div><div class="t">de evidencia independiente verificada (URL + fecha + fragmento)</div></div>
+    <div class="fact"><div class="n">30–90 €</div><div class="t">precio hipótesis por informe + revisión concierge</div></div>
+    <div class="fact"><div class="n">100% anónimo</div><div class="t">sin datos de pacientes ni identificación de clínicas</div></div>
+  </div>
+
+  <section id="que">
+    <h2>Qué recibes<span>· HIPÓTESIS de producto, en validación</span></h2>
+    <div class="grid">
+      <div class="card"><h3>Percentiles por provincia</h3><p>Rangos y percentiles de tarifas de ortodoncia (metálico, autoligable, invisible) para situar tu precio respecto al mercado.</p></div>
+      <div class="card"><h3>Fuentes públicas</h3><p>Tarifarios publicados por clínicas y aseguradoras. Cada dato lleva URL, fecha de consulta y fragmento.</p></div>
+      <div class="card"><h3>Revisión concierge</h3><p>Videollamada para interpretar el informe y decidir tu tarifa. Entrega en PDF.</p></div>
+      <div class="card"><h3>Sin datos de pacientes</h3><p>El informe es agregado y anónimo. Nunca se usan datos clínicos ni personales.</p></div>
+    </div>
+  </section>
+
+  <section id="precio">
+    <h2>Precio <span>· hipótesis, se confirma con los primeros compradores</span></h2>
+    <div class="price">
+      <div>
+        <div class="big">60 €</div>
+        <div class="sub">por informe de tu provincia + revisión (rango 30-90 €)</div>
+        <span class="tag">PAGO ÚNICO</span><span class="tag">ENTREGA CONCIERGE</span>
+      </div>
+      <ul>
+        <li>Informe PDF con rangos y percentiles por tratamiento</li>
+        <li>Revisión por videollamada (30 min)</li>
+        <li>Fuentes citadas con URL y fecha</li>
+        <li>Actualización trimestral opcional (futura)</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="privacidad">
+    <h2>Privacidad y garantías</h2>
+    <div class="grid">
+      <div class="card"><h3>Anónimo</h3><p>Nunca se publica el nombre de ninguna clínica. Solo agregados por provincia.</p></div>
+      <div class="card"><h3>Sin inventar datos</h3><p>Cada cifra del informe proviene de una fuente pública verificable o se marca como desconocida.</p></div>
+      <div class="card"><h3>Sin consejo clínico</h3><p>Esto es un informe de mercado, no asesoramiento médico ni fiscal.</p></div>
+    </div>
+    <p class="disclaimer">Este producto es un experimento de validación de 30 días preparado por WAWA (Autonomous Business Lab). El checkout y el envío se activarán únicamente cuando el propietario conecte los servicios (Stripe, email, hosting, analytics) y autorice el ciclo autónomo. No se ha gastado ni se gastará dinero real sin esa autorización.</p>
+  </section>
+
+  <footer>© 2026 WAWA Autonomous Business Command · landing estática de producto (sin backend) · datos marcados como hipótesis hasta verificación con comprador real</footer>
+</div>
+</body>
+</html>

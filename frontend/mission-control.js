@@ -100,7 +100,59 @@
     renderCommercial(d.commercial_metrics || {});
     renderExperiment(d.experiment_state || {});
     renderRelations(d.agent_relationships || [], d.agents || []);
+    renderWinner(d.launch_winner || null);
+    renderServices(d.services_required || []);
+    renderMandate(d.authorization_mandate || null);
     setText("mc-footnote", d.note ? d.note : "—");
+  }
+
+  function renderWinner(w) {
+    if (!w) { setHtml("mc-winner", '<p class="mc-empty">SIN DATOS — aún no hay ganadora seleccionada</p>'); return; }
+    var rows = [
+      ["Estado readiness", w.readiness_state || "—"],
+      ["Oferta", w.offer || "—"],
+      ["Precio hipótesis", w.price_usd != null ? w.price_usd + " EUR" : "DESCONOCIDO"],
+      ["Evidencias verificadas", w.evidence_verified != null ? String(w.evidence_verified) : "SIN DATOS"],
+      ["Grupos independientes", w.evidence_groups != null ? String(w.evidence_groups) : "SIN DATOS"],
+      ["Experiment ID", w.experiment_id || "—"]
+    ];
+    var html = '<div class="mc-winner-title">' + V.escapeHtml(w.title || "—") + "</div><ul class='dl'>" +
+      rows.map(function (r) { return "<li><span>" + V.escapeHtml(r[0]) + "</span><span>" + V.escapeHtml(r[1]) + "</span></li>"; }).join("") +
+      "</ul>";
+    setHtml("mc-winner", html);
+  }
+
+  function renderServices(services) {
+    if (!services.length) { setHtml("mc-services", '<li class="mc-empty">SIN DATOS</li>'); return; }
+    setHtml("mc-services", services.map(function (s) {
+      var st = s.status || "MISSING";
+      var cls = st === "CONNECTED" ? "chip-ok" : "chip-bad";
+      return '<li><span class="k"><span class="chip ' + cls + '">' + V.escapeHtml(st) + "</span></span>" +
+        '<span class="v"><b>' + V.escapeHtml(s.name) + "</b> · " + V.escapeHtml(s.env_var || "—") +
+        '<div class="a-action">' + V.escapeHtml(s.purpose || "") + "</div></span></li>";
+    }).join(""));
+  }
+
+  function renderMandate(m) {
+    if (!m) { setHtml("mc-mandate", '<p class="mc-empty">SIN DATOS — mandato pendiente de ganadora</p>'); return; }
+    var rows = [
+      ["Duración", (m.duration_days || 0) + " días"],
+      ["Presupuesto máximo", m.max_budget_usd + " USD (0 = sin gasto real autorizado)"],
+      ["Gasto diario máximo", m.max_daily_spend_usd + " USD"],
+      ["Rango de precio", (m.price_optimization_range_usd || []).join(" - ") + " EUR"],
+      ["Condición de éxito", m.success_condition || "—"],
+      ["Condición de pivot", m.pivot_condition || "—"],
+      ["Condición de cierre", m.close_condition || "—"],
+      ["Estado", m.state || "—"]
+    ];
+    var html = '<ul class="dl">' + rows.map(function (r) {
+      return "<li><span>" + V.escapeHtml(r[0]) + "</span><span>" + V.escapeHtml(r[1]) + "</span></li>";
+    }).join("") + "</ul>" +
+      "<div class='mc-sub'><b>Canales permitidos:</b> " + V.escapeHtml((m.allowed_channels || []).join(" · ")) + "</div>" +
+      "<div class='mc-sub'><b>Acciones automáticas:</b> " + V.escapeHtml((m.automatic_actions || []).join(" · ")) + "</div>" +
+      "<div class='mc-sub' style='color:var(--mc-red)'><b>Acciones bloqueadas:</b> " + V.escapeHtml((m.blocked_actions || []).join(" · ")) + "</div>" +
+      "<div class='mc-sub'><b>Requieren intervención humana:</b> " + V.escapeHtml((m.human_intervention_cases || []).join(" · ")) + "</div>";
+    setHtml("mc-mandate", html);
   }
 
   function statusChip(agent) {

@@ -127,6 +127,44 @@ borrar el historial previo.
 - **Verificación**: paquete 15/15; suite **337 passed**; flujo offline completo
   reproducido (plan → 12 misiones → paquete → RESEARCH_IMPORTED).
 
+## Iteración 021 — Activación comercial: de Mission Control a READY_TO_CONNECT_SERVICES (v0.20.0) — 2026-08-26
+
+- **Estado real recuperado**: 3 candidatas REALES de la campaña (no las 3 del
+  enunciado): Benchmark de tarifas de ortodoncia (torneo 77.5), Benchmark de
+  honorarios de gestorías (72.5) y Benchmark de costes de placas solares
+  (72.5), todas `RESEARCH_PENDING` con 0 evidencia verificada. «Cuaderno de
+  cuotas» y «modelo 232» NO existen en el universo de la campaña (75
+  conceptos: 67 NEEDS_REFORMULATION + 5 RECOMBINATION_INCOHERENT + 3
+  RESEARCH_PENDING).
+- **Investigación Fase 1 REAL importada**: 18 misiones (6 por candidata) con
+  31 evidencias verificadas (URL + fecha 2026-08-26 + fragmento), fuentes
+  primarias (tarifarios de clínicas/aseguradoras, gestorías online, asociación
+  UNEF, registros oficiales de colegios), competidores y buyer_confirmed como
+  HIPÓTESIS. `evidence_backed_venture_score` sube de 0 a 59.14 en las 3 con 7
+  grupos independientes (tope de score 100).
+- **Ganadora determinista**: Benchmark anónimo de tarifas de ortodoncia
+  (única con `low_launch_cost=2/2` y `concierge_delivery=2/2` en el torneo
+  018; 11 evidencias, 7 grupos). Decisión `approved` (experimento SMALL de 30
+  días), registrada en `decision_log`.
+- **READY_TO_CONNECT_SERVICES** alcanzado honestamente: candidata activa,
+  brief válido, Quality Gate, decisión, experimento, oferta/precio (60 EUR
+  hipótesis), comprador, canal, métrica de éxito, condición de cierre,
+  presupuesto (0 EUR reales), 18 misiones importadas, sin deuda/bloqueadores.
+  Producción bloqueada por diseño; condiciones `services_connected=false`,
+  `owner_authorized=false`.
+- **Paquete de lanzamiento preparado (no conectado)**: `product/` (landing
+  responsive, contrato de checkout Stripe, plantillas de email, contrato de
+  analytics, términos/privacidad adaptables, checklist de credenciales).
+- **Panel**: secciones «Candidata ganadora», «CONECTAR SERVICIOS» (6 servicios
+  con estado MISSING/CONNECTED, sin secretos) y «AUTORIZAR CICLO AUTÓNOMO
+  · 30 DÍAS» (mandato completo, `PENDING_OWNER_AUTHORIZATION`).
+- **Trazabilidad**: `OpportunityRepository.get_by_concept` (concepto→
+  oportunidad por título normalizado + campaña) y
+  `DiscoveryRepository.update_mission_target` (`opportunity_id` en target).
+- **Verificación**: suite **393 passed** (387 + 6 nuevos); `node --check` OK;
+  servidor real: rutas 200 y readiness confirmado; paquete verificado;
+  versión v0.20.0 / build 021-commercial-activation.
+
 ## Iteración 018 — OX Alpha Grand Intelligence Sprint (v0.17.0) — 2026-08-26
 
 - **OX Alpha honesto**: verificación real de la puerta (B2): sin slug
@@ -173,3 +211,4 @@ borrar el historial previo.
 - **Iteración 18** · 2026-08-26T14:37:16.598823+00:00 · paquete: `autonomous-business-lab_iteracion-018_2026-08-26.zip.txt` · tamaño: 6824166 bytes · SHA-256 (canónico): `d44dccbd229895067b6ba508c7be46613a8cbf6f7d1f03f98298317fffd8388e`
 - **Iteración 19** · 2026-08-26T18:19:12.180563+00:00 · paquete: `autonomous-business-lab_iteracion-019_2026-08-26.zip.txt` · tamaño: 6834827 bytes · SHA-256 (canónico): `431dfafc4e40c8ab5729e887fc22fe1d433a8bd23bdbda9f5dc6304fdebc9818`
 - **Iteración 20** · 2026-08-26T18:31:01.537951+00:00 · paquete: `autonomous-business-lab_iteracion-020_2026-08-26.zip.txt` · tamaño: 6879637 bytes · SHA-256 (canónico): `76dfb286bfb78c9d61571b2f609c8c39dfc1133d8ed56ed9d64649210db687f2`
+- **Iteración 21** · 2026-08-26T20:06:50.376666+00:00 · paquete: `autonomous-business-lab_iteracion-021_2026-08-26.zip.txt` · tamaño: 6917671 bytes · SHA-256 (canónico): `44fad77ae2404c69e4015a72837a528e0ddff6ce950b59bf0c7ca681d24ad560`
