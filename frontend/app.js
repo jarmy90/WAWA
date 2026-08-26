@@ -1,5 +1,6 @@
 /* Autonomous Business Lab — dashboard (vanilla JS, sin dependencias). Iteración 014: E2E flow. */
 "use strict";
+/* Iteración 017: importación automática de planes y paquetes portables. */
 
 const $ = (sel) => document.querySelector(sel);
 

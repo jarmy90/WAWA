@@ -592,6 +592,26 @@ class OpportunityBriefIn(BaseModel):
     brief: dict
 
 
+class ReformulationPlanIn(BaseModel):
+    """Plan de reformulación portable (iteración 017). Los concept_id que
+    trae son de una reproducción aislada: NUNCA se insertan, solo trazabilidad."""
+
+    model_config = ConfigDict(extra="forbid")
+    plan: dict = Field(min_length=2)
+    preview: bool = True
+    run_id: str | None = Field(default=None, max_length=64)
+
+
+class ResearchPortablePackageIn(BaseModel):
+    """Paquete de investigación portable (iteración 017): se asocia a misiones
+    LOCALES por mapeo estable (título normalizado + kind + phase + ordinal)."""
+
+    model_config = ConfigDict(extra="forbid")
+    package: dict = Field(min_length=2)
+    apply: bool = False
+    run_id: str | None = Field(default=None, max_length=64)
+
+
 @router.post("/discovery/campaigns/{campaign_id}/reprocess")
 def discovery_reprocess(request: Request, campaign_id: str = Depends(valid_campaign_id)) -> dict:
     """Iteración 013: reprocesa la campaña con la puerta de calidad semántica
@@ -609,6 +629,37 @@ def discovery_generate_reformulations(
     """Iteración 013: genera 3-5 reformulaciones concretas (hipótesis) para un
     concepto abstracto. Ninguna se investiga hasta completar su brief."""
     return get_container(request).discovery.generate_reformulations(campaign_id, concept_id)
+
+
+@router.post("/orchestrator/reformulation-plan")
+def orchestrator_apply_reformulation_plan(request: Request, payload: ReformulationPlanIn) -> dict:
+    """APLICAR PLAN DE REFORMULACIÓN (iteración 017): localiza los conceptos
+    LOCALES por título normalizado / territorio+lente+arquetipo con coincidencia
+    inequívoca, aplica los briefs válidos y deja que el orquestador ejecute
+    Quality Gate + torneo (≤3) + misiones Fase 1 con IDs locales. Idempotente.
+    Los IDs del plan nunca se insertan en la base local."""
+    from app.services.reformulation_import import apply_reformulation_plan
+
+    container = get_container(request)
+    result = apply_reformulation_plan(
+        container, payload.plan, run_id=payload.run_id, preview=payload.preview
+    )
+    return {**result, "real_money_moved": False}
+
+
+@router.post("/orchestrator/research-package")
+def orchestrator_resolve_research_package(request: Request, payload: ResearchPortablePackageIn) -> dict:
+    """Importación en lote de un paquete de investigación portable (iteración
+    017): asocia resultados a misiones locales por mapeo estable; asociaciones
+    ambiguas se rechazan; delega en import_research (raw conservado, dedupe,
+    verificación URL+fecha+fragmento). Con apply=False devuelve la vista previa."""
+    from app.services.reformulation_import import resolve_research_package
+
+    container = get_container(request)
+    result = resolve_research_package(
+        container, payload.package, run_id=payload.run_id, apply=payload.apply
+    )
+    return {**result, "real_money_moved": False}
 
 
 @router.post("/discovery/concepts/{concept_id}/brief")

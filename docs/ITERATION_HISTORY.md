@@ -21,6 +21,7 @@
 | 013 | 2026-08-23 | Calidad semántica, estados honestos y reformulación ANTES de investigar (v0.12.0): sustitución de etiquetas ambiguas (passed/promoted/blocked/eliminated/clone) por 15 estados inequívocos en español con significado visible (GENERATED_HYPOTHESIS…EXPERIMENT_READY, incl. NEEDS_REFORMULATION, RECOMBINATION_INCOHERENT, RESEARCH_CANDIDATE, RESEARCH_PENDING, FINALIST); ventajas sin evidencia mostradas como HIPÓTESIS (HYPOTHESIS_DEFENSIBLE_WORKFLOW…); dos puntuaciones separadas — estructural (pre-evidencia) y con evidencia (0 sin evidencia, tope 40 con <3 grupos, real con ≥3); Quality Gate del Opportunity Brief de 19 campos (bloquea 'profesional o pequeña organización' y frases genéricas; sin brief concreto no hay candidata); detector determinista de coherencia semántica (3 frases incoherentes reales de la campaña como casos); reformulaciones concretas (3-5 por familia regulatorio/intermediarios/incertidumbre) + torneo de reformulaciones (máx. 3, 0 válido); misiones PROGRESIVAS (solo 6 de Fase 1 por candidata, nunca las 10); reproceso de la campaña real conservando las 66 ideas y superseding las 30 misiones antiguas (SUPERSEDED_BY_SEMANTIC_QUALITY_GATE); PRE_CYCLE permanece detenido; exportaciones CSV con puntuación estructural/evidencia y motivo; tarjetas de Ideas corregidas (Estado/Qué significa/Filtro/Evidencia/Comprador/Problema/Entrega/Canal/Estructura/Con evidencia/Motivo/Qué falta/Próxima acción). Aceptación real: 66 conceptos reprocesados → 61 reformulación + 5 incoherentes + 3 candidatas concretas seleccionadas + 18 misiones de Fase 1, capturas de navegador y CSV/MD descargados. | entregado | autonomous-business-lab_iteracion-013_2026-08-23.zip.txt | 263e0021ef27b132cdf34136312a37df66554bec03122368a91ff4a7ed40b18a (canónico) |
 | 014 | 2026-08-23 | Flujo E2E: selector de misión para importar investigación, badge de Ideas actualizado, versión v0.13.0 sincronizada. | en curso | _pendiente_ | — |
 | 016 | 2026-08-24 | Continuidad tras primera instalación real (v0.15.0): parada contextual honesta del orquestador (nunca ordena COPIAR MISIÓN sin misiones; explica RESEARCH_CANDIDATE=0), re-planificación determinista post-parada tras Opportunity Brief válido sin duplicar misiones, endpoint de misiones trazable (mission_id/concept_id/markdown/explanation), tarjeta Campaña real honesta, portada idempotente CONTINUAR CAMPAÑA REAL, raw_excerpt obligatorio para evidencia verificada. Demostrado: el '6' observado eran NEEDS_REFORMULATION. Suite: 328 passed. | entregado | autonomous-business-lab_iteracion-016_2026-08-24.zip.txt | 1d32a9f772f76262cb3d4770f7fff3298b7641b5afff6ee21a524f21d6f03d38 (canónico) |
+| 017 | 2026-08-26 | Importación automática de planes de reformulación y paquetes portables (v0.16.0): `apply_reformulation_plan` localiza conceptos LOCALES por título normalizado (+territorio/lente/arquetipo) con coincidencia inequívoca (ambiguo ⇒ rechazo registrado), nunca inserta IDs foráneos, idempotente por contenido de brief; delega Quality Gate + torneo ≤3 + misiones Fase 1 en el orquestador. `resolve_research_package` asocia investigación portable a misiones locales por mapeo estable y delega en import_research (URL+fecha+fragmento). Endpoints API + CLI único + bloque visual en panel. Suite: 337 passed. | entregado | autonomous-business-lab_iteracion-017_2026-08-26.zip.txt | 91d1c229b119d0406c480537aea0fc166f46d42982b56cd73ea0125e10e475d2 (canónico) |
 
 ## Iteración 016 — Continuidad tras primera instalación real (v0.15.0) — 2026-08-24
 
@@ -105,6 +106,27 @@ borrar el historial previo.
 - **Iteración 13** · 2026-08-23T15:25:35.651711+00:00 · paquete: `autonomous-business-lab_iteracion-013_2026-08-23.zip.txt` · tamaño: 6653908 bytes · SHA-256 (canónico): `d6064e9a445c9fecebe3a5eaf3ee34069d80da7fbd9cb8eb53ad3cda58d77519`
 - **Iteración 13** · 2026-08-23T15:25:45.711480+00:00 · paquete: `autonomous-business-lab_iteracion-013_2026-08-23.zip.txt` · tamaño: 6653968 bytes · SHA-256 (canónico): `263e0021ef27b132cdf34136312a37df66554bec03122368a91ff4a7ed40b18a`
 
+## Iteración 017 — Importación automática de planes y paquetes portables (v0.16.0) — 2026-08-26
+
+- **Servicio**: `app/services/reformulation_import.py` (`apply_reformulation_plan`,
+  `resolve_research_package`). Coincidencia inequívoca por título normalizado
+  NFKD (reforzada por territorio+lente+arquetipo); los concept_id/opportunity_id/
+  mission_id del paquete portable son SOLO trazabilidad y jamás se insertan.
+- **Idempotencia**: brief almacenado idéntico ⇒ `YA_APLICADO_IDEMPOTENTE`
+  (cualquier estado posterior); distinto ⇒ rechazo honesto sin sobrescribir.
+- **Delegación**: tras aplicar, `advance()` ejecuta Quality Gate, torneo (≤3)
+  y planificación progresiva Fase 1 con IDs LOCALES; el importador no duplica
+  lógica de negocio.
+- **Investigación portable**: mapeo estable título+kind+phase+ordinal;
+  ambigüedades rechazadas; aplicación vía `import_research` (raw conservado,
+  dedupe, verificación URL+fecha+fragmento).
+- **Superficie**: `POST /api/orchestrator/reformulation-plan`,
+  `POST /api/orchestrator/research-package`, CLI
+  `scripts/apply_reformulation_plan.py`, panel "Operación automática"
+  (`frontend/ops17.js`).
+- **Verificación**: paquete 15/15; suite **337 passed**; flujo offline completo
+  reproducido (plan → 12 misiones → paquete → RESEARCH_IMPORTED).
+
 ## Iteración 015 — Ventana prioritaria OX Alpha (v0.14.0) — 2026-08-23
 
 - Puerta determinista `app/core/ox_alpha.py`: identidad OX_ALPHA_UNVERIFIED hasta que el propietario verifique el slug real contra el catálogo de OmniRoute; la ventana expira sola el 2026-08-27; límite diario y recorte de entrada.
@@ -115,3 +137,4 @@ borrar el historial previo.
 - 14 tests nuevos offline → total **314 passed**.
 - **Iteración 16** · 2026-08-24T16:33:27.296509+00:00 · paquete: `autonomous-business-lab_iteracion-016_2026-08-24.zip.txt` · tamaño: 6804465 bytes · SHA-256 (canónico): `1d32a9f772f76262cb3d4770f7fff3298b7641b5afff6ee21a524f21d6f03d38`
 - **Iteración 16** · 2026-08-24T16:43:01.840024+00:00 · paquete: `autonomous-business-lab_iteracion-016_2026-08-24.zip.txt` · tamaño: 6692081 bytes · SHA-256 (canónico): `1d32a9f772f76262cb3d4770f7fff3298b7641b5afff6ee21a524f21d6f03d38`
+- **Iteración 17** · 2026-08-26T10:28:29.165722+00:00 · paquete: `autonomous-business-lab_iteracion-017_2026-08-26.zip.txt` · tamaño: 6764871 bytes · SHA-256 (canónico): `91d1c229b119d0406c480537aea0fc166f46d42982b56cd73ea0125e10e475d2`

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-wawa-version="0.15.0" data-iteration="016" data-build="016-research-traceability">
+<html lang="es" data-wawa-version="0.16.0" data-iteration="017" data-build="017-reformulation-import">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -20,7 +20,7 @@
         </div>
       </div>
       <div class="topbar-right">
-        <span id="wawa-version" class="chip chip-neutral" title="Versión de esta interfaz">v0.15.0</span>
+        <span id="wawa-version" class="chip chip-neutral" title="Versión de esta interfaz">v0.16.0</span>
         <div id="budget-chip" class="chip chip-neutral" title="Estado del BudgetGuard">—</div>
       </div>
     </header>
@@ -28,8 +28,8 @@
     <!-- Diagnóstico visible (iteración 012): versiones y estado de JS. -->
     <div class="diag" id="diag">
       Backend: <span id="diag-backend">—</span>
-      · Frontend: <span id="diag-frontend">v0.15.0</span>
-      · Iteración: <span id="diag-iter">014</span>
+      · Frontend: <span id="diag-frontend">v0.16.0</span>
+      · Iteración: <span id="diag-iter">017</span>
       · JavaScript: <span id="diag-js">cargando…</span>
       · Paquete: <span id="diag-package">014-e2e-flow</span>
     </div>
@@ -82,6 +82,22 @@
         <div id="orchestrator-panel" class="stack"></div>
         <div id="orchestrator-empty" class="empty hidden">
           <p>No hay campaña real en curso. Pulsa <strong>INICIAR CAMPAÑA REAL</strong> (portada) para crear la PRIMERA CAMPAÑA REAL 001 (60 conceptos iniciales, territorios diversos, sin ventaja de sector).</p>
+        </div>
+
+        <div class="sub-block">
+          <h3>Operación automática <span class="tag tag-unverified">IDs locales garantizados</span></h3>
+          <p class="hint">Los identificadores de los JSON portables son de una reproducción aislada: el sistema localiza tus conceptos LOCALES por título/territorio+lente+arquetipo y rechaza cualquier coincidencia ambigua. Nunca se insertan IDs foráneos.</p>
+          <div class="row">
+            <input type="file" id="file-reformulation-plan" class="input" accept=".json,application/json" />
+            <button id="btn-apply-plan-preview" class="btn btn-ghost btn-sm">Previsualizar plan</button>
+            <button id="btn-apply-plan" class="btn btn-primary btn-sm">APLICAR PLAN DE REFORMULACIÓN</button>
+          </div>
+          <div class="row">
+            <input type="file" id="file-research-package" class="input" accept=".json,application/json" />
+            <button id="btn-import-package-preview" class="btn btn-ghost btn-sm">Previsualizar paquete</button>
+            <button id="btn-import-package" class="btn btn-primary btn-sm">IMPORTAR PAQUETE DE INVESTIGACIÓN</button>
+          </div>
+          <pre id="plan-result" class="code hidden"></pre>
         </div>
       </section>
 
@@ -335,6 +351,7 @@
       </div>
     </noscript>
 
-    <script src="/app.js?v=0140"></script>
+    <script src="/app.js?v=0170"></script>
+    <script src="/ops17.js?v=0170"></script>
   </body>
 </html>
