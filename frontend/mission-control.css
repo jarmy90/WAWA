@@ -214,6 +214,34 @@ a.mc-home:hover { color: var(--mc-cyan); }
   .agent-row .a-status { grid-column: 2; justify-self: start; }
 }
 
+/* --- Iteración 022: reparación automática ----------------------------- */
+.mc-repair-state { margin-bottom: 8px; }
+.mc-repair-preview { margin-bottom: 10px; }
+.mc-repair-preview p { color: var(--mc-text-dim); font-size: 13px; line-height: 1.5; }
+.mc-details { margin-top: 12px; }
+.mc-details summary { color: var(--mc-cyan); font: 600 12px var(--mc-mono); cursor: pointer; letter-spacing: 0.05em; }
+.mc-diagnosis { margin-top: 8px; }
+.diag-item { display: grid; grid-template-columns: 120px 1fr; gap: 10px; padding: 7px 0;
+  border-bottom: 1px solid rgba(120, 180, 255, 0.08); font-size: 12.5px; }
+.diag-item .k { color: var(--mc-amber); font-family: var(--mc-mono); }
+.diag-item .v { color: var(--mc-text-dim); }
+.diag-item .v em { color: var(--mc-green); font-style: normal; }
+
+/* --- Iteración 022: asistente CONECTAR SERVICIOS ---------------------- */
+.svc-wizard { margin-top: 12px; border-top: 1px solid rgba(120, 180, 255, 0.12); padding-top: 10px; }
+.svc-wizard h4 { color: var(--mc-cyan); font: 700 12px var(--mc-mono); letter-spacing: 0.14em; margin-bottom: 10px; }
+.svc-row { display: grid; gap: 6px; padding: 8px 0; border-bottom: 1px solid rgba(120, 180, 255, 0.08); }
+.svc-meta b { color: var(--mc-text); font-size: 13px; }
+.svc-meta code { color: var(--mc-amber); font-family: var(--mc-mono); font-size: 11.5px; }
+.svc-inputs { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.svc-inputs input[type=password] { flex: 1 1 220px; background: rgba(8, 16, 34, 0.9); color: var(--mc-text);
+  border: 1px solid rgba(120, 180, 255, 0.25); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.svc-inputs input[type=password]:focus { outline: 2px solid var(--mc-cyan); outline-offset: 1px; }
+.svc-check-result { font: 12px var(--mc-mono); }
+.svc-check-result.ok { color: var(--mc-green); }
+.svc-check-result.bad { color: var(--mc-red); }
+#btn-svc-save { margin-top: 10px; }
+
 /* --- Accesibilidad: movimiento reducido -------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }

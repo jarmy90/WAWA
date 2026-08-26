@@ -212,3 +212,55 @@ borrar el historial previo.
 - **Iteración 19** · 2026-08-26T18:19:12.180563+00:00 · paquete: `autonomous-business-lab_iteracion-019_2026-08-26.zip.txt` · tamaño: 6834827 bytes · SHA-256 (canónico): `431dfafc4e40c8ab5729e887fc22fe1d433a8bd23bdbda9f5dc6304fdebc9818`
 - **Iteración 20** · 2026-08-26T18:31:01.537951+00:00 · paquete: `autonomous-business-lab_iteracion-020_2026-08-26.zip.txt` · tamaño: 6879637 bytes · SHA-256 (canónico): `76dfb286bfb78c9d61571b2f609c8c39dfc1133d8ed56ed9d64649210db687f2`
 - **Iteración 21** · 2026-08-26T20:06:50.376666+00:00 · paquete: `autonomous-business-lab_iteracion-021_2026-08-26.zip.txt` · tamaño: 6917671 bytes · SHA-256 (canónico): `44fad77ae2404c69e4015a72837a528e0ddff6ce950b59bf0c7ca681d24ad560`
+
+## Iteración 022 — One-Click Owner Activation (v0.21.0) — 2026-08-26
+
+- **Modo demo corregido (causa del demo persistente)**: el estado demo era
+  volátil pero la vista lo volvía a activar al recargar por una lectura
+  temprana del parámetro `?demo=1`; ahora el estado vive SOLO en memoria,
+  `?demo=1` se elimina de la URL en la misma carga (refrescar/reiniciar nunca
+  reactiva demo), se limpian claves demo de localStorage/sessionStorage, el
+  botón indica `ACTIVAR DEMO` / `SALIR DE DEMO` según el estado real y los
+  datos demo y reales nunca se mezclan (`data_nature=DEMO` vs `REAL`).
+  Smoke headless `scripts/demo_state_smoke.js` (6 casos) + verificación en
+  navegador real: clic en SALIR DE DEMO deja la URL sin `?demo`.
+- **Causa del error PowerShell**: se ejecutó `.venv\Scripts\python.exe …`
+  desde `C:\Users\j` (fuera de la carpeta de WAWA). `START_WAWA.bat` ahora
+  hace `cd /d "%~dp0"`, crea/reutiliza el `.venv` con rutas entre comillas
+  (espacios OK) y es el único punto de entrada: doble clic → 7 pasos
+  `[1/7]…[7/7]` → bootstrap → navegador. Sin comandos manuales.
+- **CommercialBootstrapService** (`app/services/commercial_bootstrap.py`):
+  convierte `activate/readiness_021` en servicio interno idempotente y
+  transaccional con checkpoints append-only. Detecta instalación limpia /
+  parcial / FAILED recuperable, materializa las 3 candidatas del paquete
+  portable en la campaña LOCAL por mapeo estable (título normalizado; NUNCA
+  inserta IDs foráneos), importa 18 misiones y 31 evidencias verificadas sin
+  duplicar, recalcula puntuaciones (7 grupos independientes), selecciona la
+  ganadora determinista, crea el experimento, encola el comité y deja
+  `READY_TO_CONNECT_SERVICES`. Deja PRE_CYCLE detenido, gasto real 0 y
+  producción bloqueada. Cada paso en `decision_log`. Reanudable tras corte.
+- **Activos integrados** `resources/bootstrap/commercial_021/`: manifiesto
+  inmutable por versión + investigación portable + tarjetas de candidatas,
+  con checksum SHA-256 verificado, sin secretos/SQLite/logs,
+  `buyer_confirmed` como HIPÓTESIS.
+- **Panel**: ruta `/candidates` (3 tarjetas con puntuación estructural/con
+  evidencia, evidencias, grupos, comprador, problema, oferta, precio
+  hipótesis, canal, alternativas, fuentes, contradicciones, riesgos, kill
+  condition; la ganadora muestra `GANADORA DETERMINISTA PARA EXPERIMENTO`,
+  nunca demanda validada) + comité directo (COPIAR GPT/GROK/GEMINI,
+  DESCARGAR EXPEDIENTE, PEGAR RESPUESTA, IMPORTAR COMBINADO, wizard
+  PASO 1-2-3 con estados pendiente/importado/válido) + botón
+  `REPARAR Y CONTINUAR AUTOMÁTICAMENTE` con `VER DIAGNÓSTICO` (solo si
+  FAILED/falta activación) + asistente `CONECTAR SERVICIOS`
+  (`/api/services/status|save|check`; estado CONNECTED/PARTIAL/INVALID/
+  MISSING + últimos 4; secretos fuera de Git, nunca por API/logs/paquetes;
+  GitHub permanece CONNECTED).
+- **Verificación visual real**: Playwright/Chromium temporal (fuera del
+  paquete) → 9 capturas PNG en `deliverables/iteracion_022_capturas/`
+  (inicio, candidatas, tarjeta ganadora, wizard, Mission Control sin demo /
+  con demo / tras salir de demo, CONECTAR SERVICIOS, móvil).
+- **Pruebas**: suite **423 passed** (393 + 30 nuevos); `node --check` OK;
+  smoke bootstrap end-to-end en instalación limpia y sobre la base real 021
+  (recuperación idempotente: applied, sin duplicados).
+- Versión v0.21.0 / build 022-one-click-activation.
+- **Iteración 22** · 2026-08-26T21:41:48.109087+00:00 · paquete: `autonomous-business-lab_iteracion-022_2026-08-26.zip.txt` · tamaño: 9303052 bytes · SHA-256 (canónico): `999fdd5c2f3c70d95d4728d19ddb8c65f31fb9df147afcfc6e98b978171f71b1`

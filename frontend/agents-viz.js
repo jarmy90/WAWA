@@ -25,7 +25,7 @@
   var width = 0, height = 0;
   var rafId = null, lastTs = 0, paused = false, running = false;
   var reduced = V.prefersReducedMotion();
-  var demo = V.isDemoMode();
+  var demo = false; // OFF por defecto; se inicializa en init() (iteración 022)
   var data = null;
   var focusId = null;
   var filterState = "ALL";
@@ -582,11 +582,17 @@
     else if (el.requestFullscreen) el.requestFullscreen().catch(function () {});
   }
 
-  function toggleDemo() {
-    demo = !demo;
+  function applyDemoUI() {
+    $("sv-mode").textContent = demo ? "DEMO DATA · NOT REAL ACTIVITY" : "REAL · datos persistidos";
     $("sv-mode").classList.toggle("chip-demo", demo);
     if (demo) show("sv-demo-banner"); else hide("sv-demo-banner");
-    $("btn-sv-demo").textContent = demo ? "SALIR DE DEMO" : "MODO DEMO";
+    $("btn-sv-demo").textContent = demo ? "SALIR DE DEMO" : "ACTIVAR DEMO";
+    $("btn-sv-demo").setAttribute("aria-pressed", demo ? "true" : "false");
+  }
+
+  function toggleDemo() {
+    demo = V.setDemoActive(!demo);
+    applyDemoUI();
     loadData();
   }
 
@@ -646,7 +652,8 @@
       zoom = Math.min(1.6, Math.max(0.6, zoom - ev.deltaY * 0.001));
     }, { passive: false });
 
-    if (demo) show("sv-demo-banner");
+    demo = V.initDemoState(); // OFF por defecto; ?demo=1 activa y se limpia
+    applyDemoUI();
     loadData().then(function () {
       start();
     });

@@ -84,8 +84,8 @@ def test_telemetry_endpoint_contract(client):
     d = r.json()
     assert REQUIRED_TOP_KEYS <= set(d.keys())
     assert d["data_nature"] == "REAL"
-    assert d["version"] == "0.20.0"
-    assert d["iteration"] == "021"
+    assert d["version"] == "0.21.0"
+    assert d["iteration"] == "022"
 
 
 def test_telemetry_agent_fields_and_states(client):

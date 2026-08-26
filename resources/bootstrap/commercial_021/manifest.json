@@ -1,0 +1,82 @@
+{
+ "asset": "commercial_021",
+ "version": "1",
+ "generated_at": "2026-08-26",
+ "provenance": {
+  "operation": "activacion_comercial_021 (iteracion 021, commit 8ca43b1)",
+  "research_file": "deliverables/operacion_activacion_comercial_2026-08-26/investigacion_fase1_021.json",
+  "method": "investigacion web autorizada + fuentes primarias publicas (URL + fecha + fragmento)",
+  "ids_are_provenance_only": "Los IDs de la reproduccion nunca se insertan: resolucion local por mapeo estable (titulo normalizado + kind + fase + ordinal).",
+  "buyer_confirmed_is_hypothesis": true,
+  "no_payment_real": true,
+  "no_evidence_invented": true,
+  "concept_source": "reproducción 021 (base data/abl.db) — campos canónicos, sin IDs"
+ },
+ "selection_criteria": [
+  "1. Evidencia verificada (URL + fecha + fragmento)",
+  "2. Comprador concreto (hipotesis)",
+  "3. Problema economico o urgente",
+  "4. Canal accesible",
+  "5. Primer pago posible en <10 dias desde el lanzamiento",
+  "6. Coste inicial bajo",
+  "7. Entrega concierge posible",
+  "8. Margen",
+  "9. Automatizacion",
+  "10. Riesgo legal aceptable",
+  "11. Encaje con operacion 24/7",
+  "12. Capacidad para aprender durante 30 dias"
+ ],
+ "winner": {
+  "title": "Benchmark anonimo de tarifas para clinicas dentales que deciden su precio de ortodoncia",
+  "reason": "Torneo 018 = 77.5 (unica con low_launch_cost=2/2 y concierge_delivery=2/2); 11 evidencias verificadas, 7 grupos independientes; decisio determinista approved (experimento SMALL 30 dias). NO es demanda validada: no hay pago real."
+ },
+ "experiment_contract": {
+  "offer": "Informe de benchmark anonimo de tarifas de ortodoncia por provincia (rangos y percentiles) + revision por videollamada",
+  "price_usd": 60.0,
+  "price_range_usd": [
+   30,
+   90
+  ],
+  "buyer": "Gerentes de clinicas dentales de 2-5 dentistas (HIPOTESIS)",
+  "channel": "Contacto directo autorizado a 20 clinicas via colegios y directorios oficiales; LinkedIn",
+  "duration_days": 30,
+  "max_cost_usd": 0.0,
+  "success_metric": "primer pago real confirmado",
+  "success_threshold": "1 pago confirmado (30-90 EUR) por un comprador real",
+  "kill_condition": "sin senal de pago tras 14 dias de contacto activo",
+  "close_condition": "sin senal de pago en 30 dias y sin pivote viable",
+  "pivots": [
+   "Vender el benchmark a aseguradoras/software dental como dato agregado anonimo",
+   "Ampliar a otras especialidades (implantes, invisible)",
+   "Suscripcion trimestral de actualizacion de tarifas"
+  ]
+ },
+ "checksums": {
+  "investigacion_fase1_021.json": "4ae96de85a5bda479605f8381a19dd3679c4478c95a4403d5335c0b7025735b0",
+  "candidatas.json": "106af96b9dcc0eac682e834d6ad8c57feee199b3795301b1d6696b021a9aff9a"
+ },
+ "assets": [
+  {
+   "name": "manifest.json",
+   "purpose": "Contrato inmutable por version"
+  },
+  {
+   "name": "investigacion_fase1_021.json",
+   "purpose": "Investigacion portable (18 misiones, 31 evidencias) para importar contra misiones LOCALES"
+  },
+  {
+   "name": "candidatas.json",
+   "purpose": "Tarjetas de candidatas con concept/brief canónicos materializables localmente (precios/compradores HIPÓTESIS)"
+  }
+ ],
+ "guarantees": {
+  "no_secrets": true,
+  "no_sqlite": true,
+  "no_logs": true,
+  "no_foreign_ids_inserted": true,
+  "verified_only_with_url_date_fragment": true,
+  "production_blocked": true,
+  "real_spend_zero": true,
+  "pre_cycle_stopped": true
+ }
+}

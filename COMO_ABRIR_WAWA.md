@@ -1,117 +1,124 @@
-# Cómo abrir WAWA (Autonomous Business Lab)
+# Cómo abrir WAWA (Autonomous Business Lab) — v0.21.0 (iteración 022)
 
-WAWA es una **web local** (no una página pública de GitHub). Se abre en tu
-propio ordenador en `http://127.0.0.1:8000`. Sigue estos pasos.
+WAWA es una **web local** que se abre en tu propio ordenador en
+`http://127.0.0.1:8000`. **No necesitas abrir PowerShell ni escribir ningún
+comando**: solo descargar, extraer y hacer doble clic en `START_WAWA.bat`.
 
 ---
 
-## 1. Descargar el paquete
+## Recorrido normal (7 pasos)
 
-1. Descarga el archivo `.zip.txt` más reciente de la carpeta
-   `deliverables/packages/` del repositorio (o el que te haya pasado el
-   supervisor).
-2. **Importante**: el repositorio es **privado**, así que los enlaces RAW de
-   GitHub no funcionan. Descarga desde la interfaz web de GitHub (con tu
-   cuenta), desde el workspace de Freebuff, o por el canal que te indique el
-   supervisor.
-3. Guarda el archivo donde quieras, por ejemplo en `Documentos/WAWA`.
+### 1. Extraer
 
-> **¿Cómo saber que estás viendo la versión correcta?**
-> El topbar de la web muestra un chip con la versión (p. ej. `v0.11`).
-> Si aparece un **banner rojo** "Frontend desactualizado", pulsa
-> **Ctrl+F5** (recarga forzada) o reinicia WAWA. La interfaz de la
-> iteración 011 incluye las pestañas **Campaña real** e **Ideas**, el botón
-> **INICIAR CAMPAÑA REAL** y la franja de estado con **PRE_CYCLE** en la
-> parte superior.
+1. Descarga el archivo `.zip.txt` más reciente de `deliverables/packages/`
+   del repositorio (o el que te haya pasado el supervisor). El repositorio es
+   **privado**: descarga desde la interfaz web de GitHub con tu cuenta o
+   desde el workspace de Freebuff.
+2. Clic derecho → **Extraer todo** (el `.zip.txt` es un ZIP normal; si
+   Windows no lo reconoce, renómbralo a `wawa.zip` e inténtalo de nuevo).
 
-## 2. Extraerlo
+### 2. Ejecutar START_WAWA.bat
 
-- **Windows**: clic derecho sobre el archivo → **Extraer todo**.
-  El `.zip.txt` es un ZIP normal; si Windows no lo reconoce, cambia el nombre
-  a `wawa.zip` y vuelve a intentarlo.
-- **Linux/macOS**: doble clic o `unzip archivo.zip.txt`.
+- Haz **doble clic** en `START_WAWA.bat` (dentro de la carpeta extraída).
+- La primera vez tarda un poco: crea el entorno, instala dependencias,
+  **aplica automáticamente la activación comercial** (3 candidatas, 18
+  misiones, 31 evidencias, ganadora y READY_TO_CONNECT_SERVICES) y abre el
+  navegador solo.
+- Verás el progreso en la consola: `[1/7]` … `[7/7]`. Si ya estaba aplicado,
+  verás `BOOTSTRAP COMERCIAL YA APLICADO` y no cambia nada.
 
-Obtendrás una carpeta con `start_wawa.sh`, `START_WAWA.bat`, `app/`,
-`frontend/`, etc.
+> **Versión correcta**: el topbar muestra `v0.21.0`. Si el botón muestra
+> `ACTIVAR DEMO`, estás en modo real (correcto). Demo solo se activa si tú
+> lo pides con el botón o con `?demo=1` en la URL, y al salir se limpia todo.
 
-## 3. Iniciar la web
+### 3. Abrir Candidatas
 
-Abre una terminal dentro de la carpeta extraída:
+- En la web, abre la entrada **CANDIDATAS** (menú superior).
+- Verás las **3 candidatas investigadas** con sus tarjetas. La ganadora lleva
+  el distintivo **GANADORA DETERMINISTA PARA EXPERIMENTO** (no es "demanda
+  validada": todavía no hay ningún pago real).
 
-- **Windows**: haz doble clic en `START_WAWA.bat` (o en la terminal:
-  `START_WAWA.bat`).
-- **Linux/macOS**: `sh start_wawa.sh`
+### 4. Copiar para GPT / Grok / Gemini
 
-La primera vez tardará un poco (crea el entorno virtual e instala
-dependencias). Al final se abrirá el navegador solo.
+- En la tarjeta de la ganadora (o de cualquier candidata apta), pulsa
+  **COPIAR PARA GPT**, **COPIAR PARA GROK** y **COPIAR PARA GEMINI**
+  (los tres expedientes son el mismo contenido; solo cambia la cabecera).
+- Pega cada expediente en el modelo correspondiente (GPT, Grok, Gemini) y
+  copia la respuesta. También puedes **DESCARGAR EXPEDIENTE .MD**.
 
-## 4. URL de acceso
+### 5. Importar respuestas
 
-```
-http://127.0.0.1:8000
-```
+- Vuelve a CANDIDATAS y pega cada respuesta en **PEGAR RESPUESTA** (o sube el
+  **ARCHIVO COMBINADO**).
+- El sistema las valida, conserva el texto original y sintetiza
+  automáticamente (PASO 3 · SÍNTESIS AUTOMÁTICA). Puedes continuar con una,
+  dos o tres respuestas: la ausencia de revisión es neutral y nunca bloquea.
 
-Si no se abre el navegador solo, escríbela a mano.
+### 6. Conectar servicios
 
-## 5. Detenerla
+- Abre **CONECTAR SERVICIOS** (panel Mission Control). Introduce las claves
+  de Stripe, email, hosting, dominio y analytics cuando las tengas.
+- Botón **PROBAR CONEXIÓN** (comprobación local de formato) y
+  **GUARDAR LOCALMENTE** (se guardan fuera de Git; la pantalla solo muestra
+  estado y últimos 4 caracteres). GitHub permanece CONNECTED.
+
+### 7. Autorizar ciclo
+
+- Cuando todo esté conectado, pulsa **AUTORIZAR CICLO AUTÓNOMO · 30 DÍAS**
+  y revisa el mandato (presupuesto, canales, acciones bloqueadas, éxito,
+  pivot y cierre). Sin esa autorización explícita, WAWA permanece en
+  `READY_TO_CONNECT_SERVICES` con producción bloqueada — por diseño.
+
+---
+
+## Detenerla
 
 - **Windows**: doble clic en `STOP_WAWA.bat`.
 - **Linux/macOS**: `sh stop_wawa.sh`
 
-También puedes cerrar la ventana de la terminal, pero mejor usa los scripts.
+## Puerto 8000 ocupado
 
-## 6. Dónde están los archivos de ideas
+- **Windows**: doble clic en `START_WAWA.bat` con un argumento: crea un
+  acceso directo o ejecuta `START_WAWA.bat 8001`.
+- Entra en `http://127.0.0.1:8001`.
 
-- En la web: pestaña **Campaña real** → pulsa **INICIAR CAMPAÑA REAL**.
-- En la pestaña **Ideas**: filtra y descarga **CSV**, **JSON**, **Markdown**,
-  **Finalistas** o el **paquete de investigación (.zip)**.
-- En disco: dentro de la carpeta de la web, `data/` (base de datos SQLite
-  `data/abl.db`) y `logs/wawa.log` (registro del servidor).
-
-## 7. Cómo iniciar una campaña
-
-1. Abre la web.
-2. Ve a la pestaña **Campaña real**.
-3. Pulsa **INICIAR CAMPAÑA REAL**.
-4. El sistema genera conceptos, los filtra, hace el torneo y llega solo hasta
-   el punto donde necesita **investigación externa** (se detiene ahí
-   honestamente: no inventa evidencia).
-
-## 8. Cómo copiar misiones
-
-Cuando la campaña esté en "Investigación externa necesaria":
-
-1. Pulsa **Copiar misión** en cada misión.
-2. Pega la misión en Freebuff (o en el modelo que prefieras).
-3. Copia la respuesta.
-
-## 9. Cómo importar respuestas
-
-1. Vuelve a la web, pestaña **Campaña real**.
-2. Pega la respuesta completa en el cuadro **Pegar investigación**.
-3. Pulsa **Pegar investigación**.
-4. El sistema la asocia a la misión, guarda lo que tenga fuentes verificables
-   y continúa automáticamente. Si la respuesta no tiene URL + fecha +
-   fragmento, se guarda como nota **sin** convertirse en evidencia.
-
-## 10. El puerto 8000 está ocupado
-
-- **Windows**: `START_WAWA.bat 8001` (o cualquier otro puerto).
-- **Linux/macOS**: `sh start_wawa.sh 8001`
-- Entonces entra en `http://127.0.0.1:8001`.
-
-## 11. Python no está instalado
+## Python no está instalado
 
 - **Windows**: descarga Python 3.10+ de python.org y marca la casilla
-  **"Add Python to PATH"** al instalar.
-- **macOS**: `brew install python` o instala desde python.org.
-- **Linux**: `sudo apt install python3 python3-venv python3-pip` (o el
-  gestor de paquetes de tu distribución).
+  **"Add Python to PATH"** al instalar. Después vuelve a ejecutar
+  `START_WAWA.bat`.
+
+---
+
+## Recuperación avanzada (solo si algo falla)
+
+Normalmente no hace falta tocar nada de esto. El botón del panel
+**REPARAR Y CONTINUAR AUTOMÁTICAMENTE** (Mission Control) reaparece si la
+activación comercial falta o una ejecución quedó en FAILED: lo pulsa y ya
+está. Si prefieres la línea de comandos (Windows, dentro de la carpeta de
+WAWA, en **PowerShell** con la ruta correcta):
+
+```powershell
+.\START_WAWA.bat
+```
+
+Y si quieres ver el diagnóstico del bootstrap:
+
+```powershell
+.\scripts\startup_bootstrap.py   # o: .venv\Scripts\python.exe scripts\startup_bootstrap.py
+```
+
+> **Error típico**: ejecutar `.venv\Scripts\python.exe …` desde otra carpeta
+> (p. ej. `C:\Users\j`) da "El módulo '.venv' no pudo cargarse". Ese comando
+> solo funciona dentro de la carpeta de WAWA y con la ruta local `.\`.
+> Con `START_WAWA.bat` no necesitas hacerlo nunca.
 
 ## Notas de seguridad
 
 - WAWA escucha **solo en tu ordenador** (`127.0.0.1`). No la expongas a
   Internet: aún no tiene autenticación, TLS ni rate limiting.
-- No comparta el archivo `data/abl.db` ni ninguna clave de API que pueda
-  existir en tu `.env` local.
-- La economía es **simulada**: nunca mueve dinero real.
+- No compartas `data/abl.db` ni ninguna clave de API. Las credenciales del
+  asistente se guardan en el archivo local de credenciales (fuera de Git) y
+  nunca aparecen en logs, pantallas ni paquetes.
+- La economía es **simulada** y la producción está **bloqueada por diseño**
+  hasta que conectes los servicios y autorices el ciclo de 30 días.

@@ -53,12 +53,73 @@
     return typeof window.matchMedia !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
 
-  function isDemoMode() {
+  /* ------------------------------------------------------------------
+   * Modo demo (iteración 022): estado SOLO en memoria, OFF por defecto.
+   * - `?demo=1` en la URL activa demo al cargar y se limpia de la URL de
+   *   inmediato (history.replaceState): refrescar NUNCA reactiva demo.
+   * - El botón cambia el estado en memoria; al salir se limpian los
+   *   parámetros de la URL y cualquier clave demo de localStorage o
+   *   sessionStorage. Reiniciar WAWA tampoco reactiva demo (no hay
+   *   persistencia). Los datos demo y reales nunca se mezclan: el
+   *   consumidor usa una sola fuente por snapshot.
+   * ---------------------------------------------------------------- */
+  var demoState = { active: false };
+
+  function clearDemoStorage() {
     try {
-      return new URLSearchParams(window.location.search).get("demo") === "1";
+      if (typeof localStorage !== "undefined") {
+        Object.keys(localStorage).forEach(function (k) {
+          if (/demo/i.test(k)) localStorage.removeItem(k);
+        });
+      }
+    } catch (e) { /* sin almacenamiento: ignorar */ }
+    try {
+      if (typeof sessionStorage !== "undefined") {
+        Object.keys(sessionStorage).forEach(function (k) {
+          if (/demo/i.test(k)) sessionStorage.removeItem(k);
+        });
+      }
+    } catch (e) { /* sin almacenamiento: ignorar */ }
+  }
+
+  function stripDemoParam() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      if (!params.has("demo")) return;
+      params.delete("demo");
+      var qs = params.toString();
+      var url = window.location.pathname + (qs ? "?" + qs : "") + window.location.hash;
+      window.history.replaceState(null, "", url);
+    } catch (e) { /* entorno sin history: solo estado en memoria */ }
+  }
+
+  /* Inicializa el estado demo al cargar la vista. Devuelve si demo quedó
+   * activo (solo si la URL lo pedía explícitamente con ?demo=1). */
+  function initDemoState() {
+    demoState.active = false;
+    try {
+      if (new URLSearchParams(window.location.search).get("demo") === "1") {
+        demoState.active = true;
+        stripDemoParam(); // refrescar no reactiva demo
+      }
     } catch (e) {
-      return false;
+      demoState.active = false;
     }
+    clearDemoStorage();
+    return demoState.active;
+  }
+
+  function isDemoMode() {
+    return demoState.active;
+  }
+
+  function setDemoActive(active) {
+    demoState.active = !!active;
+    if (!demoState.active) {
+      stripDemoParam();
+      clearDemoStorage();
+    }
+    return demoState.active;
   }
 
   /* fetch con timeout y error legible (sin lanzar en red caída). */
@@ -182,6 +243,9 @@
     stateLabel: stateLabel,
     prefersReducedMotion: prefersReducedMotion,
     isDemoMode: isDemoMode,
+    initDemoState: initDemoState,
+    setDemoActive: setDemoActive,
+    clearDemoStorage: clearDemoStorage,
     fetchJSON: fetchJSON,
     fmtTimestamp: fmtTimestamp,
     fmtCost: fmtCost,

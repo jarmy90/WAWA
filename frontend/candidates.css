@@ -1,0 +1,64 @@
+/* WAWA — CANDIDATAS (iteración 022). Coherente con Mission Control. */
+.cand-wrap { max-width: 1200px; margin: 0 auto; padding: 22px 18px 60px; }
+.cand-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap; padding: 14px 0; border-bottom: 1px solid rgba(120, 180, 255, 0.14); }
+.cand-brand h1 { font-size: 17px; letter-spacing: 0.14em; color: var(--mc-teal, #35e0c8); }
+.cand-brand p { color: var(--mc-text-dim, #93a4c4); font-size: 12px; margin-top: 3px; }
+.cand-topbar-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.cand-nav a { color: var(--mc-text-dim, #93a4c4); font-size: 12px; text-decoration: none; margin-left: 12px; }
+.cand-nav a:hover { color: var(--mc-cyan, #5cc8ff); }
+
+.cand-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-top: 18px; }
+.cand-card { background: linear-gradient(180deg, #0e1730, #101a36); border: 1px solid rgba(120, 180, 255, 0.14);
+  border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.cand-card.winner { border-color: rgba(53, 224, 200, 0.5); box-shadow: 0 0 24px rgba(53, 224, 200, 0.12); }
+.cand-badge { display: inline-block; font: 700 10.5px var(--mc-mono, monospace); letter-spacing: 0.1em;
+  padding: 4px 10px; border-radius: 999px; width: fit-content; }
+.cand-badge.winner { background: rgba(53, 224, 200, 0.14); color: var(--mc-teal, #35e0c8);
+  border: 1px solid rgba(53, 224, 200, 0.45); }
+.cand-badge.candidate { background: rgba(148, 163, 184, 0.12); color: #b8c4da; border: 1px solid rgba(148, 163, 184, 0.3); }
+.cand-title { font-size: 15.5px; font-weight: 800; color: #e8eefc; line-height: 1.35; }
+.cand-kv { display: grid; grid-template-columns: 128px 1fr; gap: 6px 12px; font-size: 12.5px; }
+.cand-kv .k { color: #7d8fb0; }
+.cand-kv .v { color: #dbe4f5; }
+.cand-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.cand-metric { background: rgba(8, 16, 34, 0.7); border: 1px solid rgba(120, 180, 255, 0.12);
+  border-radius: 10px; padding: 8px 10px; }
+.cand-metric .n { font-size: 18px; font-weight: 800; color: var(--mc-cyan, #5cc8ff); }
+.cand-metric .t { font-size: 10.5px; color: #7d8fb0; text-transform: uppercase; letter-spacing: 0.06em; }
+.cand-section { margin-top: 4px; }
+.cand-section h5 { font: 700 10.5px var(--mc-mono, monospace); letter-spacing: 0.12em; color: var(--mc-amber, #f4c95d);
+  margin-bottom: 6px; }
+.cand-section p, .cand-section li { font-size: 12.5px; color: #c9d4ea; line-height: 1.5; }
+.cand-section ul { list-style: none; padding: 0; margin: 0; }
+.cand-section li { padding: 3px 0; border-bottom: 1px dashed rgba(120, 180, 255, 0.08); }
+.cand-src a { color: var(--mc-cyan, #5cc8ff); word-break: break-all; }
+.kill { color: #fbbf24; }
+
+/* Comité y wizard */
+.cand-committee { border-top: 1px solid rgba(120, 180, 255, 0.14); margin-top: 6px; padding-top: 10px; }
+.reviewer-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 6px 0; }
+.reviewer-chip { font: 700 11px var(--mc-mono, monospace); padding: 4px 10px; border-radius: 999px; }
+.reviewer-chip.pending { background: rgba(148, 163, 184, 0.12); color: #b8c4da; }
+.reviewer-chip.imported { background: rgba(92, 200, 255, 0.12); color: #5cc8ff; }
+.reviewer-chip.valid { background: rgba(53, 224, 200, 0.14); color: #35e0c8; }
+.wizard-steps { display: flex; gap: 8px; margin: 10px 0 8px; flex-wrap: wrap; }
+.wizard-step { font: 700 10.5px var(--mc-mono, monospace); letter-spacing: 0.08em; color: #7d8fb0;
+  border: 1px solid rgba(120, 180, 255, 0.2); border-radius: 999px; padding: 4px 10px; }
+.wizard-step.active { color: #35e0c8; border-color: rgba(53, 224, 200, 0.5); }
+.wizard-panel textarea { width: 100%; min-height: 120px; background: rgba(8, 16, 34, 0.9); color: #dbe4f5;
+  border: 1px solid rgba(120, 180, 255, 0.25); border-radius: 10px; padding: 10px; font-size: 12.5px;
+  font-family: var(--mc-mono, monospace); }
+.wizard-panel textarea:focus { outline: 2px solid var(--mc-cyan, #5cc8ff); }
+.wizard-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.cand-btn { background: rgba(92, 200, 255, 0.1); color: #cfe9ff; border: 1px solid rgba(92, 200, 255, 0.35);
+  border-radius: 8px; padding: 7px 12px; font: 700 11px var(--mc-mono, monospace); letter-spacing: 0.06em;
+  cursor: pointer; }
+.cand-btn:hover { background: rgba(92, 200, 255, 0.2); }
+.cand-btn.primary { background: linear-gradient(135deg, #35e0c8, #19b8a3); color: #06231f; border: none; }
+.cand-btn.danger { background: rgba(248, 113, 113, 0.12); color: #fbbfbb; border-color: rgba(248, 113, 113, 0.4); }
+.cand-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.cand-result { font-size: 12.5px; margin-top: 8px; color: #c9d4ea; }
+.cand-result.ok { color: #35e0c8; }
+.cand-result.err { color: #f87171; }
+.hidden { display: none !important; }

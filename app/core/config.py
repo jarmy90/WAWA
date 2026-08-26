@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     # --- Identidad -----------------------------------------------------
     app_name: str = "Autonomous Business Lab"
-    version: str = "0.20.0"
+    version: str = "0.21.0"
     log_level: str = "INFO"
 
     # --- Rutas ---------------------------------------------------------
@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     logs_dir: Path = PROJECT_ROOT / "data" / "logs"
     manual_research_dir: Path = PROJECT_ROOT / "data" / "manual_research"
     frontend_dir: Path = PROJECT_ROOT / "frontend"
+    # Credenciales del asistente CONECTAR SERVICIOS (iteración 022): archivo
+    # LOCAL fuera de Git (`.env`). En tests se redirige a un directorio temporal.
+    credentials_env_path: Path = PROJECT_ROOT / ".env"
 
     # --- Proveedores LLM ------------------------------------------------
     llm_provider: Literal["auto", "mock", "gemini", "manual", "openrouter"] = "auto"

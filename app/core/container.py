@@ -16,6 +16,8 @@ from app.repositories.costs import CostRepository
 from app.services.budget import BudgetGuard
 from app.services.campaign import CampaignService
 from app.services.command_center import CommandCenterService
+from app.services.commercial_bootstrap import CommercialBootstrapService
+from app.services.connect_services import ConnectServicesService
 from app.services.cycle import CycleEvaluator
 from app.services.discovery import DiscoveryService
 from app.services.deep_reasoning import DeepReasoningService
@@ -50,6 +52,8 @@ class AppContainer:
     deep_reasoning: DeepReasoningService
     super_tournament: SuperTournamentService
     command_center: CommandCenterService
+    bootstrap: CommercialBootstrapService
+    connect_services: ConnectServicesService
 
     def close(self) -> None:
         try:
@@ -83,17 +87,11 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     cycle = CycleEvaluator(settings, conn, repos=repos, orchestrator=orchestrator)
     deep_reasoning = DeepReasoningService(settings, providers, repos.llm_calls)
     super_tournament = SuperTournamentService(settings, repos, repos.decision_log)
-    command_center = CommandCenterService(
-        AppContainer(
-            settings=settings, conn=conn, repos=repos, engine=engine, budget=budget,
-            economy=economy, providers=providers, opportunities=opportunities,
-            pipeline=pipeline, discovery=discovery, exports=exports, imports=imports,
-            reviews=reviews, campaigns=campaigns, cycle=cycle, orchestrator=orchestrator,
-            deep_reasoning=deep_reasoning, super_tournament=super_tournament,
-            command_center=None,  # type: ignore[arg-type]
-        )
-    )
-    return AppContainer(
+    # Contenedor final: los servicios que se referencian entre sí (bootstrap,
+    # command_center, connect_services) se construyen sobre el MISMO contenedor
+    # final para que sus accesos cruzados (p. ej. bootstrap -> command_center)
+    # funcionen. AppContainer no es frozen: se reasignan tras crear el objeto.
+    container = AppContainer(
         settings=settings,
         conn=conn,
         repos=repos,
@@ -112,5 +110,11 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         orchestrator=orchestrator,
         deep_reasoning=deep_reasoning,
         super_tournament=super_tournament,
-        command_center=command_center,
+        command_center=None,  # type: ignore[arg-type]
+        bootstrap=None,  # type: ignore[arg-type]
+        connect_services=None,  # type: ignore[arg-type]
     )
+    container.command_center = CommandCenterService(container)
+    container.bootstrap = CommercialBootstrapService(container)
+    container.connect_services = ConnectServicesService(settings)
+    return container

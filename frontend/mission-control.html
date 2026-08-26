@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="es" data-wawa-version="0.19.0" data-iteration="020" data-build="020-agent-mission-control">
+<html lang="es" data-wawa-version="0.21.0" data-iteration="022" data-build="022-one-click-activation">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <link rel="icon" href="data:," />
     <title>WAWA — Mission Control</title>
-    <link rel="stylesheet" href="/mission-control.css?v=0200" />
+    <link rel="stylesheet" href="/mission-control.css?v=0220" />
   </head>
   <body>
     <noscript>
@@ -38,12 +38,28 @@
         <div class="mc-controls">
           <button id="btn-mc-refresh" class="mc-btn primary" type="button">⟳ REFRESCAR</button>
           <button id="btn-mc-auto" class="mc-btn active" type="button" aria-pressed="true">AUTO · 10s</button>
-          <button id="btn-mc-demo" class="mc-btn" type="button">MODO DEMO</button>
+          <button id="btn-mc-demo" class="mc-btn" type="button" aria-pressed="false">ACTIVAR DEMO</button>
           <button id="btn-mc-fullscreen" class="mc-btn" type="button">⛶ PANTALLA COMPLETA</button>
           <span id="mc-conn" class="mc-conn"><span class="dot" aria-hidden="true"></span><span id="mc-conn-label">CONECTANDO…</span></span>
-          <a class="mc-home" href="/">← Volver al panel principal</a>
+          <a class="mc-home" href="/">← Panel principal</a>
+          <a class="mc-home" href="/candidates">Candidatas</a>
           <a class="mc-home" href="/agents-viz">Sistema Solar →</a>
         </div>
+
+        <!-- 022. Reparación automática (bootstrap comercial) -->
+        <section class="panel wide" aria-label="Reparación automática">
+          <h3>REPARAR Y CONTINUAR AUTOMÁTICAMENTE <span class="hint">activación comercial 021 · sin comandos manuales</span></h3>
+          <div id="mc-repair">
+            <div class="mc-repair-state" id="mc-repair-state"></div>
+            <div class="mc-repair-preview" id="mc-repair-preview"></div>
+            <button id="btn-mc-repair" class="mc-btn primary hidden" type="button">REPARAR Y CONTINUAR AUTOMÁTICAMENTE</button>
+            <div class="mc-sub" id="mc-repair-result" role="status"></div>
+            <details class="mc-details">
+              <summary>VER DIAGNÓSTICO (avanzado)</summary>
+              <div id="mc-repair-diagnosis" class="mc-diagnosis"></div>
+            </details>
+          </div>
+        </section>
 
         <!-- 1-4. Salud, producción, campaña, proyecto -->
         <div class="mc-grid">
@@ -139,8 +155,10 @@
             <div id="mc-winner"><p class="mc-empty">SIN DATOS</p></div>
           </section>
           <section class="panel wide" aria-label="Conectar servicios">
-            <h3>CONECTAR SERVICIOS <span class="hint">un único flujo · credenciales fuera de Git</span></h3>
+            <h3>CONECTAR SERVICIOS <span class="hint">asistente local · credenciales fuera de Git · nunca por API</span></h3>
             <ul class="mc-list" id="mc-services"><li class="mc-empty">SIN DATOS</li></ul>
+            <div id="mc-services-wizard"></div>
+            <div class="mc-sub" id="mc-services-result" role="status"></div>
           </section>
           <section class="panel wide" aria-label="Autorizar ciclo autónomo">
             <h3>AUTORIZAR CICLO AUTÓNOMO · 30 DÍAS</h3>
@@ -162,7 +180,7 @@
       </div>
     </div>
 
-    <script src="/viz-core.js?v=0210"></script>
-    <script src="/mission-control.js?v=0210"></script>
+    <script src="/viz-core.js?v=0220"></script>
+    <script src="/mission-control.js?v=0220"></script>
   </body>
 </html>

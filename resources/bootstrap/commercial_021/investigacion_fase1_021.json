@@ -1,0 +1,640 @@
+{
+ "operacion": "activacion_comercial_021",
+ "fecha": "2026-08-26",
+ "metodo": "investigacion web autorizada + fuentes primarias publicas (URL + fecha + fragmento)",
+ "regla": "Nunca inventar demanda, precios, competidores ni clientes. Sin URL+fecha+fragmento no hay verified=true. buyer_confirmed es HIPOTESIS (no hubo entrevista real).",
+ "campaign_id_provenance": "e97858e1417d4d2682c44a7974da0523",
+ "note_ids": "Los concept_id/opportunity_id de la reproduccion se eliminan del payload operativo; la resolucion local es por mapeo estable (titulo normalizado + kind).",
+ "payloads": [
+  {
+   "title": "Benchmark anonimo de tarifas para clinicas dentales que deciden su precio de ortodoncia",
+   "missions": [
+    {
+     "kind": "DEMAND_REALITY_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "demand_signal",
+       "source_name": "Sanitas Dental - precios tratamientos",
+       "source_url": "https://www.sanitas.es/dental/precios-tratamientos-dentales",
+       "captured_at": "2026-08-26",
+       "summary": "Aseguradora sanitaria publica tarifario de tratamientos; el precio depende de estudios y diagnostico por paciente.",
+       "raw_excerpt": "Precios tratamientos dentales ; Retenedor, 175 €, 227,50 € ; Ortodoncia invisible ; Estudio y diagnóstico para planificación personalizada del tratamiento, 80,90 € ...",
+       "reliability_score": 0.7,
+       "independence_group": "demand_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual de la pagina."
+      },
+      {
+       "evidence_type": "price",
+       "source_name": "Clínica Friedlander - precio ortodoncia",
+       "source_url": "https://www.clinicafriedlander.com/precio-de-ortodoncia/",
+       "captured_at": "2026-08-26",
+       "summary": "Clinica publica rango de 2.900-8.100 EUR: dispersion amplia segun tipo de ortodoncia.",
+       "raw_excerpt": "A modo general podemos decir que el precio de ortodoncia esta en un rango desde 2,900€ a 8,100€ dependiendo del tipo de ortodoncia y de la ...",
+       "reliability_score": 0.6,
+       "independence_group": "demand_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": null,
+     "notes": "Existe dispersion de precios publicamente documentada: fijar tarifa es una decision con informacion imperfecta. HIPOTESIS de dolor, no demanda verificada."
+    },
+    {
+     "kind": "BUYER_BUDGET_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "price",
+       "source_name": "Prodentis - guia precios dentales Málaga 2026",
+       "source_url": "https://www.prodentis.es/blog/guia-precios-dentales-malaga-2026",
+       "captured_at": "2026-08-26",
+       "summary": "Guia de precios por ciudad: cada clinica fija tarifas dentro de rangos publicados.",
+       "raw_excerpt": "Un empaste cuesta entre 50 y 120 €, un implante completo entre 1.200 y 2.300 €, y una ortodoncia Invisalign entre 2.500 y 5.500 €. Esta guía ...",
+       "reliability_score": 0.6,
+       "independence_group": "price_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      },
+      {
+       "evidence_type": "customer_profile",
+       "source_name": "Clínica Dental Nobel - coste brackets España",
+       "source_url": "https://clinicadentalnobel.es/costo-de-los-brackets-dentales-en-espana/",
+       "captured_at": "2026-08-26",
+       "summary": "Las clinicas compiten publicando precios de brackets e invisible; el gerente decide tarifas.",
+       "raw_excerpt": "En Clínica Nobel, los brackets están desde 2.450 € (hasta unos 3.200 € según la complejidad) y la ortodoncia invisible desde 3.100 € hasta 5.400 €, todo con ...",
+       "reliability_score": 0.6,
+       "independence_group": "buyer_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": {
+      "user": "Gerentes de clinicas dentales de 2-5 dentistas",
+      "buyer": "Gerentes de clinicas dentales de 2-5 dentistas",
+      "beneficiary": "Gerente o director de la clinica",
+      "budget_source": "Presupuesto de gestion de la clinica (hipotesis, no verificado)",
+      "trigger_event": "Revision de tarifas, presion competitiva o apertura de clinica",
+      "current_alternative": "Guías de precios genéricas de internet y criterio propio",
+      "cost_of_not_solving": "Precios sin datos de mercado: perdida de margen o de pacientes (hipotesis)"
+     },
+     "notes": "Comprador y presupuesto son HIPOTESIS; ninguna cifra de presupuesto verificada con comprador real."
+    },
+    {
+     "kind": "CURRENT_ALTERNATIVE_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "other",
+       "source_name": "Doctocliq - fijar precio tratamientos dentales",
+       "source_url": "https://www.doctocliq.com/blog/fijar-precio-de-tratamientos-dentales",
+       "captured_at": "2026-08-26",
+       "summary": "Alternativa actual: articulos genericos y calculo manual de costes para fijar precios.",
+       "raw_excerpt": "Aprende a calcular el precio real de tus tratamientos dentales para asegurar la rentabilidad de tu clínica. Define costos, evita pérdidas y ...",
+       "reliability_score": 0.6,
+       "independence_group": "alternative_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      },
+      {
+       "evidence_type": "other",
+       "source_name": "Dental Data School - cómo fijar precio en clínicas",
+       "source_url": "https://dentaldataschool.es/articulos/como-fijar-precio-clinica-dental/",
+       "captured_at": "2026-08-26",
+       "summary": "Alternativa de pago: formacion y consultoria sobre factores que influyen en precios.",
+       "raw_excerpt": "Factores que influyen en los precios de una clínica dental · Alquiler o hipoteca de la clínica · Salarios del equipo · Equipamiento y tecnología · Materiales y ...",
+       "reliability_score": 0.6,
+       "independence_group": "alternative_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": null,
+     "notes": "La alternativa actual es formacion/consultoria generica y calculo manual; no existe un benchmark anonimo local (hipotesis a confirmar)."
+    },
+    {
+     "kind": "COMPETITOR_EQUIVALENT_SEARCH",
+     "evidences": [
+      {
+       "evidence_type": "competitor",
+       "source_name": "Infomed - KPIs y estudio de mercado para clínicas",
+       "source_url": "https://www.infomedsoftware.com/tam-sam-som-ltv-kpis-nps-estudio-mercado-dashboard-valor-rentabilidad/",
+       "captured_at": "2026-08-26",
+       "summary": "Software de gestion clinica con estudio de mercado y KPIs: competidor indirecto.",
+       "raw_excerpt": "Ortodoncia: más jóvenes, sensibles al precio, interesados en facilidades de pago como las financiaciones bancarias. Implantes y rehabilitación: mayor edad, alto ...",
+       "reliability_score": 0.6,
+       "independence_group": "competitor_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [
+      {
+       "name": "Dental Data School",
+       "url": "https://dentaldataschool.es/articulos/como-fijar-precio-clinica-dental/",
+       "offer": "Formacion y consultoria para fijar precios en clinicas dentales",
+       "observed_price": null,
+       "strengths": "Contenido especifico del sector",
+       "weaknesses": "Formacion generica, sin benchmark anonimo local por provincia"
+      },
+      {
+       "name": "Infomed Software",
+       "url": "https://www.infomedsoftware.com/tam-sam-som-ltv-kpis-nps-estudio-mercado-dashboard-valor-rentabilidad/",
+       "offer": "Software de gestion clinica con KPIs y estudio de mercado",
+       "observed_price": null,
+       "strengths": "Software instalado en clinicas",
+       "weaknesses": "No publica benchmark anonimo de tarifas de competidores"
+      },
+      {
+       "name": "Doctocliq",
+       "url": "https://www.doctocliq.com/blog/fijar-precio-de-tratamientos-dentales",
+       "offer": "Contenido y herramientas para fijar precios de tratamientos",
+       "observed_price": null,
+       "strengths": "Contenido accesible",
+       "weaknesses": "Sin datos locales de mercado"
+      }
+     ],
+     "buyer_confirmed": null,
+     "notes": "Competidores identificados como formacion/software; ninguno ofrece benchmark anonimo de tarifas por zona (hipotesis)."
+    },
+    {
+     "kind": "DISTRIBUTION_ACCESS_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "customer_profile",
+       "source_name": "GuiaDentistas - Consejo General de Dentistas",
+       "source_url": "https://guiadentistas.es/",
+       "captured_at": "2026-08-26",
+       "summary": "Directorio oficial del Consejo General con contacto de colegios provinciales: canal hacia gerentes de clinicas.",
+       "raw_excerpt": "Contacto Colegios Profesionales. Contacto. Consejo General de Colegios de Dentistas de España C/ Alcalá 79 2º 28009 Madrid. +34 914 264 410. Contacto. Enlaces ...",
+       "reliability_score": 0.7,
+       "independence_group": "channel_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      },
+      {
+       "evidence_type": "customer_profile",
+       "source_name": "Consejo Dentistas - colegios oficiales",
+       "source_url": "https://consejodentistas.es/consejo-general/colegios-oficiales/",
+       "captured_at": "2026-08-26",
+       "summary": "Listado oficial de colegios provinciales: punto de acceso institucional al colectivo.",
+       "raw_excerpt": "Colegios Oficiales - Presidentes",
+       "reliability_score": 0.6,
+       "independence_group": "channel_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": null,
+     "notes": "Canal accesible via colegios profesionales y directorios; contacto directo requiere permiso/ToS (sin spam)."
+    },
+    {
+     "kind": "GENERAL_AI_SUBSTITUTION_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "other",
+       "source_name": "Dental Tribune - cómo fijar honorarios",
+       "source_url": "https://la.dental-tribune.com/news/como-fijar-honorarios-en-odontologia-el-miedo-al-precio-y-el-poder-del-valor/",
+       "captured_at": "2026-08-26",
+       "summary": "Fijar precios depende de estrategia y contexto local del negocio: no es una respuesta generica.",
+       "raw_excerpt": "Antes de fijar honorarios, el odontólogo debe preguntarse si busca ganar mercado, abrir un nuevo segmento, maximizar volumen o margen, o ...",
+       "reliability_score": 0.6,
+       "independence_group": "ai_substitution_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      },
+      {
+       "evidence_type": "price",
+       "source_name": "Clínica Ferrús Bràtos - precios tratamientos",
+       "source_url": "https://www.clinicaferrusbratos.com/odontologia-general/precios-tratamientos-dentales/",
+       "captured_at": "2026-08-26",
+       "summary": "Cada clinica publica su propia tarifa sin estandar de mercado: la dispersion real no es publica de forma agregada.",
+       "raw_excerpt": "Ortodoncia con brackets linguales Incognito, desde 7.150€ ; Brackets transparentes de cristal de zafiro, desde 3.002 € ; Brackets metálicos, desde ...",
+       "reliability_score": 0.6,
+       "independence_group": "ai_substitution_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": null,
+     "notes": "Analisis de sustitucion (hipotesis): una IA generalista puede redactar una guia generica de precios, pero no un benchmark anonimo con percentiles reales por provincia, que exige recopilar tarifarios de competidores y revision responsable."
+    }
+   ]
+  },
+  {
+   "title": "Benchmark de honorarios para gestorias que deciden su tarifa mensual",
+   "missions": [
+    {
+     "kind": "DEMAND_REALITY_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "demand_signal",
+       "source_name": "Cronoshare - cuánto cuesta una gestoría",
+       "source_url": "https://www.cronoshare.com/cuanto-cuesta/gestoria",
+       "captured_at": "2026-08-26",
+       "summary": "Comparativa publica de tarifas de gestorias: dispersion 35-200 EUR/mes segun formato.",
+       "raw_excerpt": "TARIFAS DE GESTORÍA PARA AUTÓNOMOS ; Gestoría online, 35 € - 80 €/mes ; Gestoría presencial, 50 € - 200 €/mes ; Alta Seguridad Social y Hacienda ...",
+       "reliability_score": 0.7,
+       "independence_group": "demand_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      },
+      {
+       "evidence_type": "price",
+       "source_name": "Dri Asesoria - cuánto cobra una asesoría",
+       "source_url": "https://driassessoria.com/blog/cuanto-cobra-asesoria-llevar-contabilidad-precios",
+       "captured_at": "2026-08-26",
+       "summary": "Dispersion documentada entre gestorias online y presenciales.",
+       "raw_excerpt": "Gestorías 100% online, hasta 50 facturas/mes: entre 25 € y 60 € al mes. Asesoría presencial en ciudad, actividad estándar: entre 30 € y 90 € al ...",
+       "reliability_score": 0.7,
+       "independence_group": "demand_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": null,
+     "notes": "Existe dispersion enorme y publicada en tarifas de gestorias: el dato base para un benchmark es obtenible. HIPOTESIS de dolor, no demanda verificada."
+    },
+    {
+     "kind": "BUYER_BUDGET_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "demand_signal",
+       "source_name": "Billeo - cuánto cobra una gestoría por llevar una empresa",
+       "source_url": "https://www.billeo.es/blog/cuanto-cobra-gestoria-llevar-empresa",
+       "captured_at": "2026-08-26",
+       "summary": "Demanda de comparacion de precios de gestorias: articulo orientado a comparar que incluye la cuota.",
+       "raw_excerpt": "Compara precios de gestoría para una SL y qué debe incluir la cuota: contabilidad, impuestos, cierres, cuentas anuales y nóminas.",
+       "reliability_score": 0.6,
+       "independence_group": "buyer_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      },
+      {
+       "evidence_type": "price",
+       "source_name": "Sage - precio del servicio contable",
+       "source_url": "https://www.sage.com/es-es/blog/precio-servicio-contabilidad/",
+       "captured_at": "2026-08-26",
+       "summary": "Las propias gestorias necesitan orientacion para calcular tarifas rentables por cliente.",
+       "raw_excerpt": "Aprende qué factores determinan el precio de un servicio contable y cómo calcular tarifas rentables para cada cliente.",
+       "reliability_score": 0.6,
+       "independence_group": "price_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": {
+      "user": "Gestorias y asesorias que fijan sus tarifas mensuales",
+      "buyer": "Gestorias y asesorias (titulares o responsables de tarifas)",
+      "beneficiary": "Titular de la gestoria",
+      "budget_source": "Presupuesto de la gestoria (hipotesis, no verificado)",
+      "trigger_event": "Revision anual de tarifas, competencia de gestorias online o subida de costes",
+      "current_alternative": "Tarifarios de la competencia consultados uno a uno y criterio propio",
+      "cost_of_not_solving": "Tarifas por debajo de mercado o perdida de clientes (hipotesis)"
+     },
+     "notes": "Comprador y presupuesto son HIPOTESIS; el presupuesto real de una gestoria por pagar un benchmark no esta verificado."
+    },
+    {
+     "kind": "CURRENT_ALTERNATIVE_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "other",
+       "source_name": "Despacho Abierto - errores al elegir asesor",
+       "source_url": "https://despachoabierto.com/elegir-asesor-fiscal-errores-y-como-evitarlos/",
+       "captured_at": "2026-08-26",
+       "summary": "La eleccion/comparacion de honorarios es opaca y manual; sin benchmark agregado.",
+       "raw_excerpt": "Elegir asesor fiscal no es como elegir una tarifa de móvil. Si te equivocas, no solo pagas de más: puedes perder dinero en deducciones no ...",
+       "reliability_score": 0.6,
+       "independence_group": "alternative_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      },
+      {
+       "evidence_type": "other",
+       "source_name": "IONOS - costes de contabilidad",
+       "source_url": "https://www.ionos.es/digitalguide/startup/gestion/costes-contabilidad/",
+       "captured_at": "2026-08-26",
+       "summary": "Alternativa: consulta puntual por horas con precios no normalizados.",
+       "raw_excerpt": "¿Cuánto cuesta la contabilidad de un asesor fiscal? La hora de consulta puntual de un asesor fiscal puede rondar entre los 80 y los 150 euros.",
+       "reliability_score": 0.6,
+       "independence_group": "alternative_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": null,
+     "notes": "Alternativa actual: consultar tarifarios uno a uno o guias genericas; no existe comparativa anonima por perfil de gestoria."
+    },
+    {
+     "kind": "COMPETITOR_EQUIVALENT_SEARCH",
+     "evidences": [
+      {
+       "evidence_type": "competitor",
+       "source_name": "OkAsesores - planes y precios",
+       "source_url": "https://okasesores.es/planes-precios-online-tarifas-asesoria-web-autonomos-sociedades/",
+       "captured_at": "2026-08-26",
+       "summary": "Gestorias online publican planes con tarifas transparentes: competencia directa y fuente de datos.",
+       "raw_excerpt": "Consulta los precios, tarifas y planes de nuestra gestoría. Consulta lo que incluye cada modalidad, para autónomos y sociedades. ¡Entra y prueba OkAsesores!",
+       "reliability_score": 0.6,
+       "independence_group": "competitor_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [
+      {
+       "name": "OkAsesores",
+       "url": "https://okasesores.es/planes-precios-online-tarifas-asesoria-web-autonomos-sociedades/",
+       "offer": "Gestoria online con planes y tarifas publicadas",
+       "observed_price": null,
+       "strengths": "Precios transparentes",
+       "weaknesses": "No ofrece benchmark de mercado a otras gestorias"
+      },
+      {
+       "name": "Cronoshare",
+       "url": "https://www.cronoshare.com/cuanto-cuesta/gestoria",
+       "offer": "Marketplace que publica rangos de precios de gestorias",
+       "observed_price": null,
+       "strengths": "Comparativa publica por servicio",
+       "weaknesses": "Rangos genericos, sin datos anonimos por perfil de gestoria"
+      },
+      {
+       "name": "Sage (contenido)",
+       "url": "https://www.sage.com/es-es/blog/precio-servicio-contabilidad/",
+       "offer": "Articulos sobre calculo de tarifas contables",
+       "observed_price": null,
+       "strengths": "Marca reconocida y contenido amplio",
+       "weaknesses": "Sin datos de mercado por zona"
+      }
+     ],
+     "buyer_confirmed": null,
+     "notes": "Los tarifarios publicados de las gestorias online son la fuente primaria de datos para el benchmark (licitud: datos publicados por las propias gestorias)."
+    },
+    {
+     "kind": "DISTRIBUTION_ACCESS_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "customer_profile",
+       "source_name": "Consejo General de Gestores Administrativos - colegios",
+       "source_url": "https://www.consejogestores.org/colegios/",
+       "captured_at": "2026-08-26",
+       "summary": "Red oficial de colegios provinciales de gestores administrativos: canal institucional directo.",
+       "raw_excerpt": "Consejo General de Colegios de Gestores Administrativos de España · Inicio ... DIRECCIÓN, WEB. Albacete, Albacete, C\\ Tinte, 44 entpta. of.4, 02002 Albacete.",
+       "reliability_score": 0.7,
+       "independence_group": "channel_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      },
+      {
+       "evidence_type": "customer_profile",
+       "source_name": "Registro de Gestores Administrativos",
+       "source_url": "https://registro.consejogestores.org/",
+       "captured_at": "2026-08-26",
+       "summary": "Registro publico de gestores con nombres, localidad y telefono: lista de compradores potenciales.",
+       "raw_excerpt": "Registro de Gestores Administrativos ... Gestores Administrativos de España. Puig, Antonio Zaragoza (Zaragoza) 976073065 antonioabad@gestores.net.",
+       "reliability_score": 0.7,
+       "independence_group": "channel_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": null,
+     "notes": "Canal accesible: colegios + registro publico; contacto directo con permiso y sin spam."
+    },
+    {
+     "kind": "GENERAL_AI_SUBSTITUTION_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "price",
+       "source_name": "Mi Gestoría Online - precios gestoría autónomos",
+       "source_url": "https://www.migestoriaonline.es/gestoria-para-autonomos-precios/",
+       "captured_at": "2026-08-26",
+       "summary": "Tarifas muy variables segun plan elegido: el dato agregado real no es publico (una IA generalista no lo conoce).",
+       "raw_excerpt": "Por lo general, los precios oscilan entre los 50€ (o más) y los 36€ mensuales, dependiendo de las tarifas escogidas. En Mi Gestoría Online el precio básico para ...",
+       "reliability_score": 0.6,
+       "independence_group": "ai_substitution_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": null,
+     "notes": "Analisis de sustitucion (hipotesis): una IA generalista puede redactar consejos de tarificacion genericos, pero no dispone de la dispersion real y anonima de honorarios por perfil y zona; el activo es recopilar y normalizar tarifarios publicos."
+    }
+   ]
+  },
+  {
+   "title": "Benchmark de costes de instalacion para empresas de placas solares que deciden presupuesto",
+   "missions": [
+    {
+     "kind": "DEMAND_REALITY_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "price",
+       "source_name": "Cambio Energético - precio placas solares",
+       "source_url": "https://www.cambioenergetico.com/blog/precio-placas-solares/",
+       "captured_at": "2026-08-26",
+       "summary": "Dispersion de precio por kWp instalado documentada: 800-1.400 EUR/kWp en residencial.",
+       "raw_excerpt": "El precio por kWp instalado varía bastante según el tipo de instalación: En autoconsumo residencial, suele oscilar entre 800 € y 1.400 € por kWp, dependiendo ...",
+       "reliability_score": 0.7,
+       "independence_group": "demand_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      },
+      {
+       "evidence_type": "price",
+       "source_name": "SotySolar - precio instalación",
+       "source_url": "https://sotysolar.es/placas-solares/instalacion/precio",
+       "captured_at": "2026-08-26",
+       "summary": "Rango 4.000-9.000 EUR para una instalacion: decision de precio con informacion imperfecta.",
+       "raw_excerpt": "El precio medio de una instalación en España es de entre 4.000 y los 9.000 euros, El coste promedio para un panel instalado será ...",
+       "reliability_score": 0.7,
+       "independence_group": "demand_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": null,
+     "notes": "Existe dispersion publica de precios; el dolor del instalador (presupuestar sin datos de mercado) es HIPOTESIS."
+    },
+    {
+     "kind": "BUYER_BUDGET_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "price",
+       "source_name": "Solfy - precio instalación 2026",
+       "source_url": "https://solfy.net/autoconsumo/placas-solares/precio/",
+       "captured_at": "2026-08-26",
+       "summary": "Presupuestos personalizados segun potencia: el instalador fija precio por proyecto.",
+       "raw_excerpt": "El precio medio de instalar placas solares en una vivienda unifamiliar en España en 2026 oscila entre 4.000 y 9.000€, dependiendo de la potencia ...",
+       "reliability_score": 0.7,
+       "independence_group": "price_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      },
+      {
+       "evidence_type": "customer_profile",
+       "source_name": "AutoSolar - precio instalación fotovoltaica",
+       "source_url": "https://autosolar.es/mi-experiencia-placas-solares/cuanto-cuesta-una-instalacion-fotovoltaica",
+       "captured_at": "2026-08-26",
+       "summary": "Presupuesto por kW (5 kW ~4.100-4.500 EUR): el precio depende de potencia y componentes.",
+       "raw_excerpt": "El precio instalación placas solares en 2026 puede ascender hasta los 2.000€ . A partir de 40.000 € ・ un presupuesto personalizado, 4.500 € 5 kW 4.100 ・ 300 ...",
+       "reliability_score": 0.6,
+       "independence_group": "buyer_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": {
+      "user": "Empresas instaladoras de autoconsumo (pymes)",
+      "buyer": "Responsable de presupuestos de la empresa instaladora",
+      "beneficiary": "Empresa instaladora",
+      "budget_source": "Margen del proyecto (hipotesis, no verificado)",
+      "trigger_event": "Preparacion de presupuesto para cliente final o revision de tarifas de mano de obra",
+      "current_alternative": "Software de presupuestos y criterio propio",
+      "cost_of_not_solving": "Presupuestos fuera de mercado o margen erosionado (hipotesis)"
+     },
+     "notes": "Comprador y presupuesto son HIPOTESIS; no verificado con comprador real."
+    },
+    {
+     "kind": "CURRENT_ALTERNATIVE_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "other",
+       "source_name": "Suntropy - software estudios autoconsumo",
+       "source_url": "https://suntropy.es/",
+       "captured_at": "2026-08-26",
+       "summary": "Alternativa actual consolidada: software que automatiza estudios y presupuestos de autoconsumo.",
+       "raw_excerpt": "Suntropy es el software para proyectos de autoconsumo solar con el que generas más leads, creas estudios en minutos y automatizas tus presupuestos.",
+       "reliability_score": 0.7,
+       "independence_group": "alternative_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      },
+      {
+       "evidence_type": "other",
+       "source_name": "Motor de Presupuestos - fotovoltaica",
+       "source_url": "https://motordepresupuestos.com/software-presupuestos/fotovoltaica",
+       "captured_at": "2026-08-26",
+       "summary": "Herramienta con IA para presupuestos fotovoltaicos: alternativa existente.",
+       "raw_excerpt": "Presupuestos de instalaciones fotovoltaicas en 1 minuto por voz. Paneles, inversores, baterías y más de 100 partidas incluidas.",
+       "reliability_score": 0.6,
+       "independence_group": "alternative_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": null,
+     "notes": "El territorio ya tiene herramientas de presupuestacion: el benchmark debe diferenciarse con datos de mercado, no con otra herramienta de presupuestos."
+    },
+    {
+     "kind": "COMPETITOR_EQUIVALENT_SEARCH",
+     "evidences": [
+      {
+       "evidence_type": "competitor",
+       "source_name": "ACCA Solarius PV",
+       "source_url": "https://www.accasoftware.com/es/software-calculo-instalacion-fotovoltaica",
+       "captured_at": "2026-08-26",
+       "summary": "Software tecnico establecido para calculo y simulacion economica de instalaciones.",
+       "raw_excerpt": "Solarius PV es el software completo, fiable y novedoso para el proyecto técnico y la simulación económica de cualquier tipo de instalación fotovoltaica ...",
+       "reliability_score": 0.7,
+       "independence_group": "competitor_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [
+      {
+       "name": "Suntropy",
+       "url": "https://suntropy.es/",
+       "offer": "Software de estudios de autoconsumo y automatizacion de presupuestos",
+       "observed_price": null,
+       "strengths": "Enfocado a instaladores, genera leads",
+       "weaknesses": "Estudios tecnicos, no benchmark de tarifas de mercado"
+      },
+      {
+       "name": "Motor de Presupuestos",
+       "url": "https://motordepresupuestos.com/software-presupuestos/fotovoltaica",
+       "offer": "Presupuestos con IA para instaladores fotovoltaicos",
+       "observed_price": null,
+       "strengths": "Rapido, muchas partidas",
+       "weaknesses": "Sin datos de tarifas de mercado por zona"
+      },
+      {
+       "name": "ACCA Solarius PV",
+       "url": "https://www.accasoftware.com/es/software-calculo-instalacion-fotovoltaica",
+       "offer": "Software tecnico de calculo y simulacion economica",
+       "observed_price": null,
+       "strengths": "Referencia tecnica del sector",
+       "weaknesses": "Complejo, orientado a ingenieria, no a fijar tarifas"
+      }
+     ],
+     "buyer_confirmed": null,
+     "notes": "Competencia de software fuerte y consolidada: riesgo de diferenciacion."
+    },
+    {
+     "kind": "DISTRIBUTION_ACCESS_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "customer_profile",
+       "source_name": "UNEF - Unión Española Fotovoltaica",
+       "source_url": "https://www.unef.es/",
+       "captured_at": "2026-08-26",
+       "summary": "Asociacion sectorial con mas de 800 empresas asociadas: canal de acceso a instaladores.",
+       "raw_excerpt": "UNEF es la principal asociación del sector solar fotovoltaico en España, con más de 800 empresas asociadas, somos el punto de encuentro, networking",
+       "reliability_score": 0.7,
+       "independence_group": "channel_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      },
+      {
+       "evidence_type": "customer_profile",
+       "source_name": "Global Solar Council - UNEF",
+       "source_url": "https://www.globalsolarcouncil.org/members/union-espanola-fotovoltaica/",
+       "captured_at": "2026-08-26",
+       "summary": "Verificacion internacional de la asociacion; cifra de asociadas distinta (400 vs 800): incertidumbre en el numero exacto.",
+       "raw_excerpt": "The Spanish PV Association (UNEF) is the sectorial association of photovoltaic solar energy in Spain. It is composed by about 400 companies and entities",
+       "reliability_score": 0.6,
+       "independence_group": "channel_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual. Contradiccion menor con UNEF: 400 vs 800 asociadas."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": null,
+     "notes": "Canal accesible via asociacion sectorial; contradiccion en el tamano de la base de asociadas (400 vs 800)."
+    },
+    {
+     "kind": "GENERAL_AI_SUBSTITUTION_CHECK",
+     "evidences": [
+      {
+       "evidence_type": "other",
+       "source_name": "SolarVis - software de propuestas solares",
+       "source_url": "https://solarvis.co/es/resources/glossary/solar-proposal-software",
+       "captured_at": "2026-08-26",
+       "summary": "Existen herramientas especializadas de propuestas: el diferenciador no es la IA generica sino datos de mercado locales.",
+       "raw_excerpt": "Herramienta de venta especializada que permite al instalador solar convertir un lead cualificado en una propuesta lista para el cliente, ...",
+       "reliability_score": 0.6,
+       "independence_group": "ai_substitution_evidence",
+       "verified": true,
+       "verification_notes": "URL + fecha de consulta + fragmento textual."
+      }
+     ],
+     "competitors": [],
+     "buyer_confirmed": null,
+     "notes": "Analisis de sustitucion (hipotesis): riesgo de IA generalista bajo para el benchmark (datos no publicos), pero la competencia de software especializado es alta."
+    }
+   ]
+  }
+ ]
+}

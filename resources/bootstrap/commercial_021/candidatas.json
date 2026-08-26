@@ -1,0 +1,261 @@
+{
+ "operacion": "activacion_comercial_021",
+ "fecha": "2026-08-26",
+ "note": "Tarjetas de candidatas del bootstrap comercial. Precios y compradores son HIPÓTESIS (no hay pago ni entrevista real). La ganadora NO tiene demanda validada: es ganadora determinista PARA EXPERIMENTO. Los campos concept/brief son los canónicos de la reproducción 021 (base de referencia), materializables localmente sin IDs foráneos.",
+ "candidates": [
+  {
+   "title": "Benchmark anonimo de tarifas para clinicas dentales que deciden su precio de ortodoncia",
+   "role": "WINNER",
+   "winner_reason": "Ganadora determinista (torneo 018: 77.5 + evidencia verificada 11/31). Única con low_launch_cost=2/2 y concierge_delivery=2/2. No indica demanda validada: no existe pago real.",
+   "buyer": "HIPÓTESIS: gerentes de clínicas dentales de 2-5 dentistas",
+   "problem": "Las clínicas dentales pequeñas fijan el precio de ortodoncia sin un comparativo de tarifas de su zona y pierden margen o pacientes.",
+   "offer": "Informe de benchmark anónimo de tarifas de ortodoncia por provincia (rangos y percentiles) + revisión por videollamada (concierge).",
+   "price": "HIPÓTESIS: 30-90 EUR (midpoint 60 EUR) — sin comprador real todavía",
+   "channel": "Contacto directo autorizado a 20 clínicas identificadas vía colegios y directorios oficiales; LinkedIn y colegios provinciales",
+   "contradictions": "Dispersión real documentada (2.900-8.100 EUR según fuentes públicas); la urgencia de compra no está demostrada; guías gratuitas pueden suplir parte del valor.",
+   "risks": [
+    "Guías de precios gratuitas como sustituto (cubierto por kill condition)",
+    "Dominio sanitario: nunca usar datos de pacientes (informe anónimo agregado)",
+    "Urgencia no demostrada: sin evento de compra claro"
+   ],
+   "kill_condition": "Sin señal de pago tras 14 días de contacto activo; cierre en 30 días sin pivote viable.",
+   "status": "RESEARCH_PENDING -> READY_TO_CONNECT_SERVICES (tras bootstrap)",
+   "evidence_verified": 11,
+   "evidence_groups": 7,
+   "main_sources": [
+    "Sanitas Dental - precios tratamientos",
+    "Clínica Friedlander - precio ortodoncia",
+    "Prodentis - guia precios dentales Málaga 2026",
+    "Clínica Dental Nobel - coste brackets España",
+    "Doctocliq - fijar precio tratamientos dentales",
+    "Dental Data School - cómo fijar precio en clínicas",
+    "Infomed - KPIs y estudio de mercado para clínicas",
+    "GuiaDentistas - Consejo General de Dentistas",
+    "Consejo Dentistas - colegios oficiales",
+    "Dental Tribune - cómo fijar honorarios",
+    "Clínica Ferrús Bràtos - precios tratamientos"
+   ],
+   "competitors": [
+    {
+     "name": "Dental Data School",
+     "offer": "Formacion y consultoria para fijar precios en clinicas dentales",
+     "observed_price": null
+    },
+    {
+     "name": "Infomed Software",
+     "offer": "Software de gestion clinica con KPIs y estudio de mercado",
+     "observed_price": null
+    },
+    {
+     "name": "Doctocliq",
+     "offer": "Contenido y herramientas para fijar precios de tratamientos",
+     "observed_price": null
+    }
+   ],
+   "concept": {
+    "title": "Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+    "territory_key": "hard_to_verify_info",
+    "lens_keys": [
+     "ENTERTAINMENT_PLUS_UTILITY"
+    ],
+    "archetype_key": "PROSUMER_PRODUCT",
+    "problem_hypothesis": "Las clínicas dentales pequeñas fijan el precio de ortodoncia sin un comparativo de tarifas de su zona y pierden margen o pacientes.",
+    "mechanism": "Encuesta de tarifas anónima entre clínicas de la misma provincia con informe comparativo trimestral.",
+    "buyer_hypothesis": "Gerentes de clínicas dentales de 2-5 dentistas.",
+    "outcome_hypothesis": "Informe de tarifas por provincia con percentiles para decidir el precio.",
+    "why_now": "Reformulación de candidata abstracta (iteración 013).",
+    "general_ai_risk": "Requiere datos específicos del sector y entregable revisable.",
+    "asset_potential": "Plantillas y expedientes acumulados."
+   },
+   "brief": {
+    "specific_name": "Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+    "user": "Gerentes de clínicas dentales de 2-5 dentistas.",
+    "buyer": "Gerentes de clínicas dentales de 2-5 dentistas.",
+    "situation": "Las clínicas dentales pequeñas fijan el precio de ortodoncia sin un comparativo de tarifas de su zona y pierden margen o pacientes.",
+    "observable_problem": "Las clínicas dentales pequeñas fijan el precio de ortodoncia sin un comparativo de tarifas de su zona y pierden margen o pacientes.",
+    "current_alternative": "La gestión se hace hoy con plantillas genéricas de internet y tiempo manual del propio negocio.",
+    "economic_or_time_cost": "Horas de preparación no facturables y riesgo de incumplimiento o de fijar precios sin datos.",
+    "concrete_deliverable": "Informe de tarifas por provincia con percentiles para decidir el precio.",
+    "measurable_outcome": "Informe de tarifas por provincia con percentiles para decidir el precio.",
+    "revenue_model": "Pago único por entrega del expediente o informe (30-90 EUR) con revisión incluida.",
+    "expected_price_hypothesis": "Precio hipótesis de 30-90 EUR por entrega; por confirmar con compradores reales.",
+    "first_distribution_channel": "Mensaje directo a 20 negocios concretos del sector identificados por zona (sin spam).",
+    "first_20_buyers_location": "Lista de 20 negocios locales del sector objetivo, a verificar con directorios públicos.",
+    "test_in_48_hours": "Ofrecer la entrega a 3 negocios reales y confirmar si pagarían (no es demanda verificada).",
+    "generic_ai_limitation": "Una IA generalista no conoce los requisitos exactos de cada convocatoria ni entrega un expediente revisado por alguien responsable.",
+    "compounding_asset": "Banco de plantillas y expedientes propios que mejora cada entrega.",
+    "primary_risk": "Que el comprador no perciba urgencia o resuelva con la plantilla gratuita del organismo.",
+    "assumptions": "Hipótesis de comprador, dolor y precio; ninguna verificada todavía.",
+    "prohibited_claims": "No afirmar demanda, no prometer resultados, no citar clientes reales sin su permiso."
+   }
+  },
+  {
+   "title": "Benchmark de honorarios para gestorias que deciden su tarifa mensual",
+   "role": "CANDIDATE",
+   "winner_reason": "No seleccionada: torneo 018 = 72.5 (por debajo de 77.5) y sin ventaja concierge/low-launch-cost plena. Se conserva como candidata investigada.",
+   "buyer": "HIPÓTESIS: gestorías y asesorías contables que fijan su tarifa mensual",
+   "problem": "Las gestorías fijan honorarios mensuales sin comparativa de mercado; precios opacos y clientes sin forma de comparar.",
+   "offer": "Benchmark anónimo de honorarios de gestorías por tamaño de cartera/región.",
+   "price": "HIPÓTESIS: sin precio fijado — pendiente de experimento",
+   "channel": "Colegios/registros de gestores administrativos; asociaciones profesionales; LinkedIn",
+   "contradictions": "Sector con precios tradicionalmente opacos; fuentes públicas limitadas.",
+   "risks": [
+    "Opacidad de precios reales del sector",
+    "Comprador (gestoría) poco habituado a pagar por datos de mercado"
+   ],
+   "kill_condition": "Sin señal de pago tras experimento de 30 días.",
+   "status": "RESEARCH_PENDING -> investigada con evidencia (no ganadora)",
+   "evidence_verified": 10,
+   "evidence_groups": 7,
+   "main_sources": [
+    "Cronoshare - cuánto cuesta una gestoría",
+    "Dri Asesoria - cuánto cobra una asesoría",
+    "Billeo - cuánto cobra una gestoría por llevar una empresa",
+    "Sage - precio del servicio contable",
+    "Despacho Abierto - errores al elegir asesor",
+    "IONOS - costes de contabilidad",
+    "OkAsesores - planes y precios",
+    "Consejo General de Gestores Administrativos - colegios",
+    "Registro de Gestores Administrativos",
+    "Mi Gestoría Online - precios gestoría autónomos"
+   ],
+   "competitors": [
+    {
+     "name": "OkAsesores",
+     "offer": "Gestoria online con planes y tarifas publicadas",
+     "observed_price": null
+    },
+    {
+     "name": "Cronoshare",
+     "offer": "Marketplace que publica rangos de precios de gestorias",
+     "observed_price": null
+    },
+    {
+     "name": "Sage (contenido)",
+     "offer": "Articulos sobre calculo de tarifas contables",
+     "observed_price": null
+    }
+   ],
+   "concept": {
+    "title": "Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+    "territory_key": "hard_to_verify_info",
+    "lens_keys": [
+     "ENTERTAINMENT_PLUS_UTILITY"
+    ],
+    "archetype_key": "PROSUMER_PRODUCT",
+    "problem_hypothesis": "Las gestorías pequeñas fijan la cuota mensual de clientes sin saber el rango de honorarios de su provincia.",
+    "mechanism": "Encuesta anónima de honorarios por tipo de cliente (autónomo, pyme) con informe comparativo.",
+    "buyer_hypothesis": "Titulares de gestorías administrativas de 1-5 empleados.",
+    "outcome_hypothesis": "Rango de honorarios por provincia y tipo de cliente para posicionar la cuota.",
+    "why_now": "Reformulación de candidata abstracta (iteración 013).",
+    "general_ai_risk": "Requiere datos específicos del sector y entregable revisable.",
+    "asset_potential": "Plantillas y expedientes acumulados."
+   },
+   "brief": {
+    "specific_name": "Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+    "user": "Titulares de gestorías administrativas de 1-5 empleados.",
+    "buyer": "Titulares de gestorías administrativas de 1-5 empleados.",
+    "situation": "Las gestorías pequeñas fijan la cuota mensual de clientes sin saber el rango de honorarios de su provincia.",
+    "observable_problem": "Las gestorías pequeñas fijan la cuota mensual de clientes sin saber el rango de honorarios de su provincia.",
+    "current_alternative": "La gestión se hace hoy con plantillas genéricas de internet y tiempo manual del propio negocio.",
+    "economic_or_time_cost": "Horas de preparación no facturables y riesgo de incumplimiento o de fijar precios sin datos.",
+    "concrete_deliverable": "Rango de honorarios por provincia y tipo de cliente para posicionar la cuota.",
+    "measurable_outcome": "Rango de honorarios por provincia y tipo de cliente para posicionar la cuota.",
+    "revenue_model": "Pago único por entrega del expediente o informe (30-90 EUR) con revisión incluida.",
+    "expected_price_hypothesis": "Precio hipótesis de 30-90 EUR por entrega; por confirmar con compradores reales.",
+    "first_distribution_channel": "Mensaje directo a 20 negocios concretos del sector identificados por zona (sin spam).",
+    "first_20_buyers_location": "Lista de 20 negocios locales del sector objetivo, a verificar con directorios públicos.",
+    "test_in_48_hours": "Ofrecer la entrega a 3 negocios reales y confirmar si pagarían (no es demanda verificada).",
+    "generic_ai_limitation": "Una IA generalista no conoce los requisitos exactos de cada convocatoria ni entrega un expediente revisado por alguien responsable.",
+    "compounding_asset": "Banco de plantillas y expedientes propios que mejora cada entrega.",
+    "primary_risk": "Que el comprador no perciba urgencia o resuelva con la plantilla gratuita del organismo.",
+    "assumptions": "Hipótesis de comprador, dolor y precio; ninguna verificada todavía.",
+    "prohibited_claims": "No afirmar demanda, no prometer resultados, no citar clientes reales sin su permiso."
+   }
+  },
+  {
+   "title": "Benchmark de costes de instalacion para empresas de placas solares que deciden presupuesto",
+   "role": "CANDIDATE",
+   "winner_reason": "No seleccionada: torneo 018 = 72.5 y coste de lanzamiento/entrega concierge inferiores a la ganadora. Se conserva como candidata investigada.",
+   "buyer": "HIPÓTESIS: empresas instaladoras de placas solares que deciden presupuesto",
+   "problem": "Las instaladoras fijan presupuestos sin referencia de coste por kW y pierden margen o clientes.",
+   "offer": "Benchmark de costes de instalación fotovoltaica por kW y zona.",
+   "price": "HIPÓTESIS: sin precio fijado — pendiente de experimento",
+   "channel": "Asociaciones (UNEF y afines); directorios de instaladores; LinkedIn sectorial",
+   "contradictions": "Costes muy dependientes de zona/tipo de cubierta; datos públicos fragmentados.",
+   "risks": [
+    "Volatilidad de precios de componentes",
+    "Comprador con alternativas gratuitas de cálculo"
+   ],
+   "kill_condition": "Sin señal de pago tras experimento de 30 días.",
+   "status": "RESEARCH_PENDING -> investigada con evidencia (no ganadora)",
+   "evidence_verified": 10,
+   "evidence_groups": 7,
+   "main_sources": [
+    "Cambio Energético - precio placas solares",
+    "SotySolar - precio instalación",
+    "Solfy - precio instalación 2026",
+    "AutoSolar - precio instalación fotovoltaica",
+    "Suntropy - software estudios autoconsumo",
+    "Motor de Presupuestos - fotovoltaica",
+    "ACCA Solarius PV",
+    "UNEF - Unión Española Fotovoltaica",
+    "Global Solar Council - UNEF",
+    "SolarVis - software de propuestas solares"
+   ],
+   "competitors": [
+    {
+     "name": "Suntropy",
+     "offer": "Software de estudios de autoconsumo y automatizacion de presupuestos",
+     "observed_price": null
+    },
+    {
+     "name": "Motor de Presupuestos",
+     "offer": "Presupuestos con IA para instaladores fotovoltaicos",
+     "observed_price": null
+    },
+    {
+     "name": "ACCA Solarius PV",
+     "offer": "Software tecnico de calculo y simulacion economica",
+     "observed_price": null
+    }
+   ],
+   "concept": {
+    "title": "Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+    "territory_key": "hard_to_verify_info",
+    "lens_keys": [
+     "ENTERTAINMENT_PLUS_UTILITY"
+    ],
+    "archetype_key": "PROSUMER_PRODUCT",
+    "problem_hypothesis": "Los instaladores de placas solares pequeños presupuestan sin un comparativo de costes por tipo de tejado y tipo de instalación.",
+    "mechanism": "Registro colaborativo anónimo de costes reales por tipo de instalación con informe comparativo.",
+    "buyer_hypothesis": "Instaladores de energía solar de 3-10 empleados.",
+    "outcome_hypothesis": "Rango de costes por tipo de instalación para ajustar presupuestos.",
+    "why_now": "Reformulación de candidata abstracta (iteración 013).",
+    "general_ai_risk": "Requiere datos específicos del sector y entregable revisable.",
+    "asset_potential": "Plantillas y expedientes acumulados."
+   },
+   "brief": {
+    "specific_name": "Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+    "user": "Instaladores de energía solar de 3-10 empleados.",
+    "buyer": "Instaladores de energía solar de 3-10 empleados.",
+    "situation": "Los instaladores de placas solares pequeños presupuestan sin un comparativo de costes por tipo de tejado y tipo de instalación.",
+    "observable_problem": "Los instaladores de placas solares pequeños presupuestan sin un comparativo de costes por tipo de tejado y tipo de instalación.",
+    "current_alternative": "La gestión se hace hoy con plantillas genéricas de internet y tiempo manual del propio negocio.",
+    "economic_or_time_cost": "Horas de preparación no facturables y riesgo de incumplimiento o de fijar precios sin datos.",
+    "concrete_deliverable": "Rango de costes por tipo de instalación para ajustar presupuestos.",
+    "measurable_outcome": "Rango de costes por tipo de instalación para ajustar presupuestos.",
+    "revenue_model": "Pago único por entrega del expediente o informe (30-90 EUR) con revisión incluida.",
+    "expected_price_hypothesis": "Precio hipótesis de 30-90 EUR por entrega; por confirmar con compradores reales.",
+    "first_distribution_channel": "Mensaje directo a 20 negocios concretos del sector identificados por zona (sin spam).",
+    "first_20_buyers_location": "Lista de 20 negocios locales del sector objetivo, a verificar con directorios públicos.",
+    "test_in_48_hours": "Ofrecer la entrega a 3 negocios reales y confirmar si pagarían (no es demanda verificada).",
+    "generic_ai_limitation": "Una IA generalista no conoce los requisitos exactos de cada convocatoria ni entrega un expediente revisado por alguien responsable.",
+    "compounding_asset": "Banco de plantillas y expedientes propios que mejora cada entrega.",
+    "primary_risk": "Que el comprador no perciba urgencia o resuelva con la plantilla gratuita del organismo.",
+    "assumptions": "Hipótesis de comprador, dolor y precio; ninguna verificada todavía.",
+    "prohibited_claims": "No afirmar demanda, no prometer resultados, no citar clientes reales sin su permiso."
+   }
+  }
+ ]
+}

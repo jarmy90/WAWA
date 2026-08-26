@@ -1,5 +1,8 @@
 @echo off
 REM START_WAWA (Windows) — arranca Autonomous Business Lab en local.
+REM Iteración 022: UN solo punto de entrada. NO hace falta abrir PowerShell
+REM ni escribir comandos: se detecta y aplica la activación comercial
+REM automáticamente antes de abrir el navegador.
 REM Uso: doble clic, o:  START_WAWA.bat [puerto]
 setlocal
 cd /d "%~dp0"
@@ -12,35 +15,42 @@ echo ==============================================
 echo   Autonomous Business Lab - inicio local
 echo ==============================================
 
-REM 1) Entorno virtual
+echo [1/7] Preparando entorno...
 if not exist ".venv" (
-  echo [1/5] Creando entorno virtual...
+  echo       Creando entorno virtual...
   python -m venv .venv
+  if errorlevel 1 (
+    echo ERROR: no se encontro Python. Instala Python 3.10+ desde python.org
+    echo y marca "Add Python to PATH", luego vuelve a ejecutar este archivo.
+    pause
+    exit /b 1
+  )
 )
-call .venv\Scripts\activate.bat
+call ".venv\Scripts\activate.bat"
 
-REM 2) Dependencias
+echo [2/7] Inicializando base local...
 python -c "import fastapi, uvicorn, pydantic" >nul 2>&1
 if errorlevel 1 (
-  echo [2/5] Instalando dependencias...
+  echo       Instalando dependencias...
   python -m pip install --quiet --upgrade pip
   python -m pip install --quiet -e ".[dev]"
 )
+if not exist "data" mkdir data
+if not exist "logs" mkdir logs
+python -c "from app.repositories.db import init_db; from app.core.config import get_settings; init_db(get_settings()); print('      SQLite inicializado')"
 
-REM 3) Base de datos
-echo [3/5] Preparando datos locales...
-if not exist data mkdir data
-if not exist logs mkdir logs
-if not exist "data\abl.db" (
-  python -c "from app.repositories.db import init_db; from app.core.config import Settings; s=Settings(); init_db(s); print('SQLite inicializado')"
-)
+echo [3/7] Comprobando campana...
+python -c "from app.core.config import get_settings; from app.core.container import build_container; c=build_container(get_settings()); s=c.bootstrap.status(); print('      Campana: ' + str(s.get('run_state') or 'sin run (se creara)') + ' | bootstrap aplicado: ' + str(s.get('applied'))); c.close()"
 
-REM 4) Arrancar la API (solo local)
-echo [4/5] Arrancando la web en %URL% ...
+echo [4/7] Aplicando investigacion verificada...
+echo [5/7] Seleccionando ganadora...
+echo [6/7] Verificando READY_TO_CONNECT_SERVICES...
+python "scripts\startup_bootstrap.py"
+
+echo [7/7] Abriendo WAWA...
 start "WAWA server" cmd /c "call .venv\Scripts\activate.bat && python -m uvicorn app.main:app --host %HOST% --port %PORT% > logs\wawa.log 2>&1"
 
-REM 5) Esperar a /api/health y abrir el navegador
-echo [5/5] Esperando a que el servidor responda...
+echo       Esperando a que el servidor responda...
 set /a i=0
 :waitloop
 curl -fsS "%URL%/api/health" >nul 2>&1
@@ -62,4 +72,7 @@ echo   AVISO: el servidor no respondio en 30 s. Revisa logs\wawa.log
 echo.
 echo Web abierta en: %URL%
 echo Para detener:   STOP_WAWA.bat
+echo.
+echo Siguiente paso: en el panel, abre CANDIDATAS para ver las 3 candidatas
+echo y copiar los expedientes GPT/Grok/Gemini (comite).
 endlocal

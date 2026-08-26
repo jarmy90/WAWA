@@ -79,10 +79,14 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
             content={"error": {"code": "internal_error", "message": "Error interno del servidor."}},
         )
 
-    # Vistas premium (iteración 020): rutas limpias /mission-control y
-    # /agents-viz que funcionan directamente y tras refrescar el navegador.
+    # Vistas premium (iteración 020) y CANDIDATAS (iteración 022): rutas
+    # limpias que funcionan directamente y tras refrescar el navegador.
     if settings.frontend_dir.exists():
-        for route, filename in (("/mission-control", "mission-control.html"), ("/agents-viz", "agents-viz.html")):
+        for route, filename in (
+            ("/mission-control", "mission-control.html"),
+            ("/agents-viz", "agents-viz.html"),
+            ("/candidates", "candidates.html"),
+        ):
             path = settings.frontend_dir / filename
             if path.exists():
                 app.get(route)(lambda path=path: FileResponse(path, media_type="text/html"))

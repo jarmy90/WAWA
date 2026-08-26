@@ -1161,6 +1161,61 @@ def sessions_list(request: Request, limit: int = Query(default=20, ge=1, le=100)
 
 
 # ---------------------------------------------------------------------------
+# Activación de un clic (iteración 022): bootstrap comercial + candidatas
+# ---------------------------------------------------------------------------
+@router.get("/bootstrap/status")
+def bootstrap_status(request: Request) -> dict:
+    """Estado del bootstrap comercial (sin ejecutarlo): aplicado, recuperable,
+    diagnóstico y acción de recuperación. Sin secretos ni stack traces."""
+    return get_container(request).bootstrap.status(include_snapshot=True)
+
+
+@router.post("/bootstrap/commercial")
+def bootstrap_commercial(request: Request) -> dict:
+    """REPARAR Y CONTINUAR AUTOMÁTICAMENTE: aplica el bootstrap comercial de
+    forma idempotente y con checkpoints. Nunca duplica datos; deja producción
+    bloqueada, gasto real en cero y PRE_CYCLE detenido."""
+    return get_container(request).bootstrap.apply()
+
+
+@router.get("/candidates")
+def candidates(request: Request) -> dict:
+    """Tarjetas de candidatas (máximo 3): datos de investigación empaquetados
+    021 + puntuaciones/evidencia/revisiones en vivo. La ganadora es
+    determinista PARA EXPERIMENTO; nunca demanda validada (sin pago real)."""
+    return get_container(request).bootstrap.candidates()
+
+
+# ---------------------------------------------------------------------------
+# Asistente CONECTAR SERVICIOS (iteración 022) — sin secretos por API
+# ---------------------------------------------------------------------------
+@router.get("/services/status")
+def services_status(request: Request) -> dict:
+    """Estado de los servicios requeridos (CONNECTED / PARTIAL / INVALID /
+    MISSING) + últimos 4 caracteres cuando es seguro. Nunca devuelve valores."""
+    return get_container(request).connect_services.status()
+
+
+class CredentialsSaveIn(BaseModel):
+    """Guardado local de credenciales del asistente. Los valores se escriben en
+    el archivo local de credenciales (`.env`, fuera de Git) y nunca se
+    devuelven por la API."""
+
+    model_config = ConfigDict(extra="forbid")
+    values: dict[str, str] = Field(default_factory=dict)
+
+
+@router.post("/services/save")
+def services_save(payload: CredentialsSaveIn, request: Request) -> dict:
+    return get_container(request).connect_services.save(payload.values)
+
+
+@router.post("/services/check")
+def services_check(payload: CredentialsSaveIn, request: Request) -> dict:
+    return get_container(request).connect_services.check(payload.values)
+
+
+# ---------------------------------------------------------------------------
 # Importación / demostración
 # ---------------------------------------------------------------------------
 @router.post("/import")

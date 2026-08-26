@@ -10,7 +10,7 @@
 
   var state = {
     auto: true,
-    demo: V.isDemoMode(),
+    demo: false,
     data: null,
     timer: null,
     selectedAgentId: null,
@@ -37,11 +37,13 @@
       $("mc-mode").textContent = "DEMO DATA · NOT REAL ACTIVITY";
       $("mc-mode").classList.add("chip-demo");
       $("btn-mc-demo").textContent = "SALIR DE DEMO";
+      $("btn-mc-demo").setAttribute("aria-pressed", "true");
     } else {
       hide("mc-demo-banner");
       $("mc-mode").textContent = "REAL · datos persistidos";
       $("mc-mode").classList.remove("chip-demo");
-      $("btn-mc-demo").textContent = "MODO DEMO";
+      $("btn-mc-demo").textContent = "ACTIVAR DEMO";
+      $("btn-mc-demo").setAttribute("aria-pressed", "false");
     }
     setConn(state.demo ? "MODO DEMO ACTIVO" : "CONECTADO A /api/agent-telemetry", state.demo ? "demo" : "online");
   }
@@ -102,8 +104,139 @@
     renderRelations(d.agent_relationships || [], d.agents || []);
     renderWinner(d.launch_winner || null);
     renderServices(d.services_required || []);
+    renderServicesWizard(d.services_required || []);
     renderMandate(d.authorization_mandate || null);
+    renderRepair(d.bootstrap || null);
     setText("mc-footnote", d.note ? d.note : "—");
+  }
+
+  /* --- Iteración 022: REPARAR Y CONTINUAR AUTOMÁTICAMENTE ------------- */
+  function renderRepair(bs) {
+    if (!bs) { setHtml("mc-repair-state", '<p class="mc-empty">SIN DATOS</p>'); return; }
+    if (bs.applied) {
+      setHtml("mc-repair-state", '<p class="mc-empty">BOOTSTRAP COMERCIAL YA APLICADO · ' +
+        V.escapeHtml(bs.applied_version || "") + "</p>");
+      hide("btn-mc-repair");
+      setHtml("mc-repair-preview", "");
+      setHtml("mc-repair-result", "");
+    } else if (bs.can_repair) {
+      setHtml("mc-repair-state", '<p class="mc-empty">Instalación incompleta o recuperable detectada.</p>');
+      setHtml("mc-repair-preview", "<p class='mc-sub'>WAWA aplicará automáticamente: investigación verificada 021 " +
+        "(3 candidatas, 18 misiones, 31 evidencias), ganadora determinista, experimento, cola de comité " +
+        "y READY_TO_CONNECT_SERVICES. Sin comandos, sin archivos, sin IDs.</p>");
+      show("btn-mc-repair");
+      setHtml("mc-repair-result", "");
+    } else {
+      setHtml("mc-repair-state", '<p class="mc-empty">Sin reparación necesaria.</p>');
+      hide("btn-mc-repair");
+      setHtml("mc-repair-preview", "");
+      setHtml("mc-repair-result", "");
+    }
+    var diag = (bs.diagnosis || []).map(function (d) {
+      return '<div class="diag-item"><span class="k">' + V.escapeHtml(d.component || "?") + "</span>" +
+        '<span class="v">' + V.escapeHtml(d.message || "") +
+        (d.recovery_action ? ' <em>→ ' + V.escapeHtml(d.recovery_action) + "</em>" : "") + "</span></div>";
+    }).join("");
+    setHtml("mc-repair-diagnosis", diag || '<p class="mc-empty">Sin diagnóstico pendiente.</p>');
+  }
+
+  function runRepair() {
+    var btn = $("btn-mc-repair");
+    btn.disabled = true;
+    btn.textContent = "REPARANDO…";
+    setHtml("mc-repair-result", '<span style="color:var(--mc-amber)">Ejecutando bootstrap comercial (idempotente)…</span>');
+    return fetch("/api/bootstrap/commercial", { method: "POST", headers: { Accept: "application/json" } })
+      .then(function (res) { return res.json().then(function (d) { return { res: res, d: d }; }); })
+      .then(function (out) {
+        var d = out.d;
+        btn.disabled = false;
+        btn.textContent = "REPARAR Y CONTINUAR AUTOMÁTICAMENTE";
+        if (!out.res.ok) {
+          setHtml("mc-repair-result", '<span style="color:var(--mc-red)">' + V.escapeHtml((d.error && d.error.message) || "Error al reparar.") + "</span>");
+          return;
+        }
+        setHtml("mc-repair-result", '<span style="color:var(--mc-green)">✓ Reparado: ' +
+          V.escapeHtml(d.readiness_state || "") + " · " + V.escapeHtml(String(d.evidences_attached || 0)) +
+          " evidencias · ganadora: " + V.escapeHtml((d.winner_title || "").slice(0, 60)) + "</span>");
+        loadData(); // refrescar campaña y Mission Control
+      })
+      .catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = "REPARAR Y CONTINUAR AUTOMÁTICAMENTE";
+        setHtml("mc-repair-result", '<span style="color:var(--mc-red)">' + V.escapeHtml(err && err.message ? err.message : "Error de red.") + "</span>");
+      });
+  }
+
+  /* --- Iteración 022: asistente CONECTAR SERVICIOS --------------------- */
+  function renderServicesWizard(services) {
+    var eligible = (services || []).filter(function (s) { return s.status !== "CONNECTED" && s.env_var && s.env_var !== "—"; });
+    if (!eligible.length) { setHtml("mc-services-wizard", ""); setText("mc-services-result", ""); return; }
+    var html = '<div class="svc-wizard"><h4>Asistente local</h4>' + eligible.map(function (s) {
+      return '<div class="svc-row"><div class="svc-meta"><b>' + V.escapeHtml(s.name) + "</b> · " +
+        '<code>' + V.escapeHtml(s.env_var) + '</code><div class="a-action">' + V.escapeHtml(s.purpose || "") +
+        (s.format_hint ? " · formato: " + V.escapeHtml(s.format_hint) : "") + "</div></div>" +
+        '<div class="svc-inputs"><input type="password" autocomplete="off" data-svc="' + V.escapeHtml(s.env_var) + '" ' +
+        'aria-label="Credencial ' + V.escapeHtml(s.env_var) + '" placeholder="Pega la clave (nunca se muestra después)" />' +
+        '<button type="button" class="mc-btn" data-svc-check="' + V.escapeHtml(s.env_var) + '">PROBAR CONEXIÓN</button>' +
+        '<span class="svc-check-result" data-svc-result="' + V.escapeHtml(s.env_var) + '"></span></div></div>';
+    }).join("") +
+      '<button type="button" id="btn-svc-save" class="mc-btn primary">GUARDAR LOCALMENTE</button>' +
+      "</div>";
+    setHtml("mc-services-wizard", html);
+    Array.prototype.forEach.call(document.querySelectorAll("[data-svc-check]"), function (btn) {
+      btn.addEventListener("click", function () { checkService(btn); });
+    });
+    var save = $("btn-svc-save");
+    if (save) save.addEventListener("click", saveServices);
+  }
+
+  function collectServiceValues() {
+    var values = {};
+    Array.prototype.forEach.call(document.querySelectorAll("[data-svc]"), function (input) {
+      var v = input.value.trim();
+      if (v) values[input.getAttribute("data-svc")] = v;
+    });
+    return values;
+  }
+
+  function checkService(btn) {
+    var key = btn.getAttribute("data-svc-check");
+    var input = document.querySelector('[data-svc="' + key + '"]');
+    var values = {};
+    if (input && input.value.trim()) values[key] = input.value.trim();
+    var out = document.querySelector('[data-svc-result="' + key + '"]');
+    out.textContent = "comprobando…";
+    return fetch("/api/services/check", {
+      method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ values: values }),
+    }).then(function (res) { return res.json(); }).then(function (d) {
+      var r = (d.results || []).filter(function (x) { return x.key === key; })[0];
+      if (!r) { out.textContent = "sin resultado"; return; }
+      out.textContent = r.state + " — " + r.message;
+      out.className = "svc-check-result " + (r.state === "OK" || r.state === "CONNECTED" ? "ok" : "bad");
+    }).catch(function () { out.textContent = "error de red"; });
+  }
+
+  function saveServices() {
+    var values = collectServiceValues();
+    if (!Object.keys(values).length) {
+      setText("mc-services-result", "Introduce al menos una credencial para guardar.");
+      return;
+    }
+    var btn = $("btn-svc-save");
+    btn.disabled = true;
+    setText("mc-services-result", "Guardando localmente (fuera de Git)…");
+    return fetch("/api/services/save", {
+      method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ values: values }),
+    }).then(function (res) { return res.json(); }).then(function (d) {
+      btn.disabled = false;
+      setText("mc-services-result", d.saved ? "✓ " + d.message : "✗ " + (d.message || "no guardado"));
+      loadData();
+    }).catch(function () {
+      btn.disabled = false;
+      setText("mc-services-result", "Error de red al guardar.");
+    });
   }
 
   function renderWinner(w) {
@@ -363,14 +496,17 @@
   }
 
   function toggleDemo() {
-    state.demo = !state.demo;
+    state.demo = V.setDemoActive(!state.demo);
     applyDemoBanner();
     loadData();
   }
 
   /* --- Inicialización ------------------------------------------------ */
   function init() {
+    state.demo = V.initDemoState(); // OFF por defecto; ?demo=1 activa y se limpia
     $("btn-mc-refresh").addEventListener("click", loadData);
+    var repairBtn = $("btn-mc-repair");
+    if (repairBtn) repairBtn.addEventListener("click", runRepair);
     $("btn-mc-auto").addEventListener("click", toggleAuto);
     $("btn-mc-demo").addEventListener("click", toggleDemo);
     $("btn-mc-fullscreen").addEventListener("click", toggleFullscreen);

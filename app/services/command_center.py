@@ -68,8 +68,8 @@ class CommandCenterService:
         return {
             "generated_at": generated_at,
             "version": self.c.settings.version,
-            "iteration": "021",
-            "build": "021-commercial-activation",
+            "iteration": "022",
+            "build": "022-one-click-activation",
             "simulated": True,
             "real_money_moved": False,
             "autonomous_launch": readiness,
@@ -121,6 +121,7 @@ class CommandCenterService:
                 "nature": "NO CONECTADO",
             },
             "timeline": timeline,
+            "bootstrap": _safe(lambda: self.c.bootstrap.status(), None),
         }
 
     @staticmethod
@@ -772,9 +773,10 @@ class CommandCenterService:
             "nature": "REAL",
         }
 
+        bootstrap_status = _safe(lambda: self.c.bootstrap.status(), None)
         return {
             "snapshot_at": generated_at,
-            "version": self.c.settings.version, "iteration": "021", "build": "021-commercial-activation",
+            "version": self.c.settings.version, "iteration": "022", "build": "022-one-click-activation",
             "system_health": health,
             "production_capability": self._production_capability(engine),
             "campaign_id": campaign_id,
@@ -816,6 +818,17 @@ class CommandCenterService:
             "authorization_mandate": authorization_mandate,
             "commercial_metrics": {"visits": "NO CONECTADO", "leads": "NO CONECTADO", "payments": "NO CONECTADO",
                                    "nature": "NO CONECTADO"},
+            "bootstrap": {
+                "applied": bool((bootstrap_status or {}).get("applied")),
+                "applied_version": (bootstrap_status or {}).get("applied_version"),
+                "recoverable": bool((bootstrap_status or {}).get("recoverable")),
+                "can_repair": bool((bootstrap_status or {}).get("can_repair")),
+                "run_state": (bootstrap_status or {}).get("run_state"),
+                "run_status": (bootstrap_status or {}).get("run_status"),
+                "missing_activation": bool((bootstrap_status or {}).get("missing_activation")),
+                "assets_ok": bool((bootstrap_status or {}).get("assets_ok")),
+                "nature": "REAL",
+            },
             "data_nature": "REAL",
             "note": "Telemetría derivada exclusivamente de datos persistidos; sin actividad inventada. Modo demo es solo cliente (?demo=1) y se etiqueta DEMO DATA · NOT REAL ACTIVITY.",
         }

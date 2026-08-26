@@ -595,6 +595,31 @@ CREATE TABLE IF NOT EXISTS llm_call_log (
 );
 CREATE INDEX IF NOT EXISTS idx_llm_call_created ON llm_call_log(created_at);
 CREATE INDEX IF NOT EXISTS idx_llm_call_opp ON llm_call_log(opportunity_id);
+
+-- Bootstrap comercial (iteración 022): fila única (id=1) con el estado
+-- APLICADO de la activación comercial. Idempotente: si ya está aplicado,
+-- START_WAWA.bat y el botón REPARAR Y CONTINUAR no duplican datos.
+CREATE TABLE IF NOT EXISTS commercial_bootstrap_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    applied_version TEXT NOT NULL DEFAULT '',
+    applied_at TEXT,
+    run_id TEXT,
+    campaign_id TEXT,
+    winner_opportunity_id TEXT,
+    asset_hash TEXT,
+    status TEXT NOT NULL DEFAULT 'pending'
+);
+
+-- Checkpoints del bootstrap (iteración 022): append-only, permiten reanudar
+-- tras un corte de alimentación sin repetir pasos completados.
+CREATE TABLE IF NOT EXISTS bootstrap_checkpoints (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    component TEXT NOT NULL,
+    state TEXT NOT NULL,
+    detail TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_bootstrap_checkpoints_component ON bootstrap_checkpoints(component);
 """
 
 

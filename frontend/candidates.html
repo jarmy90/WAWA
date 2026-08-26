@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es" data-wawa-version="0.21.0" data-iteration="022" data-build="022-one-click-activation">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>WAWA — Candidatas</title>
+    <link rel="stylesheet" href="/mission-control.css?v=0220" />
+    <link rel="stylesheet" href="/candidates.css?v=0220" />
+  </head>
+  <body>
+    <noscript>
+      <div class="nojs">JavaScript no está activo. Alternativa textual: <a href="/api/candidates">/api/candidates</a> (JSON real).</div>
+    </noscript>
+    <div class="mc-view" id="cand-view">
+      <div class="cand-wrap">
+        <header class="cand-topbar">
+          <div class="cand-brand">
+            <h1>WAWA AUTONOMOUS BUSINESS COMMAND</h1>
+            <p>Candidatas investigadas · máx. 3 · la ganadora es determinista PARA EXPERIMENTO, no demanda validada</p>
+          </div>
+          <div class="cand-topbar-right">
+            <span id="cand-readiness" class="chip" title="Estado de readiness">READINESS: —</span>
+            <span id="cand-mode" class="chip chip-info">REAL</span>
+            <nav class="cand-nav">
+              <a href="/">← Panel principal</a>
+              <a href="/mission-control">Mission Control</a>
+              <a href="/agents-viz">Sistema Solar</a>
+            </nav>
+          </div>
+        </header>
+
+        <div id="cand-error" class="mc-error hidden" role="alert"></div>
+        <div id="cand-banner" class="demo-banner hidden">DEMO DATA · NOT REAL ACTIVITY</div>
+
+        <div id="cand-loading" class="mc-empty">Cargando candidatas…</div>
+        <div id="cand-list" class="cand-grid"></div>
+
+        <p class="mc-sub" id="cand-note" style="margin-top:14px">—</p>
+      </div>
+    </div>
+
+    <script src="/viz-core.js?v=0220"></script>
+    <script src="/candidates.js?v=0220"></script>
+  </body>
+</html>
