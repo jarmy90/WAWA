@@ -328,7 +328,8 @@ class CampaignOrchestrator:
             promoted.append(opp.id)
             # Iteración 013: misiones PROGRESIVAS — solo Fase 1 (6 de descarte).
             for kind in RESEARCH_PHASE1_KINDS:
-                mission = self.discovery.create_mission(kind=kind, campaign_id=dcid, concept_id=concept["id"])
+                mission = self.discovery.create_mission(kind=kind, campaign_id=dcid, concept_id=concept["id"],
+                                                        opportunity_id=opp.id)
                 missions.append({"mission_id": mission.mission_id, "kind": kind, "concept_id": concept["id"], "opportunity_id": opp.id})
 
         if not candidates:

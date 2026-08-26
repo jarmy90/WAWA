@@ -680,11 +680,12 @@ class DiscoveryService:
     # ------------------------------------------------------------------
     # Misiones de investigación Freebuff-first
     # ------------------------------------------------------------------
-    def create_mission(self, *, kind: str, campaign_id: str | None = None, concept_id: str | None = None) -> MissionExport:
+    def create_mission(self, *, kind: str, campaign_id: str | None = None, concept_id: str | None = None,
+                       opportunity_id: str | None = None) -> MissionExport:
         if kind not in MISSION_KINDS:
             raise ValidationError(f"Tipo de misión desconocido: {kind}. Válidos: {', '.join(MISSION_KINDS)}.")
-        if campaign_id is None and concept_id is None:
-            raise ValidationError("Una misión necesita campaign_id o concept_id.")
+        if campaign_id is None and concept_id is None and opportunity_id is None:
+            raise ValidationError("Una misión necesita campaign_id, concept_id u opportunity_id.")
         target: dict[str, Any] = {}
         if campaign_id:
             campaign = self.get_campaign(campaign_id)
@@ -699,6 +700,10 @@ class DiscoveryService:
             target["problem_hypothesis"] = concept["problem_hypothesis"]
             target["mechanism"] = concept["mechanism"]
             target["buyer_hypothesis"] = concept.get("buyer_hypothesis")
+        if opportunity_id:
+            if self.repos.opportunities.get(opportunity_id) is None:
+                raise NotFoundError("Oportunidad no encontrada.")
+            target["opportunity_id"] = opportunity_id
         mission = self._build_mission(kind, target)
         self.repos.discovery.save_mission(
             {

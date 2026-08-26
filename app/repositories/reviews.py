@@ -208,6 +208,13 @@ class ReviewRepository:
         ).fetchone()
         return self._synthesis_row(row) if row else None
 
+    def list_syntheses(self, limit: int = 50) -> list[dict[str, Any]]:
+        """Lista síntesis persistidas, separadas de las revisiones externas."""
+        rows = self.conn.execute(
+            "SELECT * FROM review_syntheses ORDER BY generated_at DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return [self._synthesis_row(row) for row in rows]
+
     def delete_synthesis(self, opportunity_id: str) -> None:
         self.conn.execute("DELETE FROM review_syntheses WHERE opportunity_id = ?", (opportunity_id,))
         self.conn.commit()

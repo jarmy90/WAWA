@@ -72,10 +72,16 @@ class LLMCallRepository:
         return int(row["n"])
 
     def cost_since(self, since_iso: str, *, provider: str | None = None) -> float:
-        """Suma honesta: reported_cost si existe, si no estimated_cost (etiquetado)."""
+        """Total de costes CONOCIDOS (reported si existe, si no estimated).
+
+        Cota inferior honesta: las llamadas con coste desconocido NO se
+        convierten en cero en el agregado; se excluyen y se informan por
+        separado con ``cost_detail_since``.
+        """
         query = (
-            "SELECT COALESCE(SUM(COALESCE(reported_cost, estimated_cost, 0)), 0) AS total "
-            "FROM llm_call_log WHERE created_at >= ?"
+            "SELECT COALESCE(SUM(COALESCE(reported_cost, estimated_cost)), 0) AS total "
+            "FROM llm_call_log WHERE created_at >= ? "
+            "AND (reported_cost IS NOT NULL OR estimated_cost IS NOT NULL)"
         )
         params: list[Any] = [since_iso]
         if provider:
@@ -83,6 +89,44 @@ class LLMCallRepository:
             params.append(provider)
         row = self.conn.execute(query, params).fetchone()
         return float(row["total"] or 0.0)
+
+    def cost_detail_since(self, since_iso: str, *, provider: str | None = None) -> dict[str, Any]:
+        """Desglose honesto de costes: reportado, estimado, cero reales y desconocidos.
+
+        Distingue coste real 0, estimado 0 y coste desconocido (NULL): un
+        coste desconocido nunca se convierte en cero.
+        """
+        query = (
+            "SELECT COUNT(*) AS total_calls, "
+            "SUM(CASE WHEN reported_cost IS NOT NULL THEN 1 ELSE 0 END) AS reported_calls, "
+            "SUM(CASE WHEN reported_cost IS NULL AND estimated_cost IS NOT NULL THEN 1 ELSE 0 END) AS estimated_calls, "
+            "SUM(CASE WHEN reported_cost IS NULL AND estimated_cost IS NULL THEN 1 ELSE 0 END) AS unknown_calls, "
+            "SUM(CASE WHEN COALESCE(reported_cost, estimated_cost) = 0 THEN 1 ELSE 0 END) AS zero_calls, "
+            "COALESCE(SUM(reported_cost), 0) AS reported_total, "
+            "COALESCE(SUM(CASE WHEN reported_cost IS NULL THEN estimated_cost ELSE 0 END), 0) AS estimated_total "
+            "FROM llm_call_log WHERE created_at >= ?"
+        )
+        params: list[Any] = [since_iso]
+        if provider:
+            query += " AND provider = ?"
+            params.append(provider)
+        row = self.conn.execute(query, params).fetchone()
+        reported_calls = int(row["reported_calls"] or 0)
+        estimated_calls = int(row["estimated_calls"] or 0)
+        unknown_calls = int(row["unknown_calls"] or 0)
+        reported_total = float(row["reported_total"] or 0.0) if reported_calls > 0 else None
+        estimated_total = float(row["estimated_total"] or 0.0) if estimated_calls > 0 else None
+        return {
+            "total_calls": int(row["total_calls"] or 0),
+            "reported_calls": reported_calls,
+            "estimated_calls": estimated_calls,
+            "unknown_calls": unknown_calls,
+            "zero_calls": int(row["zero_calls"] or 0),
+            "reported_total": reported_total,
+            "estimated_total": estimated_total,
+            "known_total": float((reported_total or 0.0) + (estimated_total or 0.0)),
+            "complete": unknown_calls == 0,
+        }
 
     def failures_since(self, since_iso: str, *, provider: str | None = None) -> int:
         query = "SELECT COUNT(*) AS n FROM llm_call_log WHERE created_at >= ? AND response_status != 'ok'"
