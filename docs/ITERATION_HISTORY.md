@@ -127,6 +127,38 @@ borrar el historial previo.
 - **Verificación**: paquete 15/15; suite **337 passed**; flujo offline completo
   reproducido (plan → 12 misiones → paquete → RESEARCH_IMPORTED).
 
+## Iteración 018 — OX Alpha Grand Intelligence Sprint (v0.17.0) — 2026-08-26
+
+- **OX Alpha honesto**: verificación real de la puerta (B2): sin slug
+  verificado contra el catálogo y con `OMNIROUTE_ENABLED=false` ⇒ identidad
+  `OX_ALPHA_UNVERIFIED` (nunca se inventa el slug; `auto` no cuenta).
+  Benchmark reproducible (B3): `scripts/benchmark_ox_alpha.py` con rúbrica
+  determinista → veredicto `OX_ALPHA_UNVERIFIED` (no se puntúa sin identidad).
+- **Super-torneo (B4-B7)**: `app/scoring/super_tournament.py` (20 criterios,
+  sin LLM, sin timestamps) + servicio con `decision_log` append-only. Brief
+  completo obligatorio, deduplicación por título normalizado (defecto real
+  corregido: el mismo negocio ganaba 3 veces), máx. 3 ganadoras, 0 válido.
+  Resultado local: **3 candidatas** (benchmarks de tarifas para clínicas
+  dentales / gestorías / placas solares) con `is_not_evidence=true` y
+  `proven_demand=0`.
+- **Plan de investigación (B8)**: `scripts/run_super_tournament.py` genera
+  `deliverables/operacion_super_torneo_2026-08-26/` (resultado + plan portable
+  con 6 misiones Fase 1 por candidata: consultas ES/EN, fuentes primarias,
+  contradicciones, kill conditions). Investigación web inicial real guardada
+  como PROVISIONAL (URL+fecha+fragmento), nunca evidencia en BD.
+- **Autonomous Launch (B10)**: `docs/AUTONOMOUS_LAUNCH.md` con estados
+  `READY_TO_CONNECT_SERVICES` / `READY_TO_LAUNCH` (bloqueado sin autorización
+  única); readiness determinista en `/api/command-center`.
+- **Centro de mando (B11)**: `app/services/command_center.py` +
+  `GET /api/command-center` + `frontend/ops18.js` (panel cyberpunk con
+  código de color y etiquetas REAL/SIMULADO/HIPÓTESIS/MODELO/DESCONOCIDO).
+- **Herramientas (B6)**: `docs/TOOL_ANALYSIS_018.md` (Agent Reach `UNKNOWN`,
+  Reddit/Stripe `BENCHMARK_FIRST`, n8n `REJECT`, SQLite backups/observabilidad
+  `INTEGRATE_NOW`).
+- **Verificación**: suite **367 passed** (337 + 30 nuevos); `node --check`
+  OK en app.js/ops17.js/ops18.js; versión v0.17.0 / build 018-ox-alpha-sprint;
+  PRE_CYCLE detenido; gasto real 0; producción bloqueada por capacidad.
+
 ## Iteración 015 — Ventana prioritaria OX Alpha (v0.14.0) — 2026-08-23
 
 - Puerta determinista `app/core/ox_alpha.py`: identidad OX_ALPHA_UNVERIFIED hasta que el propietario verifique el slug real contra el catálogo de OmniRoute; la ventana expira sola el 2026-08-27; límite diario y recorte de entrada.
@@ -138,3 +170,4 @@ borrar el historial previo.
 - **Iteración 16** · 2026-08-24T16:33:27.296509+00:00 · paquete: `autonomous-business-lab_iteracion-016_2026-08-24.zip.txt` · tamaño: 6804465 bytes · SHA-256 (canónico): `1d32a9f772f76262cb3d4770f7fff3298b7641b5afff6ee21a524f21d6f03d38`
 - **Iteración 16** · 2026-08-24T16:43:01.840024+00:00 · paquete: `autonomous-business-lab_iteracion-016_2026-08-24.zip.txt` · tamaño: 6692081 bytes · SHA-256 (canónico): `1d32a9f772f76262cb3d4770f7fff3298b7641b5afff6ee21a524f21d6f03d38`
 - **Iteración 17** · 2026-08-26T10:28:29.165722+00:00 · paquete: `autonomous-business-lab_iteracion-017_2026-08-26.zip.txt` · tamaño: 6764871 bytes · SHA-256 (canónico): `91d1c229b119d0406c480537aea0fc166f46d42982b56cd73ea0125e10e475d2`
+- **Iteración 18** · 2026-08-26T14:37:16.598823+00:00 · paquete: `autonomous-business-lab_iteracion-018_2026-08-26.zip.txt` · tamaño: 6824166 bytes · SHA-256 (canónico): `d44dccbd229895067b6ba508c7be46613a8cbf6f7d1f03f98298317fffd8388e`

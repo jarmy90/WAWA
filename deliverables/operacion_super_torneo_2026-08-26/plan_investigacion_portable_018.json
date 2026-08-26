@@ -1,0 +1,688 @@
+{
+  "operacion": "super_torneo_018",
+  "fecha": "2026-08-26",
+  "origen": "WAWA iteración 018 — torneo determinista",
+  "advertencia": "Los concept_id de este plan pertenecen a la instalación LOCAL que lo generó. Si se aplica a otra instalación, localizar por título normalizado + territorio + lente + arquetipo (nunca insertar IDs).",
+  "winners": [
+    {
+      "local_concept_id": "3867e04ec3d64a12bed5f1e8f97c6ac8",
+      "title": "Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+      "status": "RESEARCH_PENDING",
+      "super_tournament_score": 77.5,
+      "score_is_priority_not_evidence": true,
+      "brief": {
+        "specific_name": "Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+        "user": "Gerentes de clínicas dentales de 2-5 dentistas.",
+        "buyer": "Gerentes de clínicas dentales de 2-5 dentistas.",
+        "situation": "Las clínicas dentales pequeñas fijan el precio de ortodoncia sin un comparativo de tarifas de su zona y pierden margen o pacientes.",
+        "observable_problem": "Las clínicas dentales pequeñas fijan el precio de ortodoncia sin un comparativo de tarifas de su zona y pierden margen o pacientes.",
+        "current_alternative": "La gestión se hace hoy con plantillas genéricas de internet y tiempo manual del propio negocio.",
+        "economic_or_time_cost": "Horas de preparación no facturables y riesgo de incumplimiento o de fijar precios sin datos.",
+        "concrete_deliverable": "Informe de tarifas por provincia con percentiles para decidir el precio.",
+        "measurable_outcome": "Informe de tarifas por provincia con percentiles para decidir el precio.",
+        "revenue_model": "Pago único por entrega del expediente o informe (30-90 EUR) con revisión incluida.",
+        "expected_price_hypothesis": "Precio hipótesis de 30-90 EUR por entrega; por confirmar con compradores reales.",
+        "first_distribution_channel": "Mensaje directo a 20 negocios concretos del sector identificados por zona (sin spam).",
+        "first_20_buyers_location": "Lista de 20 negocios locales del sector objetivo, a verificar con directorios públicos.",
+        "test_in_48_hours": "Ofrecer la entrega a 3 negocios reales y confirmar si pagarían (no es demanda verificada).",
+        "generic_ai_limitation": "Una IA generalista no conoce los requisitos exactos de cada convocatoria ni entrega un expediente revisado por alguien responsable.",
+        "compounding_asset": "Banco de plantillas y expedientes propios que mejora cada entrega.",
+        "primary_risk": "Que el comprador no perciba urgencia o resuelva con la plantilla gratuita del organismo.",
+        "assumptions": "Hipótesis de comprador, dolor y precio; ninguna verificada todavía.",
+        "prohibited_claims": "No afirmar demanda, no prometer resultados, no citar clientes reales sin su permiso."
+      },
+      "missions_fase1": [
+        {
+          "kind": "DEMAND_REALITY_CHECK",
+          "phase": 1,
+          "ordinal": 1,
+          "objective": "Misión DEMAND_REALITY_CHECK para Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+          "queries_es": [
+            "\"{problema}\" foro OR reddit",
+            "\"{síntoma}\" quejas \"{sector}\"",
+            "\"{dolor}\" sin solución 2026"
+          ],
+          "queries_en": [
+            "\"{problem}\" forum OR reddit complaints",
+            "\"{pain point}\" small business \"{sector}\"",
+            "who pays to solve \"{problem}\""
+          ],
+          "primary_sources": [
+            "foros sectoriales",
+            "grupos de colegios profesionales",
+            "reviews de la alternativa actual"
+          ],
+          "contradictions_to_seek": [
+            "la alternativa actual funciona bien",
+            "el problema no aparece en ninguna fuente primaria"
+          ],
+          "kill_condition": "0 manifestaciones independientes con URL+fecha+fragmento tras 3 consultas distintas.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "BUYER_BUDGET_CHECK",
+          "phase": 1,
+          "ordinal": 2,
+          "objective": "Misión BUYER_BUDGET_CHECK para Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+          "queries_es": [
+            "\"{comprador}\" presupuesto \"{servicio}\"",
+            "cuánto cobran por \"{servicio}\" \"{sector}\"",
+            "honorarios \"{comprador}\""
+          ],
+          "queries_en": [
+            "\"{buyer}\" budget \"{service}\"",
+            "how much do \"{buyer}\" pay for \"{service}\"",
+            "pricing benchmark \"{sector}\""
+          ],
+          "primary_sources": [
+            "tarifarios públicos",
+            "anuncios de servicios",
+            "encuestas sectoriales"
+          ],
+          "contradictions_to_seek": [
+            "el pago sale de un presupuesto inexistente",
+            "el servicio se paga con dinero de la casa del profesional"
+          ],
+          "kill_condition": "Ningún comprador real con presupuesto identificable; solo usuarios sin dinero.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "CURRENT_ALTERNATIVE_CHECK",
+          "phase": 1,
+          "ordinal": 3,
+          "objective": "Misión CURRENT_ALTERNATIVE_CHECK para Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+          "queries_es": [
+            "alternativas a \"{servicio}\" \"{sector}\"",
+            "cómo se hace hoy \"{tarea}\" sin herramienta",
+            "plantillas \"{tarea}\" gratis"
+          ],
+          "queries_en": [
+            "alternative to \"{service}\" \"{sector}\"",
+            "how do people do \"{task}\" manually today",
+            "free template \"{task}\""
+          ],
+          "primary_sources": [
+            "herramientas existentes",
+            "plantillas",
+            "profesionales que documentan su método"
+          ],
+          "contradictions_to_seek": [
+            "ya existe una herramienta gratis que resuelve el 80%",
+            "el método manual es rápido y barato"
+          ],
+          "kill_condition": "Existe alternativa gratuita que cubre el caso principal sin fricción.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "DISTRIBUTION_ACCESS_CHECK",
+          "phase": 1,
+          "ordinal": 4,
+          "objective": "Misión DISTRIBUTION_ACCESS_CHECK para Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+          "queries_es": [
+            "canal para llegar a \"{comprador}\"",
+            "asociaciones de \"{comprador}\" España",
+            "colegios profesionales \"{sector}\""
+          ],
+          "queries_en": [
+            "where do \"{buyer}\" gather online",
+            "associations \"{buyer}\" \"{country}\"",
+            "communities \"{sector}\" professionals"
+          ],
+          "primary_sources": [
+            "colegios/asociaciones",
+            "grupos de LinkedIn/WhatsApp",
+            "eventos sectoriales"
+          ],
+          "contradictions_to_seek": [
+            "el comprador no está accesible sin pago/permiso",
+            "no existe canal de bajo coste"
+          ],
+          "kill_condition": "No hay forma de llegar a 20 compradores sin coste relevante o spam.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "COMPETITOR_EQUIVALENT_SEARCH",
+          "phase": 1,
+          "ordinal": 5,
+          "objective": "Misión COMPETITOR_EQUIVALENT_SEARCH para Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+          "queries_es": [
+            "competidores \"{servicio}\" \"{sector}\"",
+            "empresas que hacen \"{servicio}\" para \"{comprador}\"",
+            "precios \"{servicio}\" \"{sector}\""
+          ],
+          "queries_en": [
+            "competitors \"{service}\" \"{sector}\"",
+            "companies offering \"{service}\" to \"{buyer}\"",
+            "pricing \"{service}\""
+          ],
+          "primary_sources": [
+            "competidores directos",
+            "marketplaces de servicios",
+            "directorios"
+          ],
+          "contradictions_to_seek": [
+            "un competidor dominante con foso",
+            "el mercado ya está saturado de ofertas idénticas"
+          ],
+          "kill_condition": "Existen 3+ competidores directos con oferta equivalente y tracción.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "GENERAL_AI_SUBSTITUTION_CHECK",
+          "phase": 1,
+          "ordinal": 6,
+          "objective": "Misión GENERAL_AI_SUBSTITUTION_CHECK para Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+          "queries_es": [
+            "ChatGPT para \"{tarea}\" \"{sector}\"",
+            "hacer \"{tarea}\" con IA gratis",
+            "prompt para \"{tarea}\""
+          ],
+          "queries_en": [
+            "ChatGPT \"{task}\" \"{sector}\" workflow",
+            "can AI do \"{task}\" for free",
+            "automate \"{task}\" prompt"
+          ],
+          "primary_sources": [
+            "pruebas reales de prompt",
+            "documentación de integraciones",
+            "foros de usuarios de IA"
+          ],
+          "contradictions_to_seek": [
+            "un prompt resuelve el 80% sin workflow",
+            "no hay parte que requiera memoria/integración"
+          ],
+          "kill_condition": "Una IA generalista resuelve el caso principal con un único prompt.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        }
+      ]
+    },
+    {
+      "local_concept_id": "021c85d9c1e948f596d17249b6d5f293",
+      "title": "Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+      "status": "RESEARCH_PENDING",
+      "super_tournament_score": 72.5,
+      "score_is_priority_not_evidence": true,
+      "brief": {
+        "specific_name": "Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+        "user": "Titulares de gestorías administrativas de 1-5 empleados.",
+        "buyer": "Titulares de gestorías administrativas de 1-5 empleados.",
+        "situation": "Las gestorías pequeñas fijan la cuota mensual de clientes sin saber el rango de honorarios de su provincia.",
+        "observable_problem": "Las gestorías pequeñas fijan la cuota mensual de clientes sin saber el rango de honorarios de su provincia.",
+        "current_alternative": "La gestión se hace hoy con plantillas genéricas de internet y tiempo manual del propio negocio.",
+        "economic_or_time_cost": "Horas de preparación no facturables y riesgo de incumplimiento o de fijar precios sin datos.",
+        "concrete_deliverable": "Rango de honorarios por provincia y tipo de cliente para posicionar la cuota.",
+        "measurable_outcome": "Rango de honorarios por provincia y tipo de cliente para posicionar la cuota.",
+        "revenue_model": "Pago único por entrega del expediente o informe (30-90 EUR) con revisión incluida.",
+        "expected_price_hypothesis": "Precio hipótesis de 30-90 EUR por entrega; por confirmar con compradores reales.",
+        "first_distribution_channel": "Mensaje directo a 20 negocios concretos del sector identificados por zona (sin spam).",
+        "first_20_buyers_location": "Lista de 20 negocios locales del sector objetivo, a verificar con directorios públicos.",
+        "test_in_48_hours": "Ofrecer la entrega a 3 negocios reales y confirmar si pagarían (no es demanda verificada).",
+        "generic_ai_limitation": "Una IA generalista no conoce los requisitos exactos de cada convocatoria ni entrega un expediente revisado por alguien responsable.",
+        "compounding_asset": "Banco de plantillas y expedientes propios que mejora cada entrega.",
+        "primary_risk": "Que el comprador no perciba urgencia o resuelva con la plantilla gratuita del organismo.",
+        "assumptions": "Hipótesis de comprador, dolor y precio; ninguna verificada todavía.",
+        "prohibited_claims": "No afirmar demanda, no prometer resultados, no citar clientes reales sin su permiso."
+      },
+      "missions_fase1": [
+        {
+          "kind": "DEMAND_REALITY_CHECK",
+          "phase": 1,
+          "ordinal": 1,
+          "objective": "Misión DEMAND_REALITY_CHECK para Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+          "queries_es": [
+            "\"{problema}\" foro OR reddit",
+            "\"{síntoma}\" quejas \"{sector}\"",
+            "\"{dolor}\" sin solución 2026"
+          ],
+          "queries_en": [
+            "\"{problem}\" forum OR reddit complaints",
+            "\"{pain point}\" small business \"{sector}\"",
+            "who pays to solve \"{problem}\""
+          ],
+          "primary_sources": [
+            "foros sectoriales",
+            "grupos de colegios profesionales",
+            "reviews de la alternativa actual"
+          ],
+          "contradictions_to_seek": [
+            "la alternativa actual funciona bien",
+            "el problema no aparece en ninguna fuente primaria"
+          ],
+          "kill_condition": "0 manifestaciones independientes con URL+fecha+fragmento tras 3 consultas distintas.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "BUYER_BUDGET_CHECK",
+          "phase": 1,
+          "ordinal": 2,
+          "objective": "Misión BUYER_BUDGET_CHECK para Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+          "queries_es": [
+            "\"{comprador}\" presupuesto \"{servicio}\"",
+            "cuánto cobran por \"{servicio}\" \"{sector}\"",
+            "honorarios \"{comprador}\""
+          ],
+          "queries_en": [
+            "\"{buyer}\" budget \"{service}\"",
+            "how much do \"{buyer}\" pay for \"{service}\"",
+            "pricing benchmark \"{sector}\""
+          ],
+          "primary_sources": [
+            "tarifarios públicos",
+            "anuncios de servicios",
+            "encuestas sectoriales"
+          ],
+          "contradictions_to_seek": [
+            "el pago sale de un presupuesto inexistente",
+            "el servicio se paga con dinero de la casa del profesional"
+          ],
+          "kill_condition": "Ningún comprador real con presupuesto identificable; solo usuarios sin dinero.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "CURRENT_ALTERNATIVE_CHECK",
+          "phase": 1,
+          "ordinal": 3,
+          "objective": "Misión CURRENT_ALTERNATIVE_CHECK para Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+          "queries_es": [
+            "alternativas a \"{servicio}\" \"{sector}\"",
+            "cómo se hace hoy \"{tarea}\" sin herramienta",
+            "plantillas \"{tarea}\" gratis"
+          ],
+          "queries_en": [
+            "alternative to \"{service}\" \"{sector}\"",
+            "how do people do \"{task}\" manually today",
+            "free template \"{task}\""
+          ],
+          "primary_sources": [
+            "herramientas existentes",
+            "plantillas",
+            "profesionales que documentan su método"
+          ],
+          "contradictions_to_seek": [
+            "ya existe una herramienta gratis que resuelve el 80%",
+            "el método manual es rápido y barato"
+          ],
+          "kill_condition": "Existe alternativa gratuita que cubre el caso principal sin fricción.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "DISTRIBUTION_ACCESS_CHECK",
+          "phase": 1,
+          "ordinal": 4,
+          "objective": "Misión DISTRIBUTION_ACCESS_CHECK para Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+          "queries_es": [
+            "canal para llegar a \"{comprador}\"",
+            "asociaciones de \"{comprador}\" España",
+            "colegios profesionales \"{sector}\""
+          ],
+          "queries_en": [
+            "where do \"{buyer}\" gather online",
+            "associations \"{buyer}\" \"{country}\"",
+            "communities \"{sector}\" professionals"
+          ],
+          "primary_sources": [
+            "colegios/asociaciones",
+            "grupos de LinkedIn/WhatsApp",
+            "eventos sectoriales"
+          ],
+          "contradictions_to_seek": [
+            "el comprador no está accesible sin pago/permiso",
+            "no existe canal de bajo coste"
+          ],
+          "kill_condition": "No hay forma de llegar a 20 compradores sin coste relevante o spam.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "COMPETITOR_EQUIVALENT_SEARCH",
+          "phase": 1,
+          "ordinal": 5,
+          "objective": "Misión COMPETITOR_EQUIVALENT_SEARCH para Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+          "queries_es": [
+            "competidores \"{servicio}\" \"{sector}\"",
+            "empresas que hacen \"{servicio}\" para \"{comprador}\"",
+            "precios \"{servicio}\" \"{sector}\""
+          ],
+          "queries_en": [
+            "competitors \"{service}\" \"{sector}\"",
+            "companies offering \"{service}\" to \"{buyer}\"",
+            "pricing \"{service}\""
+          ],
+          "primary_sources": [
+            "competidores directos",
+            "marketplaces de servicios",
+            "directorios"
+          ],
+          "contradictions_to_seek": [
+            "un competidor dominante con foso",
+            "el mercado ya está saturado de ofertas idénticas"
+          ],
+          "kill_condition": "Existen 3+ competidores directos con oferta equivalente y tracción.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "GENERAL_AI_SUBSTITUTION_CHECK",
+          "phase": 1,
+          "ordinal": 6,
+          "objective": "Misión GENERAL_AI_SUBSTITUTION_CHECK para Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+          "queries_es": [
+            "ChatGPT para \"{tarea}\" \"{sector}\"",
+            "hacer \"{tarea}\" con IA gratis",
+            "prompt para \"{tarea}\""
+          ],
+          "queries_en": [
+            "ChatGPT \"{task}\" \"{sector}\" workflow",
+            "can AI do \"{task}\" for free",
+            "automate \"{task}\" prompt"
+          ],
+          "primary_sources": [
+            "pruebas reales de prompt",
+            "documentación de integraciones",
+            "foros de usuarios de IA"
+          ],
+          "contradictions_to_seek": [
+            "un prompt resuelve el 80% sin workflow",
+            "no hay parte que requiera memoria/integración"
+          ],
+          "kill_condition": "Una IA generalista resuelve el caso principal con un único prompt.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        }
+      ]
+    },
+    {
+      "local_concept_id": "e01af20c092b429a9195045feeb8edc8",
+      "title": "Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+      "status": "RESEARCH_PENDING",
+      "super_tournament_score": 72.5,
+      "score_is_priority_not_evidence": true,
+      "brief": {
+        "specific_name": "Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+        "user": "Instaladores de energía solar de 3-10 empleados.",
+        "buyer": "Instaladores de energía solar de 3-10 empleados.",
+        "situation": "Los instaladores de placas solares pequeños presupuestan sin un comparativo de costes por tipo de tejado y tipo de instalación.",
+        "observable_problem": "Los instaladores de placas solares pequeños presupuestan sin un comparativo de costes por tipo de tejado y tipo de instalación.",
+        "current_alternative": "La gestión se hace hoy con plantillas genéricas de internet y tiempo manual del propio negocio.",
+        "economic_or_time_cost": "Horas de preparación no facturables y riesgo de incumplimiento o de fijar precios sin datos.",
+        "concrete_deliverable": "Rango de costes por tipo de instalación para ajustar presupuestos.",
+        "measurable_outcome": "Rango de costes por tipo de instalación para ajustar presupuestos.",
+        "revenue_model": "Pago único por entrega del expediente o informe (30-90 EUR) con revisión incluida.",
+        "expected_price_hypothesis": "Precio hipótesis de 30-90 EUR por entrega; por confirmar con compradores reales.",
+        "first_distribution_channel": "Mensaje directo a 20 negocios concretos del sector identificados por zona (sin spam).",
+        "first_20_buyers_location": "Lista de 20 negocios locales del sector objetivo, a verificar con directorios públicos.",
+        "test_in_48_hours": "Ofrecer la entrega a 3 negocios reales y confirmar si pagarían (no es demanda verificada).",
+        "generic_ai_limitation": "Una IA generalista no conoce los requisitos exactos de cada convocatoria ni entrega un expediente revisado por alguien responsable.",
+        "compounding_asset": "Banco de plantillas y expedientes propios que mejora cada entrega.",
+        "primary_risk": "Que el comprador no perciba urgencia o resuelva con la plantilla gratuita del organismo.",
+        "assumptions": "Hipótesis de comprador, dolor y precio; ninguna verificada todavía.",
+        "prohibited_claims": "No afirmar demanda, no prometer resultados, no citar clientes reales sin su permiso."
+      },
+      "missions_fase1": [
+        {
+          "kind": "DEMAND_REALITY_CHECK",
+          "phase": 1,
+          "ordinal": 1,
+          "objective": "Misión DEMAND_REALITY_CHECK para Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+          "queries_es": [
+            "\"{problema}\" foro OR reddit",
+            "\"{síntoma}\" quejas \"{sector}\"",
+            "\"{dolor}\" sin solución 2026"
+          ],
+          "queries_en": [
+            "\"{problem}\" forum OR reddit complaints",
+            "\"{pain point}\" small business \"{sector}\"",
+            "who pays to solve \"{problem}\""
+          ],
+          "primary_sources": [
+            "foros sectoriales",
+            "grupos de colegios profesionales",
+            "reviews de la alternativa actual"
+          ],
+          "contradictions_to_seek": [
+            "la alternativa actual funciona bien",
+            "el problema no aparece en ninguna fuente primaria"
+          ],
+          "kill_condition": "0 manifestaciones independientes con URL+fecha+fragmento tras 3 consultas distintas.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "BUYER_BUDGET_CHECK",
+          "phase": 1,
+          "ordinal": 2,
+          "objective": "Misión BUYER_BUDGET_CHECK para Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+          "queries_es": [
+            "\"{comprador}\" presupuesto \"{servicio}\"",
+            "cuánto cobran por \"{servicio}\" \"{sector}\"",
+            "honorarios \"{comprador}\""
+          ],
+          "queries_en": [
+            "\"{buyer}\" budget \"{service}\"",
+            "how much do \"{buyer}\" pay for \"{service}\"",
+            "pricing benchmark \"{sector}\""
+          ],
+          "primary_sources": [
+            "tarifarios públicos",
+            "anuncios de servicios",
+            "encuestas sectoriales"
+          ],
+          "contradictions_to_seek": [
+            "el pago sale de un presupuesto inexistente",
+            "el servicio se paga con dinero de la casa del profesional"
+          ],
+          "kill_condition": "Ningún comprador real con presupuesto identificable; solo usuarios sin dinero.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "CURRENT_ALTERNATIVE_CHECK",
+          "phase": 1,
+          "ordinal": 3,
+          "objective": "Misión CURRENT_ALTERNATIVE_CHECK para Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+          "queries_es": [
+            "alternativas a \"{servicio}\" \"{sector}\"",
+            "cómo se hace hoy \"{tarea}\" sin herramienta",
+            "plantillas \"{tarea}\" gratis"
+          ],
+          "queries_en": [
+            "alternative to \"{service}\" \"{sector}\"",
+            "how do people do \"{task}\" manually today",
+            "free template \"{task}\""
+          ],
+          "primary_sources": [
+            "herramientas existentes",
+            "plantillas",
+            "profesionales que documentan su método"
+          ],
+          "contradictions_to_seek": [
+            "ya existe una herramienta gratis que resuelve el 80%",
+            "el método manual es rápido y barato"
+          ],
+          "kill_condition": "Existe alternativa gratuita que cubre el caso principal sin fricción.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "DISTRIBUTION_ACCESS_CHECK",
+          "phase": 1,
+          "ordinal": 4,
+          "objective": "Misión DISTRIBUTION_ACCESS_CHECK para Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+          "queries_es": [
+            "canal para llegar a \"{comprador}\"",
+            "asociaciones de \"{comprador}\" España",
+            "colegios profesionales \"{sector}\""
+          ],
+          "queries_en": [
+            "where do \"{buyer}\" gather online",
+            "associations \"{buyer}\" \"{country}\"",
+            "communities \"{sector}\" professionals"
+          ],
+          "primary_sources": [
+            "colegios/asociaciones",
+            "grupos de LinkedIn/WhatsApp",
+            "eventos sectoriales"
+          ],
+          "contradictions_to_seek": [
+            "el comprador no está accesible sin pago/permiso",
+            "no existe canal de bajo coste"
+          ],
+          "kill_condition": "No hay forma de llegar a 20 compradores sin coste relevante o spam.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "COMPETITOR_EQUIVALENT_SEARCH",
+          "phase": 1,
+          "ordinal": 5,
+          "objective": "Misión COMPETITOR_EQUIVALENT_SEARCH para Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+          "queries_es": [
+            "competidores \"{servicio}\" \"{sector}\"",
+            "empresas que hacen \"{servicio}\" para \"{comprador}\"",
+            "precios \"{servicio}\" \"{sector}\""
+          ],
+          "queries_en": [
+            "competitors \"{service}\" \"{sector}\"",
+            "companies offering \"{service}\" to \"{buyer}\"",
+            "pricing \"{service}\""
+          ],
+          "primary_sources": [
+            "competidores directos",
+            "marketplaces de servicios",
+            "directorios"
+          ],
+          "contradictions_to_seek": [
+            "un competidor dominante con foso",
+            "el mercado ya está saturado de ofertas idénticas"
+          ],
+          "kill_condition": "Existen 3+ competidores directos con oferta equivalente y tracción.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        },
+        {
+          "kind": "GENERAL_AI_SUBSTITUTION_CHECK",
+          "phase": 1,
+          "ordinal": 6,
+          "objective": "Misión GENERAL_AI_SUBSTITUTION_CHECK para Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+          "queries_es": [
+            "ChatGPT para \"{tarea}\" \"{sector}\"",
+            "hacer \"{tarea}\" con IA gratis",
+            "prompt para \"{tarea}\""
+          ],
+          "queries_en": [
+            "ChatGPT \"{task}\" \"{sector}\" workflow",
+            "can AI do \"{task}\" for free",
+            "automate \"{task}\" prompt"
+          ],
+          "primary_sources": [
+            "pruebas reales de prompt",
+            "documentación de integraciones",
+            "foros de usuarios de IA"
+          ],
+          "contradictions_to_seek": [
+            "un prompt resuelve el 80% sin workflow",
+            "no hay parte que requiera memoria/integración"
+          ],
+          "kill_condition": "Una IA generalista resuelve el caso principal con un único prompt.",
+          "no_invention_rule": "NO inventar demanda, precios, competidores ni estadísticas. Sin dato ⇒ null y DESCONOCIDO.",
+          "evidence_requires": "URL + fecha de consulta + fragmento exacto."
+        }
+      ]
+    }
+  ],
+  "briefs": [
+    {
+      "concept_id": "3867e04ec3d64a12bed5f1e8f97c6ac8",
+      "direccion_original": "Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+      "territorio": "hard_to_verify_info",
+      "lente": "ENTERTAINMENT_PLUS_UTILITY",
+      "arquetipo": "PROSUMER_PRODUCT",
+      "brief": {
+        "specific_name": "Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+        "user": "Gerentes de clínicas dentales de 2-5 dentistas.",
+        "buyer": "Gerentes de clínicas dentales de 2-5 dentistas.",
+        "situation": "Las clínicas dentales pequeñas fijan el precio de ortodoncia sin un comparativo de tarifas de su zona y pierden margen o pacientes.",
+        "observable_problem": "Las clínicas dentales pequeñas fijan el precio de ortodoncia sin un comparativo de tarifas de su zona y pierden margen o pacientes.",
+        "current_alternative": "La gestión se hace hoy con plantillas genéricas de internet y tiempo manual del propio negocio.",
+        "economic_or_time_cost": "Horas de preparación no facturables y riesgo de incumplimiento o de fijar precios sin datos.",
+        "concrete_deliverable": "Informe de tarifas por provincia con percentiles para decidir el precio.",
+        "measurable_outcome": "Informe de tarifas por provincia con percentiles para decidir el precio.",
+        "revenue_model": "Pago único por entrega del expediente o informe (30-90 EUR) con revisión incluida.",
+        "expected_price_hypothesis": "Precio hipótesis de 30-90 EUR por entrega; por confirmar con compradores reales.",
+        "first_distribution_channel": "Mensaje directo a 20 negocios concretos del sector identificados por zona (sin spam).",
+        "first_20_buyers_location": "Lista de 20 negocios locales del sector objetivo, a verificar con directorios públicos.",
+        "test_in_48_hours": "Ofrecer la entrega a 3 negocios reales y confirmar si pagarían (no es demanda verificada).",
+        "generic_ai_limitation": "Una IA generalista no conoce los requisitos exactos de cada convocatoria ni entrega un expediente revisado por alguien responsable.",
+        "compounding_asset": "Banco de plantillas y expedientes propios que mejora cada entrega.",
+        "primary_risk": "Que el comprador no perciba urgencia o resuelva con la plantilla gratuita del organismo.",
+        "assumptions": "Hipótesis de comprador, dolor y precio; ninguna verificada todavía.",
+        "prohibited_claims": "No afirmar demanda, no prometer resultados, no citar clientes reales sin su permiso."
+      }
+    },
+    {
+      "concept_id": "021c85d9c1e948f596d17249b6d5f293",
+      "direccion_original": "Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+      "territorio": "hard_to_verify_info",
+      "lente": "ENTERTAINMENT_PLUS_UTILITY",
+      "arquetipo": "PROSUMER_PRODUCT",
+      "brief": {
+        "specific_name": "Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+        "user": "Titulares de gestorías administrativas de 1-5 empleados.",
+        "buyer": "Titulares de gestorías administrativas de 1-5 empleados.",
+        "situation": "Las gestorías pequeñas fijan la cuota mensual de clientes sin saber el rango de honorarios de su provincia.",
+        "observable_problem": "Las gestorías pequeñas fijan la cuota mensual de clientes sin saber el rango de honorarios de su provincia.",
+        "current_alternative": "La gestión se hace hoy con plantillas genéricas de internet y tiempo manual del propio negocio.",
+        "economic_or_time_cost": "Horas de preparación no facturables y riesgo de incumplimiento o de fijar precios sin datos.",
+        "concrete_deliverable": "Rango de honorarios por provincia y tipo de cliente para posicionar la cuota.",
+        "measurable_outcome": "Rango de honorarios por provincia y tipo de cliente para posicionar la cuota.",
+        "revenue_model": "Pago único por entrega del expediente o informe (30-90 EUR) con revisión incluida.",
+        "expected_price_hypothesis": "Precio hipótesis de 30-90 EUR por entrega; por confirmar con compradores reales.",
+        "first_distribution_channel": "Mensaje directo a 20 negocios concretos del sector identificados por zona (sin spam).",
+        "first_20_buyers_location": "Lista de 20 negocios locales del sector objetivo, a verificar con directorios públicos.",
+        "test_in_48_hours": "Ofrecer la entrega a 3 negocios reales y confirmar si pagarían (no es demanda verificada).",
+        "generic_ai_limitation": "Una IA generalista no conoce los requisitos exactos de cada convocatoria ni entrega un expediente revisado por alguien responsable.",
+        "compounding_asset": "Banco de plantillas y expedientes propios que mejora cada entrega.",
+        "primary_risk": "Que el comprador no perciba urgencia o resuelva con la plantilla gratuita del organismo.",
+        "assumptions": "Hipótesis de comprador, dolor y precio; ninguna verificada todavía.",
+        "prohibited_claims": "No afirmar demanda, no prometer resultados, no citar clientes reales sin su permiso."
+      }
+    },
+    {
+      "concept_id": "e01af20c092b429a9195045feeb8edc8",
+      "direccion_original": "Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+      "territorio": "hard_to_verify_info",
+      "lente": "ENTERTAINMENT_PLUS_UTILITY",
+      "arquetipo": "PROSUMER_PRODUCT",
+      "brief": {
+        "specific_name": "Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+        "user": "Instaladores de energía solar de 3-10 empleados.",
+        "buyer": "Instaladores de energía solar de 3-10 empleados.",
+        "situation": "Los instaladores de placas solares pequeños presupuestan sin un comparativo de costes por tipo de tejado y tipo de instalación.",
+        "observable_problem": "Los instaladores de placas solares pequeños presupuestan sin un comparativo de costes por tipo de tejado y tipo de instalación.",
+        "current_alternative": "La gestión se hace hoy con plantillas genéricas de internet y tiempo manual del propio negocio.",
+        "economic_or_time_cost": "Horas de preparación no facturables y riesgo de incumplimiento o de fijar precios sin datos.",
+        "concrete_deliverable": "Rango de costes por tipo de instalación para ajustar presupuestos.",
+        "measurable_outcome": "Rango de costes por tipo de instalación para ajustar presupuestos.",
+        "revenue_model": "Pago único por entrega del expediente o informe (30-90 EUR) con revisión incluida.",
+        "expected_price_hypothesis": "Precio hipótesis de 30-90 EUR por entrega; por confirmar con compradores reales.",
+        "first_distribution_channel": "Mensaje directo a 20 negocios concretos del sector identificados por zona (sin spam).",
+        "first_20_buyers_location": "Lista de 20 negocios locales del sector objetivo, a verificar con directorios públicos.",
+        "test_in_48_hours": "Ofrecer la entrega a 3 negocios reales y confirmar si pagarían (no es demanda verificada).",
+        "generic_ai_limitation": "Una IA generalista no conoce los requisitos exactos de cada convocatoria ni entrega un expediente revisado por alguien responsable.",
+        "compounding_asset": "Banco de plantillas y expedientes propios que mejora cada entrega.",
+        "primary_risk": "Que el comprador no perciba urgencia o resuelva con la plantilla gratuita del organismo.",
+        "assumptions": "Hipótesis de comprador, dolor y precio; ninguna verificada todavía.",
+        "prohibited_claims": "No afirmar demanda, no prometer resultados, no citar clientes reales sin su permiso."
+      }
+    }
+  ]
+}

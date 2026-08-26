@@ -15,6 +15,7 @@ from app.repositories import Repos, build_repos, init_db, connect
 from app.repositories.costs import CostRepository
 from app.services.budget import BudgetGuard
 from app.services.campaign import CampaignService
+from app.services.command_center import CommandCenterService
 from app.services.cycle import CycleEvaluator
 from app.services.discovery import DiscoveryService
 from app.services.deep_reasoning import DeepReasoningService
@@ -24,6 +25,7 @@ from app.services.import_export import ExportService, ImportService
 from app.services.opportunities import OpportunityService
 from app.services.orchestrator import CampaignOrchestrator
 from app.services.reviews import ReviewService
+from app.services.super_tournament import SuperTournamentService
 from app.workflows.pipeline import PipelineService
 
 
@@ -46,6 +48,8 @@ class AppContainer:
     cycle: CycleEvaluator
     orchestrator: CampaignOrchestrator
     deep_reasoning: DeepReasoningService
+    super_tournament: SuperTournamentService
+    command_center: CommandCenterService
 
     def close(self) -> None:
         try:
@@ -78,6 +82,17 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     )
     cycle = CycleEvaluator(settings, conn, repos=repos, orchestrator=orchestrator)
     deep_reasoning = DeepReasoningService(settings, providers, repos.llm_calls)
+    super_tournament = SuperTournamentService(settings, repos, repos.decision_log)
+    command_center = CommandCenterService(
+        AppContainer(
+            settings=settings, conn=conn, repos=repos, engine=engine, budget=budget,
+            economy=economy, providers=providers, opportunities=opportunities,
+            pipeline=pipeline, discovery=discovery, exports=exports, imports=imports,
+            reviews=reviews, campaigns=campaigns, cycle=cycle, orchestrator=orchestrator,
+            deep_reasoning=deep_reasoning, super_tournament=super_tournament,
+            command_center=None,  # type: ignore[arg-type]
+        )
+    )
     return AppContainer(
         settings=settings,
         conn=conn,
@@ -96,4 +111,6 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         cycle=cycle,
         orchestrator=orchestrator,
         deep_reasoning=deep_reasoning,
+        super_tournament=super_tournament,
+        command_center=command_center,
     )

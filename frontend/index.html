@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-wawa-version="0.16.0" data-iteration="017" data-build="017-reformulation-import">
+<html lang="es" data-wawa-version="0.17.0" data-iteration="018" data-build="018-ox-alpha-sprint">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -20,7 +20,7 @@
         </div>
       </div>
       <div class="topbar-right">
-        <span id="wawa-version" class="chip chip-neutral" title="Versión de esta interfaz">v0.16.0</span>
+        <span id="wawa-version" class="chip chip-neutral" title="Versión de esta interfaz">v0.17.0</span>
         <div id="budget-chip" class="chip chip-neutral" title="Estado del BudgetGuard">—</div>
       </div>
     </header>
@@ -28,8 +28,8 @@
     <!-- Diagnóstico visible (iteración 012): versiones y estado de JS. -->
     <div class="diag" id="diag">
       Backend: <span id="diag-backend">—</span>
-      · Frontend: <span id="diag-frontend">v0.16.0</span>
-      · Iteración: <span id="diag-iter">017</span>
+      · Frontend: <span id="diag-frontend">v0.17.0</span>
+      · Iteración: <span id="diag-iter">018</span>
       · JavaScript: <span id="diag-js">cargando…</span>
       · Paquete: <span id="diag-package">014-e2e-flow</span>
     </div>
@@ -44,6 +44,7 @@
       <a href="#experiment" data-view="experiment" class="nav-link">Experimento</a>
       <a href="#economy" data-view="economy" class="nav-link">Economía</a>
       <a href="#activity" data-view="activity" class="nav-link">Actividad</a>
+      <a href="#command" data-view="command" class="nav-link">Centro de mando <span id="cmd-badge" class="badge">0</span></a>
       <a href="#config" data-view="config" class="nav-link">Configuración <span id="count-badge" class="badge">0</span></a>
     </nav>
 
@@ -196,6 +197,20 @@
           </div>
         </div>
         <div id="engine-feed" class="feed card" style="margin-top:10px">—</div>
+      </section>
+
+      <!-- ======================= CENTRO DE MANDO (iteración 018) ======================= -->
+      <section id="view-command" class="view hidden">
+        <div class="view-head">
+          <h2>Centro de mando <span class="tag tag-unverified">datos reales · sin cifras inventadas</span></h2>
+          <div class="view-actions">
+            <button id="btn-cmd-refresh" class="btn btn-ghost btn-sm">Refrescar</button>
+            <button id="btn-cmd-fullscreen" class="btn btn-ghost btn-sm">Pantalla completa</button>
+          </div>
+        </div>
+        <p class="hint">Snapshot agregado del sistema completo. <strong>Color de código:</strong> <span class="c-cyan">■</span> trabajando · <span class="c-green">■</span> confirmado · <span class="c-amber">■</span> hipótesis/desconocido · <span class="c-violet">■</span> razonamiento de modelo · <span class="c-red">■</span> bloqueo · <span class="c-white">■</span> decisión determinista. Sin dato ⇒ <strong>DESCONOCIDO / NO CONECTADO / SIN DATOS / SIMULACIÓN</strong>, nunca ceros falsos.</p>
+        <div id="command-grid" class="command-grid"><p class="hint">Cargando centro de mando…</p></div>
+        <div id="command-detail" class="command-detail hidden"></div>
       </section>
 
       <!-- ======================= CONFIGURACIÓN ======================= -->
@@ -351,7 +366,8 @@
       </div>
     </noscript>
 
-    <script src="/app.js?v=0170"></script>
-    <script src="/ops17.js?v=0170"></script>
+    <script src="/app.js?v=0180"></script>
+    <script src="/ops17.js?v=0180"></script>
+    <script src="/ops18.js?v=0180"></script>
   </body>
 </html>

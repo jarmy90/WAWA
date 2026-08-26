@@ -1,0 +1,509 @@
+{
+  "ok": true,
+  "campaign_id": "e97858e1417d4d2682c44a7974da0523",
+  "campaign_title": "PRIMERA CAMPAÑA REAL 001",
+  "winners": [
+    {
+      "concept_id": "3867e04ec3d64a12bed5f1e8f97c6ac8",
+      "title": "Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+      "status": "RESEARCH_PENDING",
+      "super_tournament_score": 77.5,
+      "criteria_detail": [
+        {
+          "criterion": "pain_quantified",
+          "label": "Dolor económico observable y cuantificado",
+          "score": 1,
+          "max": 2,
+          "reason": "Dolor poco cuantificado"
+        },
+        {
+          "criterion": "buyer_with_budget",
+          "label": "Comprador específico con presupuesto",
+          "score": 2,
+          "max": 2,
+          "reason": "Comprador identificable"
+        },
+        {
+          "criterion": "urgency_or_event",
+          "label": "Urgencia o evento de compra",
+          "score": 0,
+          "max": 2,
+          "reason": "Sin urgencia detectable"
+        },
+        {
+          "criterion": "first_20_access",
+          "label": "Acceso a los primeros 20 compradores",
+          "score": 2,
+          "max": 2,
+          "reason": "Ubicación concreta de los primeros compradores"
+        },
+        {
+          "criterion": "valid_48h",
+          "label": "Validable en 48 horas",
+          "score": 0,
+          "max": 2,
+          "reason": "Test 48 h no definido o costoso"
+        },
+        {
+          "criterion": "payment_10_days",
+          "label": "Primer pago posible en ≤10 días",
+          "score": 2,
+          "max": 2,
+          "reason": "Cobrable directamente con precio hipotético"
+        },
+        {
+          "criterion": "low_launch_cost",
+          "label": "Coste de lanzamiento bajo",
+          "score": 2,
+          "max": 2,
+          "reason": "Entregable ligero tipo documento/servicio"
+        },
+        {
+          "criterion": "concierge_delivery",
+          "label": "Entrega inicial concierge posible",
+          "score": 2,
+          "max": 2,
+          "reason": "Entregable prestable manualmente"
+        },
+        {
+          "criterion": "automation_path",
+          "label": "Camino claro a automatización",
+          "score": 2,
+          "max": 2,
+          "reason": "Mecanismo plantillable/automatizable"
+        },
+        {
+          "criterion": "ai_resistance",
+          "label": "Resistencia a IA generalista",
+          "score": 2,
+          "max": 2,
+          "reason": "Límite de IA generalista argumentado"
+        },
+        {
+          "criterion": "legal_risk_low",
+          "label": "Riesgo legal bajo/acotado",
+          "score": 1,
+          "max": 2,
+          "reason": "Dominio sensible: revisión de cumplimiento previa"
+        },
+        {
+          "criterion": "data_obtainable",
+          "label": "Datos obtenibles legítimamente",
+          "score": 2,
+          "max": 2,
+          "reason": "Datos obtenibles por medios legítimos"
+        },
+        {
+          "criterion": "margin_plausible",
+          "label": "Margen plausible",
+          "score": 2,
+          "max": 2,
+          "reason": "Precio con margen plausible"
+        },
+        {
+          "criterion": "recurrence",
+          "label": "Recurrencia potencial",
+          "score": 0,
+          "max": 2,
+          "reason": "Ingreso único puntual"
+        },
+        {
+          "criterion": "compounding_asset",
+          "label": "Activo acumulativo",
+          "score": 2,
+          "max": 2,
+          "reason": "Activo acumulativo definido"
+        },
+        {
+          "criterion": "causal_coherence",
+          "label": "Coherencia causal problema→producto",
+          "score": 2,
+          "max": 2,
+          "reason": "Cadena causal problema→entrega coherente"
+        },
+        {
+          "criterion": "simplicity",
+          "label": "Simplicidad de explicación",
+          "score": 2,
+          "max": 2,
+          "reason": "Explicable en una frase"
+        },
+        {
+          "criterion": "fit_autonomous_247",
+          "label": "Encaje con operación autónoma",
+          "score": 0,
+          "max": 2,
+          "reason": "Canal dependiente de presencia humana constante"
+        },
+        {
+          "criterion": "limited_budget_ok",
+          "label": "Viable con presupuesto limitado",
+          "score": 1,
+          "max": 2,
+          "reason": "Requiere algo de presupuesto inicial"
+        },
+        {
+          "criterion": "deserves_next_resource",
+          "label": "Merece el siguiente euro/hora",
+          "score": 4,
+          "max": 2,
+          "reason": "Prioridad de siguiente euro/hora"
+        }
+      ],
+      "is_priority_metric": true,
+      "is_not_evidence": true,
+      "tournament_result": "WINNER"
+    },
+    {
+      "concept_id": "021c85d9c1e948f596d17249b6d5f293",
+      "title": "Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+      "status": "RESEARCH_PENDING",
+      "super_tournament_score": 72.5,
+      "criteria_detail": [
+        {
+          "criterion": "pain_quantified",
+          "label": "Dolor económico observable y cuantificado",
+          "score": 1,
+          "max": 2,
+          "reason": "Dolor poco cuantificado"
+        },
+        {
+          "criterion": "buyer_with_budget",
+          "label": "Comprador específico con presupuesto",
+          "score": 2,
+          "max": 2,
+          "reason": "Comprador identificable"
+        },
+        {
+          "criterion": "urgency_or_event",
+          "label": "Urgencia o evento de compra",
+          "score": 0,
+          "max": 2,
+          "reason": "Sin urgencia detectable"
+        },
+        {
+          "criterion": "first_20_access",
+          "label": "Acceso a los primeros 20 compradores",
+          "score": 2,
+          "max": 2,
+          "reason": "Ubicación concreta de los primeros compradores"
+        },
+        {
+          "criterion": "valid_48h",
+          "label": "Validable en 48 horas",
+          "score": 0,
+          "max": 2,
+          "reason": "Test 48 h no definido o costoso"
+        },
+        {
+          "criterion": "payment_10_days",
+          "label": "Primer pago posible en ≤10 días",
+          "score": 2,
+          "max": 2,
+          "reason": "Cobrable directamente con precio hipotético"
+        },
+        {
+          "criterion": "low_launch_cost",
+          "label": "Coste de lanzamiento bajo",
+          "score": 1,
+          "max": 2,
+          "reason": "Entregable pesado de lanzar"
+        },
+        {
+          "criterion": "concierge_delivery",
+          "label": "Entrega inicial concierge posible",
+          "score": 0,
+          "max": 2,
+          "reason": "No prestable como concierge"
+        },
+        {
+          "criterion": "automation_path",
+          "label": "Camino claro a automatización",
+          "score": 2,
+          "max": 2,
+          "reason": "Mecanismo plantillable/automatizable"
+        },
+        {
+          "criterion": "ai_resistance",
+          "label": "Resistencia a IA generalista",
+          "score": 2,
+          "max": 2,
+          "reason": "Límite de IA generalista argumentado"
+        },
+        {
+          "criterion": "legal_risk_low",
+          "label": "Riesgo legal bajo/acotado",
+          "score": 2,
+          "max": 2,
+          "reason": "Riesgo legal bajo y acotado"
+        },
+        {
+          "criterion": "data_obtainable",
+          "label": "Datos obtenibles legítimamente",
+          "score": 2,
+          "max": 2,
+          "reason": "Datos obtenibles por medios legítimos"
+        },
+        {
+          "criterion": "margin_plausible",
+          "label": "Margen plausible",
+          "score": 2,
+          "max": 2,
+          "reason": "Precio con margen plausible"
+        },
+        {
+          "criterion": "recurrence",
+          "label": "Recurrencia potencial",
+          "score": 0,
+          "max": 2,
+          "reason": "Ingreso único puntual"
+        },
+        {
+          "criterion": "compounding_asset",
+          "label": "Activo acumulativo",
+          "score": 2,
+          "max": 2,
+          "reason": "Activo acumulativo definido"
+        },
+        {
+          "criterion": "causal_coherence",
+          "label": "Coherencia causal problema→producto",
+          "score": 2,
+          "max": 2,
+          "reason": "Cadena causal problema→entrega coherente"
+        },
+        {
+          "criterion": "simplicity",
+          "label": "Simplicidad de explicación",
+          "score": 2,
+          "max": 2,
+          "reason": "Explicable en una frase"
+        },
+        {
+          "criterion": "fit_autonomous_247",
+          "label": "Encaje con operación autónoma",
+          "score": 0,
+          "max": 2,
+          "reason": "Canal dependiente de presencia humana constante"
+        },
+        {
+          "criterion": "limited_budget_ok",
+          "label": "Viable con presupuesto limitado",
+          "score": 1,
+          "max": 2,
+          "reason": "Requiere algo de presupuesto inicial"
+        },
+        {
+          "criterion": "deserves_next_resource",
+          "label": "Merece el siguiente euro/hora",
+          "score": 4,
+          "max": 2,
+          "reason": "Prioridad de siguiente euro/hora"
+        }
+      ],
+      "is_priority_metric": true,
+      "is_not_evidence": true,
+      "tournament_result": "WINNER"
+    },
+    {
+      "concept_id": "e01af20c092b429a9195045feeb8edc8",
+      "title": "Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+      "status": "RESEARCH_PENDING",
+      "super_tournament_score": 72.5,
+      "criteria_detail": [
+        {
+          "criterion": "pain_quantified",
+          "label": "Dolor económico observable y cuantificado",
+          "score": 1,
+          "max": 2,
+          "reason": "Dolor poco cuantificado"
+        },
+        {
+          "criterion": "buyer_with_budget",
+          "label": "Comprador específico con presupuesto",
+          "score": 2,
+          "max": 2,
+          "reason": "Comprador identificable"
+        },
+        {
+          "criterion": "urgency_or_event",
+          "label": "Urgencia o evento de compra",
+          "score": 0,
+          "max": 2,
+          "reason": "Sin urgencia detectable"
+        },
+        {
+          "criterion": "first_20_access",
+          "label": "Acceso a los primeros 20 compradores",
+          "score": 2,
+          "max": 2,
+          "reason": "Ubicación concreta de los primeros compradores"
+        },
+        {
+          "criterion": "valid_48h",
+          "label": "Validable en 48 horas",
+          "score": 0,
+          "max": 2,
+          "reason": "Test 48 h no definido o costoso"
+        },
+        {
+          "criterion": "payment_10_days",
+          "label": "Primer pago posible en ≤10 días",
+          "score": 2,
+          "max": 2,
+          "reason": "Cobrable directamente con precio hipotético"
+        },
+        {
+          "criterion": "low_launch_cost",
+          "label": "Coste de lanzamiento bajo",
+          "score": 1,
+          "max": 2,
+          "reason": "Entregable pesado de lanzar"
+        },
+        {
+          "criterion": "concierge_delivery",
+          "label": "Entrega inicial concierge posible",
+          "score": 0,
+          "max": 2,
+          "reason": "No prestable como concierge"
+        },
+        {
+          "criterion": "automation_path",
+          "label": "Camino claro a automatización",
+          "score": 2,
+          "max": 2,
+          "reason": "Mecanismo plantillable/automatizable"
+        },
+        {
+          "criterion": "ai_resistance",
+          "label": "Resistencia a IA generalista",
+          "score": 2,
+          "max": 2,
+          "reason": "Límite de IA generalista argumentado"
+        },
+        {
+          "criterion": "legal_risk_low",
+          "label": "Riesgo legal bajo/acotado",
+          "score": 2,
+          "max": 2,
+          "reason": "Riesgo legal bajo y acotado"
+        },
+        {
+          "criterion": "data_obtainable",
+          "label": "Datos obtenibles legítimamente",
+          "score": 2,
+          "max": 2,
+          "reason": "Datos obtenibles por medios legítimos"
+        },
+        {
+          "criterion": "margin_plausible",
+          "label": "Margen plausible",
+          "score": 2,
+          "max": 2,
+          "reason": "Precio con margen plausible"
+        },
+        {
+          "criterion": "recurrence",
+          "label": "Recurrencia potencial",
+          "score": 0,
+          "max": 2,
+          "reason": "Ingreso único puntual"
+        },
+        {
+          "criterion": "compounding_asset",
+          "label": "Activo acumulativo",
+          "score": 2,
+          "max": 2,
+          "reason": "Activo acumulativo definido"
+        },
+        {
+          "criterion": "causal_coherence",
+          "label": "Coherencia causal problema→producto",
+          "score": 2,
+          "max": 2,
+          "reason": "Cadena causal problema→entrega coherente"
+        },
+        {
+          "criterion": "simplicity",
+          "label": "Simplicidad de explicación",
+          "score": 2,
+          "max": 2,
+          "reason": "Explicable en una frase"
+        },
+        {
+          "criterion": "fit_autonomous_247",
+          "label": "Encaje con operación autónoma",
+          "score": 0,
+          "max": 2,
+          "reason": "Canal dependiente de presencia humana constante"
+        },
+        {
+          "criterion": "limited_budget_ok",
+          "label": "Viable con presupuesto limitado",
+          "score": 1,
+          "max": 2,
+          "reason": "Requiere algo de presupuesto inicial"
+        },
+        {
+          "criterion": "deserves_next_resource",
+          "label": "Merece el siguiente euro/hora",
+          "score": 4,
+          "max": 2,
+          "reason": "Prioridad de siguiente euro/hora"
+        }
+      ],
+      "is_priority_metric": true,
+      "is_not_evidence": true,
+      "tournament_result": "WINNER"
+    }
+  ],
+  "eliminated_over_slots": [],
+  "rejected_incomplete_brief": [],
+  "rejected_low_score": [],
+  "deduped_duplicates": [
+    {
+      "concept_id": "594ea6cba57547f39ef6144ea4741db9",
+      "title": "Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+      "status": "NEEDS_REFORMULATION",
+      "reason": "Duplicado de 'Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia' (se conserva el estado más avanzado)."
+    },
+    {
+      "concept_id": "c3688beb847e48e2ad643d8bb77e0337",
+      "title": "Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia",
+      "status": "NEEDS_REFORMULATION",
+      "reason": "Duplicado de 'Benchmark anónimo de tarifas para clínicas dentales que deciden su precio de ortodoncia' (se conserva el estado más avanzado)."
+    },
+    {
+      "concept_id": "3f292a85f99346aeb481327ca406004b",
+      "title": "Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+      "status": "NEEDS_REFORMULATION",
+      "reason": "Duplicado de 'Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto' (se conserva el estado más avanzado)."
+    },
+    {
+      "concept_id": "7accfed2e5744537b424ba23c184b5c7",
+      "title": "Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto",
+      "status": "NEEDS_REFORMULATION",
+      "reason": "Duplicado de 'Benchmark de costes de instalación para empresas de placas solares que deciden presupuesto' (se conserva el estado más avanzado)."
+    },
+    {
+      "concept_id": "10ee669b525744219161bc1ec9bc3522",
+      "title": "Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+      "status": "NEEDS_REFORMULATION",
+      "reason": "Duplicado de 'Benchmark de honorarios para gestorías que deciden su tarifa mensual' (se conserva el estado más avanzado)."
+    },
+    {
+      "concept_id": "9397613a83ea4d318612df8c60a8a0dc",
+      "title": "Benchmark de honorarios para gestorías que deciden su tarifa mensual",
+      "status": "NEEDS_REFORMULATION",
+      "reason": "Duplicado de 'Benchmark de honorarios para gestorías que deciden su tarifa mensual' (se conserva el estado más avanzado)."
+    }
+  ],
+  "entries_after_dedup": 3,
+  "total_entries": 9,
+  "max_winners": 3,
+  "min_score_to_qualify": 55.0,
+  "zero_winners_is_valid": true,
+  "score_semantics": "prioridad_de_investigacion_no_evidencia",
+  "challengers_without_brief_count": 66,
+  "note_model_reasoning": "OX Alpha no participó: el torneo es determinista. Toda salida es prioridad de investigación; ninguna ganadora obtiene demanda demostrada ni cambia puntuaciones con evidencia."
+}

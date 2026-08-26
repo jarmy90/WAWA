@@ -126,6 +126,15 @@ def budget(request: Request) -> dict:
     return get_container(request).budget.status()
 
 
+@router.get("/command-center")
+def command_center(request: Request) -> dict:
+    """Centro de mando (iteración 018): snapshot agregado con datos REALES del
+    sistema. Cada bloque indica su naturaleza (REAL / SIMULADO / HIPÓTESIS /
+    MODELO / DESCONOCIDO / NO CONECTADO). Nunca inventa cifras."""
+    container = get_container(request)
+    return container.command_center.snapshot()
+
+
 # ---------------------------------------------------------------------------
 # Motor de operación
 # ---------------------------------------------------------------------------

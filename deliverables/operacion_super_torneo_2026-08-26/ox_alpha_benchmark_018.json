@@ -1,0 +1,140 @@
+{
+  "operacion": "benchmark_ox_alpha_018",
+  "fecha": "2026-08-26",
+  "identity": "OX_ALPHA_UNVERIFIED",
+  "gateway_state": "GATEWAY_DISABLED",
+  "window_expires": "2026-08-27",
+  "is_evidence": false,
+  "arms": {
+    "A": {
+      "reformulation": {
+        "status": "ok",
+        "source": "baseline_determinista",
+        "score": 103.9,
+        "max": 100,
+        "percent": 103.9,
+        "detail": [
+          {
+            "criterion": "variant_diversity",
+            "score": 2
+          },
+          {
+            "criterion": "practical_utility",
+            "score": 2
+          },
+          {
+            "criterion": "valid_structure",
+            "score": 2
+          }
+        ],
+        "variants_scored": 2
+      },
+      "coherence_check": {
+        "status": "ok",
+        "source": "baseline_determinista",
+        "score": 0,
+        "max": 100,
+        "percent": 0,
+        "detail": [
+          {
+            "criterion": "causal_chain",
+            "score": 0
+          },
+          {
+            "criterion": "practical_utility",
+            "score": 0
+          }
+        ]
+      },
+      "red_team": {
+        "status": "ok",
+        "source": "baseline_determinista",
+        "score": 56,
+        "max": 100,
+        "percent": 56,
+        "detail": [
+          {
+            "criterion": "practical_utility",
+            "score": 0
+          }
+        ]
+      },
+      "variation_comparison": {
+        "status": "ok",
+        "source": "baseline_determinista",
+        "score": 80,
+        "max": 100,
+        "percent": 80,
+        "detail": [
+          {
+            "criterion": "valid_structure",
+            "score": 2
+          }
+        ]
+      }
+    },
+    "C": {
+      "reformulation": {
+        "status": "GATEWAY_DISABLED",
+        "gate": "GATEWAY_DISABLED",
+        "used_model": null,
+        "actual_model": null,
+        "call_id": null,
+        "result": null,
+        "reason": "OMNIROUTE_ENABLED=false: el gateway local no está activado."
+      },
+      "coherence_check": {
+        "status": "GATEWAY_DISABLED",
+        "gate": "GATEWAY_DISABLED",
+        "used_model": null,
+        "actual_model": null,
+        "call_id": null,
+        "result": null,
+        "reason": "OMNIROUTE_ENABLED=false: el gateway local no está activado."
+      },
+      "red_team": {
+        "status": "GATEWAY_DISABLED",
+        "gate": "GATEWAY_DISABLED",
+        "used_model": null,
+        "actual_model": null,
+        "call_id": null,
+        "result": null,
+        "reason": "OMNIROUTE_ENABLED=false: el gateway local no está activado."
+      },
+      "variation_comparison": {
+        "status": "GATEWAY_DISABLED",
+        "gate": "GATEWAY_DISABLED",
+        "used_model": null,
+        "actual_model": null,
+        "call_id": null,
+        "result": null,
+        "reason": "OMNIROUTE_ENABLED=false: el gateway local no está activado."
+      }
+    },
+    "B": {
+      "available": false,
+      "note": "proveedor omniroute no configurado/desactivado"
+    },
+    "D": {
+      "available": false,
+      "note": "proveedor openrouter no configurado/desactivado"
+    }
+  },
+  "totals": {
+    "A": 60.0,
+    "C_ok_tasks": [],
+    "C": 0.0
+  },
+  "verdict": {
+    "verdict": "OX_ALPHA_UNVERIFIED",
+    "reason": "Identidad del modelo no verificada contra el catálogo: sin benchmark de modelo.",
+    "compare": null
+  },
+  "tasks": [
+    "reformulation",
+    "coherence_check",
+    "red_team",
+    "variation_comparison"
+  ],
+  "note": "Las respuestas de modelo son RAZONAMIENTO, nunca evidencia de mercado."
+}
