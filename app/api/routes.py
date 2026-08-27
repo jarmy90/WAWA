@@ -13,6 +13,7 @@ from app.core.errors import ValidationError
 from app.core.security import validate_extension, validate_payload_size, validate_uuid
 from app.models.campaign import CampaignCreate, ReasoningIn, SessionOutputIn, SessionPrepareIn, StageChangeIn
 from app.models.discovery import CampaignCreate as DiscoveryCampaignCreate, MissionIn
+from app.models import arena as models_arena
 from app.models.enums import Decision, OpportunityStatus, OperatingMode
 from app.models.external_review import (
     CombinedReviewImportIn,
@@ -1267,3 +1268,73 @@ def load_demo(request: Request, evaluate: bool = True) -> dict:
     container = get_container(request)
     seeder = DemoSeeder(container.settings, container.repos, container.pipeline)
     return seeder.seed(evaluate=evaluate)
+
+
+# ---------------------------------------------------------------------------
+# Multi-Agent Ideation Arena (iteración 024)
+# ---------------------------------------------------------------------------
+@router.get("/arena/state")
+def arena_state(request: Request) -> dict:
+    return get_container(request).arena.get_state()
+
+
+@router.post("/arena/generate")
+def arena_generate(request: Request, count: int = Query(default=5, ge=1, le=20)) -> dict:
+    return get_container(request).arena.generate_wawa_ideas(count=count)
+
+
+@router.get("/arena/prompt")
+def arena_prompt(
+    request: Request,
+    generator: str = Query(default="EXTERNAL_MODEL"),
+) -> dict:
+    return get_container(request).arena.generate_prompt(generator_label=generator)
+
+
+@router.post("/arena/import")
+def arena_import(request: Request, payload: models_arena.ArenaImportIn) -> dict:
+    return get_container(request).arena.import_batch(
+        provider=payload.provider,
+        filename=payload.filename,
+        content=payload.content,
+        max_ideas=payload.max_ideas,
+    )
+
+
+@router.post("/arena/filter")
+def arena_filter(request: Request) -> dict:
+    return get_container(request).arena.run_filter()
+
+
+@router.post("/arena/tournament")
+def arena_tournament(request: Request) -> dict:
+    return get_container(request).arena.run_tournament()
+
+
+@router.get("/arena/review")
+def arena_review(request: Request) -> dict:
+    return get_container(request).arena.get_review_queue()
+
+
+@router.post("/arena/approve")
+def arena_approve(request: Request, payload: models_arena.ArenaApproveIn) -> dict:
+    return get_container(request).arena.approve_for_research(payload.idea_ids)
+
+
+@router.get("/arena/providers")
+def arena_providers(request: Request) -> dict:
+    return {"providers": get_container(request).arena.get_provider_statuses()}
+
+
+@router.get("/arena/events")
+def arena_events(
+    request: Request,
+    limit: int = Query(default=100, ge=1, le=500),
+    agent: str | None = Query(default=None),
+) -> dict:
+    return {"events": get_container(request).arena.get_events(limit=limit, agent=agent)}
+
+
+@router.post("/arena/reset")
+def arena_reset(request: Request) -> dict:
+    return get_container(request).arena.reset()

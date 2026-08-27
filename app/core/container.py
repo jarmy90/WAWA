@@ -27,6 +27,7 @@ from app.services.import_export import ExportService, ImportService
 from app.services.opportunities import OpportunityService
 from app.services.orchestrator import CampaignOrchestrator
 from app.services.reviews import ReviewService
+from app.services.arena import ArenaService
 from app.services.super_tournament import SuperTournamentService
 from app.workflows.pipeline import PipelineService
 
@@ -54,6 +55,7 @@ class AppContainer:
     command_center: CommandCenterService
     bootstrap: CommercialBootstrapService
     connect_services: ConnectServicesService
+    arena: ArenaService
 
     def close(self) -> None:
         try:
@@ -114,8 +116,10 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         command_center=None,  # type: ignore[arg-type]
         bootstrap=None,  # type: ignore[arg-type]
         connect_services=None,  # type: ignore[arg-type]
+        arena=None,  # type: ignore[arg-type]
     )
     container.command_center = CommandCenterService(container)
     container.bootstrap = CommercialBootstrapService(container)
     container.connect_services = ConnectServicesService(settings)
+    container.arena = ArenaService(settings, repos.arena, repos.discovery)
     return container

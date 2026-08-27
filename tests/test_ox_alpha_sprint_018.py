@@ -289,7 +289,7 @@ def test_command_center_no_invented_numbers(container):
     snap = container.command_center.snapshot()
     assert snap["real_money_moved"] is False
     assert snap["simulated"] is True
-    assert snap["version"] == "0.22.0"  # iteración 023 (recuperación del comité)
+    assert snap["version"] == "0.23.0"  # iteración 023 (recuperación del comité)
     assert snap["iteration"] == "022"
     assert snap["permissions"]["autonomous_production"] is False
     assert snap["permissions"]["api_budget_usd"] == 0
@@ -391,15 +391,15 @@ def test_tests_init_present():
 def test_frontend_backend_version_synced(tmp_path):
     from tests.conftest import FRONTEND_DIR
     index = (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")
-    assert 'data-wawa-version="0.22.0"' in index
-    assert 'data-iteration="023"' in index
-    assert 'data-build="023-committee-recovery"' in index
+    assert 'data-wawa-version="0.23.0"' in index
+    assert 'data-iteration="024"' in index
+    assert 'data-build="024-arena"' in index
     assert "ops18.js" in index
     assert (FRONTEND_DIR / "ops18.js").exists()
     ops18 = (FRONTEND_DIR / "ops18.js").read_text(encoding="utf-8")
     assert "api/command-center" in ops18
     settings = Settings()
-    assert settings.version == "0.22.0"
+    assert settings.version == "0.23.0"
 
 
 # ---------------------------------------------------------------------------

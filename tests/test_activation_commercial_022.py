@@ -437,15 +437,15 @@ def test_025_no_secrets_in_assets_or_api(tmp_path):
 def test_026_frontend_backend_synced():
     """Versión e iteración coherentes entre backend y frontend."""
     config_src = (PROJECT_ROOT / "app" / "core" / "config.py").read_text(encoding="utf-8")
-    assert 'version: str = "0.22.0"' in config_src
+    assert 'version: str = "0.23.0"' in config_src
     cc_src = (PROJECT_ROOT / "app" / "services" / "command_center.py").read_text(encoding="utf-8")
     assert '"iteration": "022"' in cc_src
     assert '"build": "022-one-click-activation"' in cc_src
     index = (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")
-    assert "v0.22.0" in index
+    assert "v0.23.0" in index
     for page in ("mission-control.html", "agents-viz.html", "candidates.html"):
         content = (FRONTEND_DIR / page).read_text(encoding="utf-8")
-        assert "023" in content or "0.22.0" in content
+        assert "023" in content or "0.23.0" in content
 
 
 def test_026b_routes_and_telemetry(tmp_path):

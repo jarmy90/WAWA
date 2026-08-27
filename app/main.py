@@ -86,6 +86,7 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
             ("/mission-control", "mission-control.html"),
             ("/agents-viz", "agents-viz.html"),
             ("/candidates", "candidates.html"),
+            ("/arena", "arena.html"),
         ):
             path = settings.frontend_dir / filename
             if path.exists():

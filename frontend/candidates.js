@@ -130,6 +130,7 @@
       "</div>" +
       '<div class="wizard-panel">' +
         '<div class="wizard-actions">' +
+          '<button type="button" class="cand-btn primary" data-load-opinions="1">CARGAR OPINIONES Y CONTINUAR</button>' +
           REVIEWERS.map(function (r) {
             return '<button type="button" class="cand-btn" data-copy="' + esc(r) + '">COPIAR PARA ' + esc(REVIEWER_LABEL[r]) + "</button>";
           }).join("") +
@@ -219,12 +220,20 @@
     });
 
     var combined = root.querySelector('[data-combined]');
+    var loadOpinions = root.querySelector('[data-load-opinions="1"]');
+    if (loadOpinions && combined) loadOpinions.addEventListener("click", function () {
+      combined.click();
+    });
     if (combined) combined.addEventListener("change", function () {
       var file = combined.files && combined.files[0];
       if (!file) return;
       var reader = new FileReader();
       reader.onload = function () {
-        importReview(opp, file.name, String(reader.result), "combined", result);
+        importReview(opp, file.name, String(reader.result), "combined", result).then(function (d) {
+          if (!d) return null;
+          say("✓ Opiniones cargadas. Sintetizando y decidiendo automáticamente…", true);
+          return synthesizeAndDecide(opp, result);
+        });
       };
       reader.readAsText(file);
     });
@@ -250,17 +259,49 @@
       payload.provider = provider;
       payload.model = provider;
     }
-    result.textContent = "Importando respuesta…";
-    result.className = "cand-result";
+    var importCtl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var importTimeout = 20000;
+    var timer = importCtl ? setTimeout(function () { importCtl.abort(); }, importTimeout) : null;
+    var done = function () { if (timer) clearTimeout(timer); };
+    var sayImport = function (text, ok) {
+      result.textContent = text;
+      result.className = "cand-result " + (ok ? "ok" : "err");
+    };
+    var importButton = result.closest ? result.closest(".cand-card").querySelector('[data-import="1"]') : null;
+    if (importButton) importButton.disabled = true;
+    sayImport("ENVIANDO RESPUESTA · validando…", true);
     return fetch("/api/reviews/opportunities/" + opp + (provider === "combined" ? "/import-combined" : "/import"), {
       method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+      signal: importCtl ? importCtl.signal : undefined,
       body: JSON.stringify(payload),
-    }).then(function (res) { return res.json(); }).then(function (d) {
-      if (d.error) { say("✗ " + esc(d.error.message || "no importado"), false); return; }
+    }).then(function (res) {
+      return res.json().catch(function () { throw new Error("HTTP " + res.status + " · respuesta no JSON"); })
+        .then(function (d) {
+          if (!res.ok || (d && d.error)) throw new Error((d && d.error && d.error.message) || "HTTP " + res.status);
+          return d;
+        });
+    }).then(function (d) {
+      // El textarea solo se limpia después de confirmación HTTP exitosa.
       if (ta) ta.value = "";
-      say("✓ Respuesta importada (" + (d.imported || 0) + " revisiones). Sintetizando y decidiendo…", true);
-      return synthesizeAndDecide(opp, result);
-    }).catch(function (e) { say("Error de red al importar: " + esc(e && e.message || "desconocido"), false); });
+      var count = d.count != null ? d.count : (d.imported || 1);
+      sayImport("✓ IMPORTADA · " + count + " revisión(es). Actualizando el comité…", true);
+      load();
+      return d;
+    }).catch(function (e) {
+      var message = e && e.name === "AbortError"
+        ? "TIEMPO DE ESPERA AGOTADO · la respuesta puede haberse guardado. COMPROBAR ESTADO antes de reintentar."
+        : "✗ Importación no confirmada: " + ((e && e.message) || "error desconocido") + ". El texto se conserva; puedes REINTENTAR.";
+      sayImport(message, false);
+      return null;
+    }).then(function (d) {
+      done();
+      if (importButton) importButton.disabled = false;
+      return d;
+    }, function (e) {
+      done();
+      if (importButton) importButton.disabled = false;
+      throw e;
+    });
   }
 
   /* Iteración 023: síntesis/decisión a prueba de bloqueos.

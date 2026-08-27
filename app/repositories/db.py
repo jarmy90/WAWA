@@ -722,5 +722,9 @@ def init_db(settings: Settings) -> None:
         _ensure_venture_columns(conn)
         _ensure_concept_columns(conn)
         _migrate_cycle_state_nullable(conn)
+        # Arena (iteración 024)
+        from app.repositories.arena import ARENA_SCHEMA as _ARENA
+        conn.executescript(_ARENA)
+        conn.commit()
     finally:
         conn.close()

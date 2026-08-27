@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es" data-wawa-version="0.23.0" data-iteration="024" data-build="024-arena">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arena · WAWA Multi-Agent Ideation</title>
+<link rel="stylesheet" href="/static/index.css">
+<style>
+:root { --bg: #070b14; --panel: #0e1525; --panel2: #141e35; --line: rgba(80,140,255,.12);
+  --text: #e4ecff; --muted: #7a8db8; --teal: #2de0b8; --gold: #f4c95d; --red: #ff6b7a;
+  --cyan: #5cc8ff; --purple: #a78bfa; --orange: #fb923c; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Inter","Segoe UI",system-ui,sans-serif; background: var(--bg);
+  color: var(--text); line-height: 1.55; min-height: 100vh; }
+.arena-wrap { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.arena-header { display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+.arena-header h1 { font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
+.arena-header h1 span { color: var(--teal); }
+.arena-header .chip { display: inline-block; padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+.chip-phase { background: rgba(45,224,184,.12); color: var(--teal); border: 1px solid rgba(45,224,184,.3); }
+.chip-waiting { background: rgba(244,201,93,.12); color: var(--gold); border: 1px solid rgba(244,201,93,.3); }
+.chip-active { background: rgba(92,200,255,.12); color: var(--cyan); border: 1px solid rgba(92,200,255,.3); }
+
+/* Steps */
+.steps-bar { display: flex; gap: 2px; margin-bottom: 20px; overflow-x: auto; }
+.step { flex: 1; min-width: 120px; padding: 10px 12px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 8px; text-align: center;
+  font-size: 11px; font-weight: 600; color: var(--muted); position: relative;
+  transition: all .2s; cursor: default; }
+.step.active { background: rgba(45,224,184,.08); border-color: var(--teal); color: var(--teal); }
+.step.done { background: rgba(45,224,184,.04); border-color: rgba(45,224,184,.2); color: var(--teal); opacity: .7; }
+.step .num { display: block; font-size: 18px; font-weight: 800; margin-bottom: 2px; }
+
+/* Panels */
+.panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+@media (max-width: 768px) { .panels { grid-template-columns: 1fr; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.panel h3 { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .04em; margin-bottom: 12px; text-transform: uppercase; }
+.panel-full { grid-column: 1 / -1; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel2);
+  color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.btn:hover { border-color: var(--teal); background: rgba(45,224,184,.08); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-primary { background: linear-gradient(135deg, var(--teal), #19b8a3); color: #06231f; border-color: transparent; }
+.btn-primary:hover { filter: brightness(1.05); transform: translateY(-1px); }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* Ideas cards */
+.idea-card { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px; margin-bottom: 8px; transition: border-color .2s; }
+.idea-card:hover { border-color: rgba(92,200,255,.3); }
+.idea-card .provider-badge { display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 700; letter-spacing: .03em; margin-bottom: 6px; }
+.badge-wawa { background: rgba(45,224,184,.15); color: var(--teal); }
+.badge-gpt { background: rgba(167,139,250,.15); color: var(--purple); }
+.badge-grok { background: rgba(251,146,60,.15); color: var(--orange); }
+.badge-gemini { background: rgba(92,200,255,.15); color: var(--cyan); }
+.badge-other { background: rgba(122,141,184,.15); color: var(--muted); }
+.idea-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.idea-card .meta { font-size: 12px; color: var(--muted); }
+.idea-card .score { font-size: 12px; font-weight: 700; color: var(--gold); }
+.idea-card .status-tag { display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 10px; font-weight: 600; }
+.tag-survivor { background: rgba(45,224,184,.15); color: var(--teal); }
+.tag-approved { background: rgba(244,201,93,.15); color: var(--gold); }
+.tag-rejected { background: rgba(255,107,122,.15); color: var(--red); }
+.tag-pending { background: rgba(122,141,184,.1); color: var(--muted); }
+
+/* Provider cards */
+.provider-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.provider-card { padding: 10px; border-radius: 8px; background: var(--panel2); border: 1px solid var(--line); }
+.provider-card .name { font-weight: 700; font-size: 13px; margin-bottom: 2px; }
+.provider-card .status { font-size: 11px; font-weight: 600; }
+.status-connected { color: var(--teal); }
+.status-nokey { color: var(--muted); }
+
+/* Log terminal */
+.log-terminal { background: #050810; border: 1px solid var(--line); border-radius: 8px;
+  padding: 12px; max-height: 300px; overflow-y: auto; font-family: "JetBrains Mono",monospace;
+  font-size: 12px; line-height: 1.6; }
+.log-line { display: flex; gap: 8px; }
+.log-ts { color: var(--muted); min-width: 70px; }
+.log-agent { font-weight: 700; min-width: 80px; }
+.log-msg { color: var(--text); }
+.log-info .log-agent { color: var(--cyan); }
+.log-warning .log-agent { color: var(--gold); }
+.log-error .log-agent { color: var(--red); }
+.log-intervention .log-agent { color: var(--orange); }
+
+/* Stats row */
+.stats-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.stat { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 14px; min-width: 100px; }
+.stat .num { font-size: 22px; font-weight: 800; color: var(--teal); }
+.stat .label { font-size: 11px; color: var(--muted); }
+
+/* Solar canvas */
+.solar-canvas { width: 100%; height: 400px; border-radius: 12px; background: radial-gradient(ellipse at center, #0a1020 0%, #050810 100%); border: 1px solid var(--line); }
+.solar-canvas-full { height: 500px; }
+
+/* Prompt area */
+.prompt-box { background: #050810; border: 1px solid var(--line); border-radius: 8px;
+  padding: 12px; font-family: monospace; font-size: 12px; color: var(--muted);
+  max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
+
+/* Import area */
+.import-area { border: 2px dashed var(--line); border-radius: 12px; padding: 30px;
+  text-align: center; color: var(--muted); cursor: pointer; transition: border-color .2s; }
+.import-area:hover { border-color: var(--teal); }
+.import-area.active { border-color: var(--teal); background: rgba(45,224,184,.04); }
+
+/* hidden */
+.hidden { display: none !important; }
+
+/* Controls bar */
+.controls-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.controls-bar .spacer { flex: 1; }
+
+/* Back link */
+.back-link { color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 600; }
+.back-link:hover { color: var(--teal); }
+</style>
+</head>
+<body>
+<div class="arena-wrap">
+  <div class="arena-header">
+    <div>
+      <h1><span>⚔</span> ARENA · Multi-Agent Ideation</h1>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">
+        <a href="/" class="back-link">← Mission Control</a>
+      </div>
+    </div>
+    <div class="controls-bar">
+      <span id="arena-phase" class="chip chip-phase">IDLE</span>
+      <button id="btn-reset" class="btn btn-sm">RESET</button>
+    </div>
+  </div>
+
+  <!-- Steps bar -->
+  <div class="steps-bar" id="steps-bar">
+    <div class="step active" data-step="1"><span class="num">1</span>GENERAR 5 IDEAS</div>
+    <div class="step" data-step="2"><span class="num">2</span>COPIAR PROMPT</div>
+    <div class="step" data-step="3"><span class="num">3</span>AÑADIR RESPUESTAS</div>
+    <div class="step" data-step="4"><span class="num">4</span>FILTRAR</div>
+    <div class="step" data-step="5"><span class="num">5</span>TORNEO</div>
+    <div class="step" data-step="6"><span class="num">6</span>REVISAR</div>
+    <div class="step" data-step="7"><span class="num">7</span>APROBAR</div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat"><div class="num" id="stat-total">0</div><div class="label">Ideas totales</div></div>
+    <div class="stat"><div class="num" id="stat-wawa">0</div><div class="label">WAWA</div></div>
+    <div class="stat"><div class="num" id="stat-external">0</div><div class="label">Externas</div></div>
+    <div class="stat"><div class="num" id="stat-duplicates">0</div><div class="label">Duplicadas</div></div>
+    <div class="stat"><div class="num" id="stat-survivors">0</div><div class="label">Supervivientes</div></div>
+    <div class="stat"><div class="num" id="stat-approved">0</div><div class="label">Aprobadas</div></div>
+  </div>
+
+  <div class="panels">
+    <!-- Left: Actions + Ideas -->
+    <div>
+      <!-- Panel 1: Generate -->
+      <div class="panel" id="panel-generate">
+        <h3>PASO 1 · GENERAR 5 IDEAS WAWA</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px">WAWA usa su Business Discovery Engine interno para generar oportunidades concretas.</p>
+        <button id="btn-generate" class="btn btn-primary">GENERAR IDEAS WAWA</button>
+        <div id="generate-result" class="hidden" style="margin-top:12px"></div>
+      </div>
+
+      <!-- Panel 2: Prompt -->
+      <div class="panel hidden" id="panel-prompt">
+        <h3>PASO 2 · COPIAR PROMPT PARA AGENTES EXTERNOS</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Copia este prompt en GPT, Grok, Gemini u otro modelo. Devolverá 5 ideas en JSON.</p>
+        <div class="prompt-box" id="prompt-content"></div>
+        <div class="btn-group">
+          <button class="btn" onclick="copyPrompt('GPT')">COPIAR PARA GPT</button>
+          <button class="btn" onclick="copyPrompt('GROK')">COPIAR PARA GROK</button>
+          <button class="btn" onclick="copyPrompt('GEMINI')">COPIAR PARA GEMINI</button>
+          <button class="btn" onclick="copyPrompt('OTHER')">COPIAR PARA OTRO</button>
+          <button id="btn-continue-step3" class="btn btn-primary">CONTINUAR →</button>
+        </div>
+      </div>
+
+      <!-- Panel 3: Import -->
+      <div class="panel hidden" id="panel-import">
+        <h3>PASO 3 · AÑADIR RESPUESTAS TXT/JSON</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Selecciona uno o varios archivos (.txt, .json, .md) de las respuestas de agentes externos.</p>
+        <div class="import-area" id="import-area">
+          <div style="font-size:32px;margin-bottom:8px">📁</div>
+          <div style="font-size:14px;font-weight:600">Haz clic o arrastra archivos aquí</div>
+          <div style="font-size:12px;margin-top:4px">Soporta .txt, .json, .md con bloques JSON</div>
+          <input type="file" id="import-files" multiple accept=".txt,.json,.md,.markdown" style="display:none" />
+        </div>
+        <div id="import-results" class="hidden" style="margin-top:12px"></div>
+        <div class="btn-group">
+          <button id="btn-filter" class="btn btn-primary" disabled>FILTRAR IDEAS →</button>
+        </div>
+      </div>
+
+      <!-- Panel 4-5: Review -->
+      <div class="panel hidden" id="panel-review">
+        <h3>PASO 5-6 · REVISAR SUPERVIVIENTES</h3>
+        <div id="review-ideas"></div>
+        <div class="btn-group">
+          <button id="btn-approve" class="btn btn-primary" disabled>APROBAR SELECCIONADAS →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Solar + Log + Providers -->
+    <div>
+      <!-- Solar System -->
+      <div class="panel">
+        <h3>SISTEMA SOLAR DE AGENTES</h3>
+        <canvas id="solar-canvas" class="solar-canvas"></canvas>
+      </div>
+
+      <!-- Providers -->
+      <div class="panel">
+        <h3>PROVEEDORES EXTERNOS</h3>
+        <div class="provider-grid" id="provider-grid"></div>
+      </div>
+
+      <!-- Live Log -->
+      <div class="panel">
+        <h3>LOG VIVO</h3>
+        <div class="log-terminal" id="log-terminal"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/viz-core.js"></script>
+<script src="/static/arena.js"></script>
+</body>
+</html>
