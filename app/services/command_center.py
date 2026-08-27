@@ -68,8 +68,8 @@ class CommandCenterService:
         return {
             "generated_at": generated_at,
             "version": self.c.settings.version,
-            "iteration": "022",
-            "build": "022-one-click-activation",
+            "iteration": "026",
+            "build": "026-owner-command-center",
             "simulated": True,
             "real_money_moved": False,
             "autonomous_launch": readiness,
@@ -776,7 +776,7 @@ class CommandCenterService:
         bootstrap_status = _safe(lambda: self.c.bootstrap.status(), None)
         return {
             "snapshot_at": generated_at,
-            "version": self.c.settings.version, "iteration": "022", "build": "022-one-click-activation",
+            "version": self.c.settings.version, "iteration": "026", "build": "026-owner-command-center",
             "system_health": health,
             "production_capability": self._production_capability(engine),
             "campaign_id": campaign_id,

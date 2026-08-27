@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-wawa-version="0.24.0" data-iteration="025" data-build="025-autonomous-24-7">
+<html lang="es" data-wawa-version="0.25.0" data-iteration="026" data-build="026-owner-command-center">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,6 +8,12 @@
     <link rel="stylesheet" href="/styles.css?v=0120" />
   </head>
   <body>
+    <section id="owner-command" class="owner-command" aria-label="Centro de mando del propietario">
+      <div class="owner-head"><div><span class="owner-kicker">WAWA · OWNER COMMAND CENTER</span><h2>Decide qué ocurre después</h2></div><span id="owner-global-status" class="owner-status">CARGANDO ESTADO REAL…</span></div>
+      <div class="owner-system" id="owner-system"><span>OmniRoute: <b id="owner-omni">SIN DATOS</b></span><span>Scheduler: <b id="owner-scheduler">SIN DATOS</b></span><span>Worker: <b id="owner-worker">SIN DATOS</b></span><span>SAFE_PAUSE: <b id="owner-pause">SIN DATOS</b></span></div>
+      <div id="owner-winner" class="owner-winner"><div class="owner-empty">Cargando ganadora real…</div></div>
+      <button id="owner-primary-action" class="btn btn-primary owner-action">VER ACTIVIDAD</button>
+    </section>
     <!-- Franja roja base: visible si app.js no termina de cargar (CSS puro). -->
     <div id="js-fail" class="js-fail">LA INTERFAZ NO HA TERMINADO DE CARGAR. Revisa la consola o abre /api/health para diagnosticar.</div>
 
@@ -20,7 +26,7 @@
         </div>
       </div>
       <div class="topbar-right">
-        <span id="wawa-version" class="chip chip-neutral" title="Versión de esta interfaz">v0.24.0</span>
+        <span id="wawa-version" class="chip chip-neutral" title="Versión de esta interfaz">v0.25.0</span>
         <div id="budget-chip" class="chip chip-neutral" title="Estado del BudgetGuard">—</div>
       </div>
     </header>
@@ -28,27 +34,29 @@
     <!-- Diagnóstico visible (iteración 012): versiones y estado de JS. -->
     <div class="diag" id="diag">
       Backend: <span id="diag-backend">—</span>
-      · Frontend: <span id="diag-frontend">v0.24.0</span>
-      · Iteración: <span id="diag-iter">022</span>
+      · Frontend: <span id="diag-frontend">v0.25.0</span>
+      · Iteración: <span id="diag-iter">026</span>
       · JavaScript: <span id="diag-js">cargando…</span>
-      · Paquete: <span id="diag-package">022-one-click-activation</span>
+      · Paquete: <span id="diag-package">026-owner-command-center</span>
     </div>
 
     <!-- Navegación principal: HTML estático, visible sin JavaScript. -->
     <nav class="main-nav" id="main-nav">
-      <a href="#home" data-view="home" class="nav-link active">Inicio</a>
-      <a href="#campaign" data-view="campaign" class="nav-link">Campaña real</a>
-      <a href="#ideas" data-view="ideas" class="nav-link">Ideas <span id="ideas-badge" class="badge">0</span></a>
-      <a href="#research" data-view="research" class="nav-link">Investigación</a>
-      <a href="#committee" data-view="committee" class="nav-link">Comité <span id="rev-badge" class="badge">0</span></a>
-      <a href="#experiment" data-view="experiment" class="nav-link">Experimento</a>
-      <a href="#economy" data-view="economy" class="nav-link">Economía</a>
+      <a href="#home" data-view="home" class="nav-link active">Resumen</a>
+      <a href="/candidates" class="nav-link">Ganadora</a>
+      <a href="#committee" data-view="committee" class="nav-link">Revisiones <span id="rev-badge" class="badge">0</span></a>
       <a href="#activity" data-view="activity" class="nav-link">Actividad</a>
-      <a href="#command" data-view="command" class="nav-link">Centro de mando <span id="cmd-badge" class="badge">0</span></a>
-      <a href="/candidates" class="nav-link" target="_blank" rel="noopener">Candidatas</a>
-      <a href="/mission-control" class="nav-link" target="_blank" rel="noopener">Mission Control</a>
-      <a href="/agents-viz" class="nav-link" target="_blank" rel="noopener">Sistema Solar</a>
       <a href="#config" data-view="config" class="nav-link">Configuración <span id="count-badge" class="badge">0</span></a>
+      <details class="nav-more"><summary>Más</summary><div class="nav-more-menu">
+        <a href="#campaign" data-view="campaign" class="nav-link">Campaña real</a>
+        <a href="#ideas" data-view="ideas" class="nav-link">Ideas <span id="ideas-badge" class="badge">0</span></a>
+        <a href="#research" data-view="research" class="nav-link">Investigación</a>
+        <a href="#experiment" data-view="experiment" class="nav-link">Experimento</a>
+        <a href="#economy" data-view="economy" class="nav-link">Economía</a>
+        <a href="#command" data-view="command" class="nav-link">Mission Control <span id="cmd-badge" class="badge">0</span></a>
+        <a href="/arena" class="nav-link">Arena avanzada</a>
+        <a href="/mission-control" class="nav-link">Sistema Solar</a>
+      </div></details>
     </nav>
 
     <main class="app">
@@ -82,7 +90,7 @@
             <button id="btn-orc-cancel" class="btn btn-ghost btn-sm hidden">Cancelar</button>
           </div>
         </div>
-        <p class="hint">Un solo flujo: descubrimiento → ideas → filtros → torneo → investigación → evidencias → reevaluación → finalistas → comité → decisión → plan de experimento → PRE_CYCLE. El orquestador avanza automáticamente y se detiene <strong>honestamente</strong> donde hace falta investigación externa o una intervención legítima. <span class="tag tag-unverified">NO 24/7 · sin investigación web automática · los conceptos offline son SINTÉTICOS hasta tener evidencias con fuente</span></p>
+        <p class="hint">Un solo flujo: descubrimiento → ideas → filtros → torneo → investigación → evidencias → reevaluación → finalistas → comité → decisión → plan de experimento → PRE_CYCLE. El orquestador avanza automáticamente y se detiene <strong>honestamente</strong> donde hace falta investigación externa o una intervención legítima. <span class="tag tag-unverified">Runtime y conectores se muestran según el estado real; los conceptos offline son SINTÉTICOS hasta tener evidencias con fuente</span></p>
         <div id="orchestrator-panel" class="stack"></div>
         <div id="orchestrator-empty" class="empty hidden">
           <p>No hay campaña real en curso. Pulsa <strong>INICIAR CAMPAÑA REAL</strong> (portada) para crear la PRIMERA CAMPAÑA REAL 001 (60 conceptos iniciales, territorios diversos, sin ventaja de sector).</p>
@@ -220,6 +228,7 @@
       <section id="view-config" class="view hidden">
         <div class="view-head">
           <h2>Configuración y oportunidades avanzadas</h2>
+          <div class="card owner-advanced-note"><strong>Estado real del runtime:</strong> consulta el Centro de mando para ver OmniRoute, scheduler, worker, SAFE_PAUSE y las acciones pendientes.</div>
         </div>
         <div class="config-grid">
           <div class="card">
@@ -256,7 +265,7 @@
             <div id="providers-info">—</div>
           </div>
           <div class="card">
-            <h3>Sesiones Freebuff <span class="tag tag-unverified">FREEBUFF SESSION · NO 24/7 GUARANTEED · API COST 0</span></h3>
+            <h3>Sesiones Freebuff <span class="tag tag-unverified">Runtime supervisable · estado real · API COST 0</span></h3>
             <button id="btn-campaigns-demo" class="btn btn-ghost btn-sm" title="Crea el piloto SINTÉTICO FREEBUFF-FIRST PILOT 001">Piloto sintético</button>
             <div id="campaigns" class="stack" style="margin-top:10px"></div>
             <div id="campaigns-empty" class="empty hidden">
@@ -369,8 +378,11 @@
       </div>
     </noscript>
 
-    <script src="/app.js?v=0210"></script>
+    <script src="/app.js?v=0260"></script>
+    <script src="/owner.js?v=0260"></script>
     <script src="/ops17.js?v=0210"></script>
     <script src="/ops18.js?v=0210"></script>
+    <!-- Legacy route marker retained for backwards-compatible navigation. -->
+    <a class="sr-only" href="/agents-viz">Advanced agent activity</a>
   </body>
 </html>

@@ -133,8 +133,10 @@ def test_invalid_format(review_container):
     opp = _seed_finalist(review_container)
     review_container.reviews.queue_opportunity(opp.id, allow_demo=True)
 
-    with pytest.raises(ValidationError):
-        review_container.reviews.import_review(opp.id, ReviewImportIn(**_review_payload(REVIEW_VALID, filename="revision.json")))
+    invalid_json = "{not valid JSON"
+    result = review_container.reviews.import_review(opp.id, ReviewImportIn(**_review_payload(invalid_json, filename="revision.json")))
+    assert result["status"] in ("needs_validation", "partial")
+    assert result["review"]["recommendation"] is None
 
 
 def test_opportunity_not_found(review_container):

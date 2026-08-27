@@ -96,6 +96,42 @@ class ModeIn(BaseModel):
 # ---------------------------------------------------------------------------
 # Salud y configuración
 # ---------------------------------------------------------------------------
+@router.get("/owner/summary")
+def owner_summary(request: Request) -> dict:
+    """Resumen compacto para la home del propietario; solo datos persistidos."""
+    container = get_container(request)
+    conn = container.conn
+    row = conn.execute("SELECT * FROM runtime_state WHERE id = 1").fetchone()
+    runtime = {
+        "runtime": dict(row) if row else {},
+        "scheduler_running": container.scheduler.is_running,
+        "worker_running": container.worker.is_running,
+        "llm_router": container.llm_router.health(),
+        "job_counts": container.repos.jobs.count_by_status(),
+        "pending_approvals": len(container.repos.approvals.list_pending()),
+        "safe_pause": container.safe_pause.status(),
+    }
+    from app.services.preflight import run_preflight
+    preflight = run_preflight(container.conn, container.settings)
+    opportunities = container.opportunities.list_with_scores()
+    evaluations = []
+    for item in opportunities:
+        if item.get("status") in ("approved", "evaluated", "researching"):
+            evaluations.append(item)
+    winner = max(evaluations, key=lambda x: float(x.get("final_score") or 0), default=None)
+    reviews = container.repos.reviews.reviews_for(winner["id"]) if winner else []
+    synthesis = container.repos.reviews.get_synthesis(winner["id"]) if winner else None
+    return {
+        "status": "SAFE_PAUSED" if runtime.get("safe_pause", {}).get("active") else ("OPERATING_24_7" if runtime.get("scheduler_running") and runtime.get("worker_running") and runtime.get("llm_router", {}).get("available") else "CONFIGURATION_REQUIRED"),
+        "runtime": runtime,
+        "preflight": preflight,
+        "winner": {"opportunity": winner, "reviews": reviews, "synthesis": synthesis} if winner else None,
+        "next_action": "IMPORT_REVIEWS" if winner and not reviews else ("EVALUATE_CRITIQUES" if reviews and not synthesis else "VIEW_ACTIVITY"),
+        "real_money_moved": False,
+        "simulated": True,
+    }
+
+
 @router.get("/health")
 def health(request: Request) -> dict:
     container = get_container(request)

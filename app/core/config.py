@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     # --- Identidad -----------------------------------------------------
     app_name: str = "Autonomous Business Lab"
-    version: str = "0.24.0"
+    version: str = "0.25.0"
     log_level: str = "INFO"
 
     # --- Rutas ---------------------------------------------------------
@@ -224,7 +224,7 @@ class Settings(BaseSettings):
     review_continue_without_review: bool = True
     review_required_for_sensitive_activities: bool = True
     review_max_file_bytes: int = 200_000
-    review_allowed_extensions: tuple[str, ...] = (".txt", ".md", ".markdown")
+    review_allowed_extensions: tuple[str, ...] = (".txt", ".md", ".markdown", ".json")
     # Iteración 009: mínimo de GRUPOS de evidencia independientes para entrar
     # en el comité (además del umbral interno). Deterministica y configurable.
     review_min_evidence_groups: int = 3

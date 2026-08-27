@@ -133,6 +133,8 @@ class ReviewImportIn(BaseModel):
     filename: str = Field(min_length=1, max_length=300)
     content: str = Field(min_length=1, max_length=200_000)
     provider: str | None = Field(default=None, max_length=100)
+    # El modelo es opcional: el proveedor puede importar una respuesta manual
+    # sin exigir que Javier conozca el identificador exacto.
     model: str | None = Field(default=None, max_length=200)
     model_version: str | None = Field(default=None, max_length=100)
     execution_mode: str = Field(default=ReviewExecutionMode.manual_import.value)
@@ -185,6 +187,9 @@ class CombinedReviewImportIn(BaseModel):
 
     filename: str = Field(min_length=1, max_length=300)
     content: str = Field(min_length=1, max_length=200_000)
+    # Para un TXT simple la selección explícita prevalece sobre cualquier
+    # inferencia; las cabeceras solo son necesarias en archivos combinados.
+    provider: str | None = Field(default=None, max_length=100)
     default_model: str | None = Field(default=None, max_length=200)
     execution_mode: str = Field(default=ReviewExecutionMode.manual_import.value)
     imported_by: str = Field(default="human", max_length=200)

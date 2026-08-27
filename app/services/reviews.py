@@ -1011,7 +1011,9 @@ class ReviewService:
 
         parsed, errors, status = self.parse_review_response(payload.content)
 
-        provider = _sanitize_text(payload.provider or "unknown", 100).lower()
+        provider = _sanitize_text(payload.provider or "", 100).lower()
+        if not provider:
+            provider = self._infer_provider(payload.filename, payload.content)
         if provider not in KNOWN_PROVIDERS and provider != "unknown":
             errors.append(f"Proveedor '{provider}' no está en la lista de conocidos; se registra igualmente como dato.")
 
@@ -1081,6 +1083,15 @@ class ReviewService:
                 sections[provider] = body
         return sections
 
+    @staticmethod
+    def _infer_provider(filename: str, content: str) -> str:
+        """Inferencia conservadora para TXT simple; no rechaza por ausencia de cabecera."""
+        probe = f"{filename} {content[:600]}".lower()
+        for provider, terms in (("gpt", ("gpt", "chatgpt", "openai")), ("grok", ("grok", "x.ai")), ("gemini", ("gemini", "google")), ("claude", ("claude", "anthropic"))):
+            if any(term in probe for term in terms):
+                return provider
+        return "unknown"
+
     def import_combined_review(self, opportunity_id: str, payload: CombinedReviewImportIn) -> dict:
         """Importa un único archivo con secciones por revisor.
 
@@ -1099,10 +1110,13 @@ class ReviewService:
         validate_extension(payload.filename, self.settings.review_allowed_extensions)
 
         sections = self._split_combined_sections(payload.content)
+        # Un archivo simple también es válido: la UI ya puede aportar el
+        # proveedor y, si no, se intenta inferir de nombre/contenido.
         if not sections:
-            raise ValidationError(
-                "No se encontró ninguna sección válida (# GPT / # GROK / # GEMINI / # HUMAN_NOTE)."
-            )
+            inferred = _sanitize_text(payload.provider or "", 100).lower() or self._infer_provider(payload.filename, payload.content)
+            if inferred == "unknown":
+                raise ValidationError("Proveedor no detectado: selecciona GPT, Grok, Gemini o Claude.")
+            sections = {inferred: payload.content}
 
         imported: list[dict] = []
         skipped: list[dict] = []
