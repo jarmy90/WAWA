@@ -700,6 +700,12 @@ def connect(db_path: Path | str) -> sqlite3.Connection:
     # WAL serializa los accesos entre hilos.
     conn = sqlite3.connect(str(db_path), check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    # Iteración 023: busy_timeout evita que una colisión con OTRA conexión
+    # (p. ej. scripts de mantenimiento junto al servidor) reviente como
+    # "database is locked"; esperar acotado es preferible a fallar. La
+    # serialización del acceso concurrente DENTRO de la app se hace con el
+    # single-flight lock de las rutas del comité (ver app/api/routes.py).
+    conn.execute("PRAGMA busy_timeout = 5000")
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
     return conn

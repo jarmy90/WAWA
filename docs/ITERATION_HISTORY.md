@@ -264,3 +264,4 @@ borrar el historial previo.
   (recuperación idempotente: applied, sin duplicados).
 - Versión v0.21.0 / build 022-one-click-activation.
 - **Iteración 22** · 2026-08-26T21:41:48.109087+00:00 · paquete: `autonomous-business-lab_iteracion-022_2026-08-26.zip.txt` · tamaño: 9303052 bytes · SHA-256 (canónico): `999fdd5c2f3c70d95d4728d19ddb8c65f31fb9df147afcfc6e98b978171f71b1`
+- **Iteración 23** · 2026-08-27 · paquete: `autonomous-business-lab_iteracion-023_2026-08-27.zip.txt` · tamaño: 9316830 bytes · SHA-256 (canónico): `1c41e8ffc3d31f7be30563183695d0965cf82bacfef4ad93e7b6f500d78ec224`

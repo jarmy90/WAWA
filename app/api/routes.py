@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -769,6 +770,16 @@ def discovery_learning(request: Request, kind: str | None = None) -> dict:
 # Las revisiones son OPINIÓN de modelos, nunca evidencia de demanda.
 REVIEW_NOTICE = {"model_opinion_not_evidence": True, "real_money_moved": False}
 
+# Iteración 023: single-flight para síntesis/decisión del comité. La conexión
+# SQLite es COMPARTIDA entre hilos (uvicorn atiende peticiones en paralelo) y
+# sqlite3 no serializa una transacción entre hilos. Un doble clic (o dos
+# operaciones solapadas síntesis+decisión) podía abrir un COMMIT a mitad de la
+# lectura del otro hilo → "cannot start a transaction within a transaction" →
+# error no manejado → el frontend se quedaba en "Sintetizando…" para siempre.
+# El lock garantiza que solo UNA operación del comité accede a la vez; es
+# idempotente y rápido (determinista), así que reintentar es seguro.
+_COMMITTEE_OPS_LOCK = threading.RLock()
+
 
 @router.post("/reviews/opportunities/{opportunity_id}/auto-review-omniroute")
 def reviews_auto_review_omniroute(request: Request, opportunity_id: str = Depends(valid_id)) -> dict:
@@ -825,7 +836,8 @@ def reviews_download_packet(request: Request, opportunity_id: str = Depends(vali
 @router.post("/reviews/opportunities/{opportunity_id}/import")
 def reviews_import(request: Request, payload: ReviewImportIn, opportunity_id: str = Depends(valid_id)) -> dict:
     container = get_container(request)
-    result = container.reviews.import_review(opportunity_id, payload)
+    with _COMMITTEE_OPS_LOCK:
+        result = container.reviews.import_review(opportunity_id, payload)
     return {**REVIEW_NOTICE, **result}
 
 
@@ -846,7 +858,8 @@ def reviews_import_combined(
 ) -> dict:
     """Importa un archivo combinado (# GPT / # GROK / # GEMINI / # HUMAN_NOTE)."""
     container = get_container(request)
-    result = container.reviews.import_combined_review(opportunity_id, payload)
+    with _COMMITTEE_OPS_LOCK:
+        result = container.reviews.import_combined_review(opportunity_id, payload)
     return {**REVIEW_NOTICE, **result}
 
 
@@ -855,7 +868,8 @@ def reviews_decide(request: Request, opportunity_id: str = Depends(valid_id)) ->
     """Decisión autónoma determinista (sin votos del propietario). Nunca
     autoriza producción, gasto, ingresos ni elimina bloqueadores."""
     container = get_container(request)
-    result = container.reviews.committee_decision(opportunity_id)
+    with _COMMITTEE_OPS_LOCK:
+        result = container.reviews.committee_decision(opportunity_id)
     return {**REVIEW_NOTICE, **result}
 
 
@@ -894,8 +908,27 @@ def reviews_invalidate(request: Request, review_id: str = Depends(valid_review_i
 @router.post("/reviews/opportunities/{opportunity_id}/synthesize")
 def reviews_synthesize(request: Request, opportunity_id: str = Depends(valid_id)) -> dict:
     container = get_container(request)
-    synthesis = container.reviews.synthesize(opportunity_id)
+    with _COMMITTEE_OPS_LOCK:
+        synthesis = container.reviews.synthesize(opportunity_id)
     return {**REVIEW_NOTICE, "synthesis": synthesis}
+
+
+@router.post("/reviews/opportunities/{opportunity_id}/synthesize-and-decide")
+def reviews_synthesize_and_decide(request: Request, opportunity_id: str = Depends(valid_id)) -> dict:
+    """Operación compuesta IDEMPOTENTE (iteración 023): valida revisiones,
+    reutiliza la síntesis persistida si corresponde, sintetiza, decide,
+    persiste y devuelve UN único contrato con `operation_id` y `status`.
+
+    Reintenable tras timeout/refresco; sin llamadas LLM; sin modificar
+    evidencia; sin iniciar PRE_CYCLE; sin conectar servicios; sin autorizar
+    producción. Si la decisión es MORE_RESEARCH crea UNA misión específica
+    (nunca repite las 18); si es REJECT señala las candidatas siguientes sin
+    inventar sustitutas.
+    """
+    container = get_container(request)
+    with _COMMITTEE_OPS_LOCK:
+        result = container.reviews.synthesize_and_decide(opportunity_id)
+    return result
 
 
 @router.post("/reviews/opportunities/{opportunity_id}/continue")

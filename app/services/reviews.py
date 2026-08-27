@@ -1462,6 +1462,152 @@ class ReviewService:
         self._log_committee_decision(opportunity_id, result, reviews)
         return result
 
+    # ==================================================================
+    # Operación compuesta idempotente (iteración 023)
+    # ==================================================================
+    def synthesize_and_decide(self, opportunity_id: str) -> dict:
+        """Valida revisiones → sintetiza → decide, en UNA operación.
+
+        Determinista, sin llamadas LLM, sin modificar evidencia y reutilizable:
+        si la síntesis persistida corresponde al MISMO conjunto de revisiones,
+        se reutiliza (no se duplica). El `operation_id` deriva del estado
+        persistido: un reintento o una recarga de página obtiene el mismo id
+        para el mismo estado. Nunca autoriza producción, gasto ni ingresos.
+        """
+        if self.repos.opportunities.get(opportunity_id) is None:
+            raise NotFoundError("Oportunidad no encontrada.")
+        reviews = self.repos.reviews.reviews_for(opportunity_id)
+        valid = [r for r in reviews if r["status"] in ("valid", "partial")]
+        invalid = [
+            {
+                "id": str(r["id"])[:8],
+                "provider": r["provider"],
+                "status": r["status"],
+                "reason": "; ".join(r.get("parse_errors") or []) or "sin recomendación válida",
+            }
+            for r in reviews
+            if r["status"] not in ("valid", "partial")
+        ]
+
+        # Reutilización idempotente de la síntesis previa SOLO si sigue vigente
+        # para el mismo conjunto; si cambió (nueva importación), se regenera.
+        synthesis = self.repos.reviews.get_synthesis(opportunity_id)
+        reused = bool(synthesis) and int(synthesis.get("valid_reviews_count") or 0) == len(valid) and (
+            int(synthesis.get("reviews_count") or 0) == len(reviews)
+        )
+        if not reused:
+            synthesis = self.synthesize(opportunity_id)
+
+        decision = self.committee_decision(opportunity_id)
+        decision_value = decision.get("decision") or "MORE_RESEARCH"
+
+        # Avance legítimo automático según la decisión.
+        followup: dict = {"kind": "none"}
+        if decision_value == "MORE_RESEARCH":
+            mission = self._ensure_more_research_mission(opportunity_id)
+            if mission:
+                followup = {
+                    "kind": "SPECIFIC_MISSION_CREATED",
+                    "mission_id": (mission or {}).get("mission_id"),
+                    "note": "Una única misión específica DEMAND_REALITY_CHECK (no se repiten las 18); indica exactamente la evidencia que falta.",
+                }
+            else:
+                followup = {
+                    "kind": "MISSION_EXISTS_OR_SKIPPED",
+                    "note": "Ya existe una misión específica pendiente o el servicio de misiones no está disponible.",
+                }
+        elif decision_value == "REJECT":
+            others = [
+                {"opportunity_id": q["opportunity_id"], "internal_score": q.get("internal_score")}
+                for q in self.repos.reviews.list_queue()
+                if q["opportunity_id"] != opportunity_id and q.get("status") == "pending"
+            ]
+            followup = {
+                "kind": "EVALUATE_SECOND_CANDIDATE",
+                "alternatives": others[:3],
+                "note": "Se conservan las candidatas investigadas reales; no se inventa sustituta.",
+            }
+        elif decision_value in ("SMALL_EXPERIMENT", "PRIORITY_EXPERIMENT"):
+            followup = {
+                "kind": "CONNECT_SERVICES_ENABLED",
+                "note": "Paso CONECTAR SERVICIOS habilitado visualmente; nada se conecta automáticamente.",
+            }
+
+        # operation_id determinista a partir del estado persistido.
+        fingerprint = json.dumps(
+            [sorted(str(r["id"]) for r in reviews), len(valid), synthesis.get("generated_at"), decision_value],
+            ensure_ascii=False,
+        )
+        operation_id = f"syndec-{hashlib.sha256(fingerprint.encode()).hexdigest()[:16]}"
+
+        return {
+            "model_opinion_not_evidence": True,
+            "real_money_moved": False,
+            "authorizes_production": False,
+            "operation_id": operation_id,
+            "status": "completed",
+            "opportunity_id": opportunity_id,
+            "reviews": {"total": len(reviews), "valid": len(valid), "invalid_or_absent": invalid},
+            "synthesis": synthesis,
+            "synthesis_reused": reused,
+            "decision": decision,
+            "winner_continues": decision_value in ("SMALL_EXPERIMENT", "PRIORITY_EXPERIMENT"),
+            "followup": followup,
+            "next_step_exact": self._next_step_label(decision_value),
+        }
+
+    @staticmethod
+    def _next_step_label(decision_value: str) -> str:
+        return {
+            "SMALL_EXPERIMENT": "CONECTAR SERVICIOS (asistente gráfico; nada conectado automáticamente).",
+            "PRIORITY_EXPERIMENT": "CONECTAR SERVICIOS (asistente gráfico; nada conectado automáticamente).",
+            "MORE_RESEARCH": "Realizar la misión específica generada e importar su resultado en Mission Control.",
+            "REJECT": "Evaluar la segunda candidata con el mismo asistente; no se inventa sustituta.",
+            "AWAITING_REVIEW": "Opcional: esperar más revisiones o continuar sin revisión (ausencia neutral).",
+        }.get(decision_value, "Revisar el estado del comité.")
+
+    def _ensure_more_research_mission(self, opportunity_id: str) -> dict | None:
+        """Garantiza UNA misión específica para la evidencia que falta.
+
+        Idempotente: si ya existe una misión DEMAND_REALITY_CHECK activa
+        (exported) para esta oportunidad, la devuelve sin duplicar. Nunca abre
+        campaña nueva ni regenera las misiones de Fase 1.
+        """
+        discovery = getattr(self, "discovery", None)
+        if discovery is None:
+            return None
+        for m in self.repos.discovery.list_missions():
+            target = m.get("target") or {}
+            if (
+                target.get("opportunity_id") == opportunity_id
+                and m.get("kind") == "DEMAND_REALITY_CHECK"
+                and m.get("status") == "exported"
+            ):
+                return m
+        try:
+            mission = discovery.create_mission(kind="DEMAND_REALITY_CHECK", opportunity_id=opportunity_id)
+            syn = self.repos.reviews.get_synthesis(opportunity_id) or {}
+            missing = list(syn.get("missing_evidence") or [])[:5]
+            target = dict(mission.target)
+            if missing:
+                target["missing_evidence_noted_by_committee"] = missing
+            self.repos.discovery.update_mission_target(mission.mission_id, target)
+            self._log(
+                agent="committee_followup",
+                opportunity_id=opportunity_id,
+                summary=(
+                    f"MORE_RESEARCH: misión específica creada ({str(mission.mission_id)[:8]}), "
+                    "evidencia demandada explícita; no se abren campañas nuevas."
+                ),
+                decision="mission_created",
+                model_or_method="deterministic_rule",
+            )
+            saved = self.repos.discovery.get_mission(mission.mission_id)
+            return saved or {"mission_id": mission.mission_id}
+        except Exception as exc:  # nunca romper la decisión por el follow-up
+            self.log.warning("No se pudo crear la misión específica: %s", exc)
+            return None
+
     def _base_decision(
         self, opportunity_id: str, item: dict, evaluation, packet_ok: bool, *, extra_reason: str, confidence_delta: float
     ) -> dict:

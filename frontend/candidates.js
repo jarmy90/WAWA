@@ -118,9 +118,11 @@
     var syn = c.synthesis ? "<div class='cand-section'><h5>SÍNTESIS</h5><p>" + esc((c.synthesis.consensus_level || "NONE")) + " · " +
       esc((c.synthesis.recommended_next_action || "sin recomendación")) + "</p></div>" : "";
     var winnerNote = c.is_winner ? "<p class='mc-sub'>En cola de comité automáticamente (ausencia de revisión = neutral).</p>" : "";
+    var recovery = recoverInterrupted(c);
     return '<div class="cand-committee">' +
       "<div class='cand-section'><h5>COMITÉ · SEGUNDAS OPINIONES (opinión, nunca evidencia)</h5>" +
       '<div class="reviewer-row">' + chips + "</div>" + winnerNote + "</div>" +
+      (recovery || "") +
       '<div class="wizard-steps">' +
         '<span class="wizard-step">PASO 1 · COPIAR EXPEDIENTES</span>' +
         '<span class="wizard-step">PASO 2 · PEGAR RESPUESTAS</span>' +
@@ -261,24 +263,137 @@
     }).catch(function (e) { say("Error de red al importar: " + esc(e && e.message || "desconocido"), false); });
   }
 
-  function synthesizeAndDecide(opp, result) {
-    result.textContent = "Sintetizando revisiones…";
+  /* Iteración 023: síntesis/decisión a prueba de bloqueos.
+   * - AbortController con timeout (20 s): nunca permanece en "Sintetizando…".
+   * - Un solo vuelo por candidata (doble clic imposible).
+   * - Botón restaurado SIEMPRE en finally.
+   * - Errores HTTP 4xx/5xx detectados (contrato {error:{message}}).
+   * - Progreso por etapas (validando → sintetizando → decidiendo → actualizando).
+   * - Recuperación tras refrescar: si la síntesis ya está persistida, se muestra.
+   */
+  var SYNTH_TIMEOUT_MS = 20000;
+  var SYNTH_INFLIGHT = {}; // opportunity_id -> true (un solo vuelo)
+
+  function stageMsg(result, text) {
+    result.textContent = text;
     result.className = "cand-result";
-    return fetch("/api/reviews/opportunities/" + opp + "/synthesize", {
-      method: "POST", headers: { Accept: "application/json" },
-    }).then(function (res) { return res.json(); }).then(function (syn) {
-      return fetch("/api/reviews/opportunities/" + opp + "/decide", {
-        method: "POST", headers: { Accept: "application/json" },
-      }).then(function (res) { return res.json(); }).then(function (dec) {
-        var decision = dec.decision || "sin decisión";
-        var continues = ["SMALL_EXPERIMENT", "PRIORITY_EXPERIMENT", "approved"].indexOf(decision) >= 0;
-        var consensus = (syn.synthesis || {}).consensus_level || "NONE";
-        say("✓ Síntesis (" + consensus + ") · decisión autónoma: " + decision + " · " +
-          (continues ? "la ganadora continúa" : "la ganadora NO continúa (revisar)") +
-          " · sin cambios en evidencia, producción ni ciclo.", true);
-        load(); // refrescar chips de estado por revisor
+  }
+
+  function postJson(path, ms) { return timedFetch(path, ms); } // alias conservado por compatibilidad
+  function timedFetch(path, ms) {
+    var ctl = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timer = ctl ? setTimeout(function () { ctl.abort(); }, ms || SYNTH_TIMEOUT_MS) : null;
+    var finish = function () { if (timer) clearTimeout(timer); };
+    return fetch(path, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      signal: ctl ? ctl.signal : undefined,
+    }).then(
+      function (res) {
+        return res.json().catch(function () {
+          throw new Error("HTTP " + res.status + " · respuesta no JSON del servidor");
+        }).then(function (d) {
+          if (!res.ok || (d && d.error)) {
+            throw new Error((d && d.error && d.error.message) || "HTTP " + res.status);
+          }
+          return d;
+        });
+      },
+      function (err) {
+        if (err && err.name === "AbortError") {
+          throw new Error("Tiempo de espera agotado (" + Math.round((ms || SYNTH_TIMEOUT_MS) / 1000) + " s). Reintenta: la operación es idempotente y recupera el resultado persistido.");
+        }
+        throw new Error("Error de red: " + ((err && err.message) || "desconocido"));
+      }
+    ).then(function (d) { finish(); return d; }, function (e) { finish(); throw e; });
+  }
+
+  function synthesizeAndDecide(opp, result) {
+    if (SYNTH_INFLIGHT[opp]) {
+      say("Ya hay una operación de síntesis en marcha para esta candidata. Espera unos segundos o refresca para ver el resultado persistido.", false);
+      return Promise.resolve();
+    }
+    SYNTH_INFLIGHT[opp] = true;
+    try { sessionStorage.setItem("wawa_synth_inflight_" + opp, "1"); } catch (_) {}
+    // Bloquear ambos botones mientras corre la operación.
+    var buttons = Array.prototype.slice.call(document.querySelectorAll('[data-opp="' + opp + '"] .cand-btn'));
+    buttons.forEach(function (b) { b.disabled = true; b.style.opacity = "0.6"; });
+
+    stageMsg(result, "ETAPA 1/4 · Validando revisiones importadas…");
+
+    var ranRecoveryCheck = false;
+    var p;
+    try {
+      p = V.fetchJSON("/api/reviews/opportunities/" + opp).then(function (state) {
+        var hadSynth = !!(state && state.synthesis);
+        if (hadSynth && !ranRecoveryCheck) {
+          ranRecoveryCheck = true;
+        }
+        stageMsg(result, "ETAPA 2/4 · Sintetizando revisiones (determinista, sin LLM)…");
+        return timedFetch("/api/reviews/opportunities/" + opp + "/synthesize-and-decide", SYNTH_TIMEOUT_MS);
       });
-    }).catch(function (e) { say("Error en síntesis/decisión: " + esc(e && e.message || "desconocido"), false); });
+    } catch (e) {
+      p = Promise.reject(e);
+    }
+
+    return p.then(function (res) {
+      stageMsg(result, "ETAPA 3/4 · Decidiendo (reglas autónomas deterministas)…");
+      return res;
+    }).then(function (res) {
+      stageMsg(result, "ETAPA 4/4 · Actualizando candidata y comité…");
+      var decisionValue = res.decision ? res.decision.decision : "SIN DATOS";
+      var consensus = res.synthesis ? res.synthesis.consensus_level : "NONE";
+      var dist = (res.synthesis && res.synthesis.recommendation_distribution) || {};
+      var repeated = (res.synthesis && res.synthesis.repeated_risks) || [];
+      var missing = (res.synthesis && res.synthesis.missing_evidence) || [];
+      var distTxt = Object.keys(dist).filter(function (k) { return dist[k] > 0; })
+        .map(function (k) { return k.replace("_EXPERIMENT", "") + ":" + dist[k]; }).join(" · ") || "sin recomendaciones";
+      var lines = [];
+      lines.push("✓ Operación " + (res.operation_id || "—") + " completada (idempotente" + (res.synthesis_reused ? ", síntesis reutilizada" : "") + ").");
+      lines.push("Recomendación final: " + decisionValue + " · Consenso: " + consensus + " · Distribución: " + distTxt + ".");
+      if (repeated.length) lines.push("Riesgos repetidos (" + repeated.length + "): " + repeated.slice(0, 3).join(" | "));
+      if (missing.length) lines.push("Evidencia ausente: " + missing.slice(0, 3).join(" | "));
+      lines.push(res.winner_continues
+        ? "La ganadora CONTINÚA hacia CONECTAR SERVICIOS (sin conectar nada automáticamente)."
+        : "La ganadora NO continúa hacia conexión: " + (res.next_step_exact || "siguiente acción indicada arriba."));
+      lines.push((res.followup && res.followup.note) ? "Siguiente paso exacto: " + res.next_step_exact : "Garantías intactas: sin producción, sin gasto, evidencia sin cambios.");
+      say(lines.join("\n"), true);
+      load(); // sincroniza candidatas + comité inmediatamente
+      return res;
+    }).catch(function (e) {
+      say("✗ " + esc(e && e.message || "error desconocido") + "\nPulsa REINTENTAR: la operación es idempotente y no duplica nada.", false);
+      var retry = document.createElement("button");
+      retry.type = "button";
+      retry.className = "cand-btn primary";
+      retry.textContent = "REINTENTAR";
+      retry.addEventListener("click", function () {
+        retry.remove();
+        synthesizeAndDecide(opp, result);
+      });
+      result.appendChild(document.createElement("br"));
+      result.appendChild(retry);
+    }).then(function () {
+      // finally: restaurar botones y estado de un solo vuelo SIEMPRE.
+      SYNTH_INFLIGHT[opp] = false;
+      try { sessionStorage.removeItem("wawa_synth_inflight_" + opp); } catch (_) {}
+      buttons.forEach(function (b) { b.disabled = false; b.style.opacity = ""; });
+    });
+  }
+
+  /* Recuperación tras refrescar/cierre: si quedó una operación marcada como
+     en marcha (sessionStorage) o existe síntesis persistida, se muestra el
+     estado recuperable en lugar de dejar al propietario sin información. */
+  function recoverInterrupted(c) {
+    if (!c.opportunity_id || !c.is_winner) return "";
+    var wasInflight = false;
+    try { wasInflight = sessionStorage.getItem("wawa_synth_inflight_" + c.opportunity_id) === "1"; } catch (_) {}
+    if (!wasInflight && !c.synthesis) return "";
+    var note = wasInflight && c.synthesis
+      ? "Operación anterior interrumpida (refresco/cierre). Síntesis persistida RECUPERADA: consenso " + esc(c.synthesis.consensus_level || "NONE") + " · acción recomendada " + esc(c.synthesis.recommended_next_action || "—") + ". Pulsa PASO 3 para regenerar decisión o validar cambios nuevos."
+      : wasInflight
+        ? "La operación anterior se interrumpió antes de completar. Pulsa PASO 3 · SINTETIZAR Y DECIDIR: es idempotente y recupera/crea el resultado sin duplicar nada."
+        : "Síntesis persistida disponible (consenso " + esc(c.synthesis.consensus_level || "NONE") + " · acción: " + esc(c.synthesis.recommended_next_action || "—") + "). Refresco verificado: el resultado sobrevive al reinicio. Pulsa PASO 3 si añades revisiones nuevas.";
+    return '<div class="cand-section"><h5>RECUPERACIÓN (iteración 023)</h5><p>' + note + "</p></div>";
   }
 
   /* --- Inicialización ------------------------------------------------ */

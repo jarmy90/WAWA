@@ -79,6 +79,7 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     exports = ExportService(repos)
     imports = ImportService(settings, repos, pipeline)
     reviews = ReviewService(settings, repos, engine=engine, providers=providers)
+    reviews.discovery = discovery  # iteración 023: misión específica si MORE_RESEARCH
     pipeline.reviews = reviews  # cola automática de finalistas en el Judge
     campaigns = CampaignService(settings, repos, discovery, reviews, engine=engine)
     orchestrator = CampaignOrchestrator(
