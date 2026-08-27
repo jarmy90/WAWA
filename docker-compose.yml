@@ -1,0 +1,87 @@
+# WAWA Autonomous 24/7 Runtime — Docker Compose (iteración 025)
+#
+# Services:
+#   - wawa-api: FastAPI + scheduler + worker (single process)
+#   - omniroute: LLM gateway (separate service, not public)
+#
+# Usage:
+#   docker compose up -d           # start
+#   docker compose down            # stop
+#   docker compose logs -f wawa-api  # follow logs
+#   docker compose exec wawa-api sh  # shell into API
+#
+# Secrets: pass via .env file or environment variables.
+# NEVER commit .env to Git.
+
+services:
+  wawa-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wawa-api
+    ports:
+      - "8000:8000"
+    environment:
+      - AUTONOMOUS_RUNTIME_ENABLED=true
+      - AUTONOMOUS_SCHEDULER_ENABLED=true
+      - AUTONOMOUS_WORKER_ENABLED=true
+      - OMNIROUTE_ENABLED=true
+      - OMNIROUTE_BASE_URL=http://omniroute:20128/v1
+      - WAWA_OPERATING_MODE=AUTONOMOUS_24_7
+    env_file:
+      - .env
+    volumes:
+      - wawa-data:/app/data
+      - wawa-logs:/app/data/logs
+    depends_on:
+      omniroute:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/runtime/status')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    networks:
+      - wawa-internal
+
+  omniroute:
+    image: ghcr.io/jarmy90/omniroute:latest
+    container_name: omniroute
+    ports:
+      - "127.0.0.1:20128:20128"  # Bind to localhost only — never public
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:20128/v1/models"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    networks:
+      - wawa-internal
+
+volumes:
+  wawa-data:
+    driver: local
+  wawa-logs:
+    driver: local
+
+networks:
+  wawa-internal:
+    driver: bridge
+    internal: true  # No external access to OmniRoute

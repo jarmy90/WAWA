@@ -46,7 +46,7 @@ class Settings(BaseSettings):
 
     # --- Identidad -----------------------------------------------------
     app_name: str = "Autonomous Business Lab"
-    version: str = "0.23.0"
+    version: str = "0.24.0"
     log_level: str = "INFO"
 
     # --- Rutas ---------------------------------------------------------
@@ -136,8 +136,47 @@ class Settings(BaseSettings):
     # PRODUCTION_ARMED. La activación final sigue bloqueada en esta iteración
     # (no existe economía real ni integración financiera verificada).
     operating_mode: Literal[
-        "development_and_review", "simulation", "shadow_mode", "production_armed", "autonomous_production", "safe_pause"
+        "development_and_review", "simulation", "shadow_mode", "production_armed",
+        "autonomous_production", "safe_pause", "autonomous_24_7",
     ] = "development_and_review"
+
+    # --- Autonomous 24/7 Runtime (iteración 025) ------------------------
+    # WAWA_OPERATING_MODE controla el modo de operación del runtime.
+    wawa_operating_mode: str = "FREEBUFF_SESSION_ONLY"
+
+    # Scheduler & Worker (solo un proceso; duplicados por Uvicorn son un error)
+    autonomous_runtime_enabled: bool = False
+    autonomous_scheduler_enabled: bool = False
+    autonomous_worker_enabled: bool = False
+    autonomous_poll_interval_seconds: int = 15
+    autonomous_max_concurrent_jobs: int = 2
+    autonomous_job_lease_seconds: int = 600
+
+    # OmniRoute como runtime principal del modo autónomo
+    # (campos adicionales; los base ya existen más arriba)
+    omniroute_model_allowlist: str = ""  # CSV de slugs permitidos
+    omniroute_default_model: str = "auto"
+
+    # LLM limits for autonomous runtime
+    llm_max_requests_per_minute: int = 10
+    llm_max_requests_per_day: int = 500
+    llm_max_tokens_per_job: int = 12000
+    llm_max_tokens_per_day: int = 150000
+    llm_max_estimated_cost_usd_per_day: float = 0.0
+    llm_hard_budget_enforcement: bool = True
+    llm_max_retries: int = 2
+    llm_circuit_failure_threshold: int = 5
+    llm_circuit_cooldown_seconds: int = 900
+
+    # Permission gates for autonomous mode (all false/locked by default)
+    autonomous_allow_real_research: bool = True
+    autonomous_allow_external_reads: bool = True
+    autonomous_allow_external_writes: bool = False
+    autonomous_allow_outbound_contact: bool = False
+    autonomous_allow_publication: bool = False
+    autonomous_allow_financial_actions: bool = False
+    autonomous_allow_code_execution: bool = False
+    autonomous_allow_production_deployment: bool = False
     engine_activation_key: str | None = None
 
     # --- Capacidad de producción (regla explícita, auditable) -------------

@@ -28,6 +28,8 @@ class NoCacheStaticFiles(StaticFiles):
         response.headers["Cache-Control"] = "no-store"
         return response
 
+from contextlib import asynccontextmanager
+
 from app.api.routes import router as api_router
 from app.core.config import get_settings
 from app.core.container import AppContainer, build_container
@@ -35,6 +37,58 @@ from app.core.errors import AppError
 from app.core.logging import get_logger
 
 log = get_logger("main")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifespan: arranca y detiene el scheduler y worker del
+    runtime autónomo 24/7 (iteración 025)."""
+    container: AppContainer = app.state.container
+    settings = container.settings
+
+    # Arrancar scheduler y worker SOLO si están habilitados
+    if settings.autonomous_scheduler_enabled:
+        container.scheduler.start()
+        log.info("Autonomous scheduler started")
+    if settings.autonomous_worker_enabled:
+        container.worker.start()
+        log.info("Autonomous worker started")
+
+    # Actualizar runtime state
+    now = _now_lifespan()
+    container.conn.execute(
+        """UPDATE runtime_state SET
+           operating_mode = CASE
+               WHEN ? = 'true' THEN 'AUTONOMOUS_24_7'
+               ELSE 'OFFLINE'
+           END,
+           scheduler_running = ?,
+           worker_running = ?,
+           omniroute_available = ?,
+           updated_at = ?
+           WHERE id = 1""",
+        (
+            str(settings.autonomous_runtime_enabled).lower(),
+            int(container.scheduler.is_running),
+            int(container.worker.is_running),
+            int(container.llm_router.available()),
+            now,
+        ),
+    )
+    container.conn.commit()
+    log.info(f"Runtime state initialized: mode={settings.wawa_operating_mode}")
+
+    yield  # --- App is running ---
+
+    # Shutdown
+    container.scheduler.stop()
+    container.worker.stop()
+    log.info("Autonomous runtime stopped")
+
+
+def _now_lifespan() -> str:
+    import datetime
+    return datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def create_app(container: AppContainer | None = None) -> FastAPI:
@@ -48,6 +102,7 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
         title=settings.app_name,
         version=settings.version,
         description="Motor autónomo de investigación y selección de oportunidades (MVP local).",
+        lifespan=lifespan,
     )
     app.state.container = container
 

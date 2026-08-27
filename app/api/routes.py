@@ -1338,3 +1338,180 @@ def arena_events(
 @router.post("/arena/reset")
 def arena_reset(request: Request) -> dict:
     return get_container(request).arena.reset()
+
+
+# =====================================================================
+# AUTONOMOUS 24/7 RUNTIME (iteración 025)
+# =====================================================================
+
+@router.get("/runtime/status")
+def runtime_status(request: Request) -> dict:
+    """Estado completo del runtime autónomo: scheduler, worker, OmniRoute,
+    circuit breaker, jobs, approvals, SAFE_PAUSE."""
+    container = get_container(request)
+    conn = container.conn
+    row = conn.execute("SELECT * FROM runtime_state WHERE id = 1").fetchone()
+    runtime = dict(row) if row else {}
+
+    job_counts = container.repos.jobs.count_by_status()
+    pending_approvals = container.repos.approvals.list_pending()
+
+    return {
+        "runtime": runtime,
+        "scheduler_running": container.scheduler.is_running,
+        "worker_running": container.worker.is_running,
+        "llm_router": container.llm_router.health(),
+        "job_counts": job_counts,
+        "pending_approvals": len(pending_approvals),
+        "safe_pause": container.safe_pause.status(),
+    }
+
+
+@router.get("/runtime/preflight")
+def runtime_preflight(request: Request) -> dict:
+    """Preflight: ¿listo para 24/7 autónomo?"""
+    container = get_container(request)
+    from app.services.preflight import run_preflight
+    return run_preflight(container.conn, container.settings)
+
+
+@router.get("/runtime/jobs")
+def runtime_jobs(
+    request: Request,
+    status: str | None = Query(default=None),
+    job_type: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+) -> dict:
+    """Lista de jobs con filtros opcionales."""
+    container = get_container(request)
+    jobs = container.repos.jobs.list_jobs(status=status, job_type=job_type, limit=limit)
+    return {"jobs": jobs, "total": len(jobs)}
+
+
+@router.post("/runtime/jobs")
+def runtime_create_job(request: Request, payload: dict) -> dict:
+    """Crear un job manualmente (para testing o intervención del propietario)."""
+    container = get_container(request)
+    job = container.repos.jobs.create_job(
+        job_type=payload.get("job_type", "maintenance_healthcheck"),
+        payload=payload.get("payload", {}),
+        priority=payload.get("priority", 2),
+        idempotency_key=payload.get("idempotency_key", ""),
+        purpose=payload.get("purpose", "maintenance"),
+    )
+    return {"job": job}
+
+
+@router.post("/runtime/jobs/{job_id}/cancel")
+def runtime_cancel_job(request: Request, job_id: str = Depends(valid_id)) -> dict:
+    container = get_container(request)
+    container.repos.jobs.cancel(job_id)
+    return {"cancelled": True, "job_id": job_id}
+
+
+@router.post("/runtime/jobs/{job_id}/retry")
+def runtime_retry_job(request: Request, job_id: str = Depends(valid_id)) -> dict:
+    """Forzar un job FAILED de vuelta a PENDING para reintento."""
+    container = get_container(request)
+    conn = container.conn
+    conn.execute(
+        "UPDATE job_queue SET status = 'PENDING', updated_at = ? WHERE job_id = ? AND status = 'FAILED'",
+        (_now_str(), job_id),
+    )
+    conn.commit()
+    return {"retried": True, "job_id": job_id}
+
+
+@router.post("/runtime/pause")
+def runtime_pause(request: Request, payload: dict | None = None) -> dict:
+    """Activar SAFE_PAUSE."""
+    container = get_container(request)
+    reason = (payload or {}).get("reason", "Manual pause by owner")
+    scope = (payload or {}).get("scope", "GLOBAL")
+    return container.safe_pause.activate(reason, scope)
+
+
+@router.post("/runtime/resume")
+def runtime_resume(request: Request) -> dict:
+    """Desactivar SAFE_PAUSE y reanudar jobs."""
+    container = get_container(request)
+    return container.safe_pause.deactivate(actor="owner_api")
+
+
+@router.get("/runtime/approvals")
+def runtime_approvals(request: Request) -> dict:
+    """Cola de aprobaciones pendientes del propietario."""
+    container = get_container(request)
+    pending = container.repos.approvals.list_pending()
+    return {"approvals": pending, "count": len(pending)}
+
+
+@router.post("/runtime/approvals/{approval_id}/decide")
+def runtime_decide_approval(
+    request: Request,
+    approval_id: str = Depends(valid_id),
+    payload: dict | None = None,
+) -> dict:
+    container = get_container(request)
+    data = payload or {}
+    decision = data.get("decision", "approved")
+    notes = data.get("notes", "")
+    result = container.repos.approvals.decide(approval_id, decision, notes=notes)
+    return {"decided": True, "approval": result}
+
+
+@router.get("/runtime/usage")
+def runtime_usage(request: Request) -> dict:
+    """Consumo de LLM: tokens, requests, coste hoy."""
+    container = get_container(request)
+    return container.llm_router.health()
+
+
+@router.get("/runtime/provider-health")
+def runtime_provider_health(request: Request) -> dict:
+    """Salud del proveedor OmniRoute."""
+    container = get_container(request)
+    return container.llm_router.health()
+
+
+@router.get("/runtime/audit")
+def runtime_audit(
+    request: Request,
+    limit: int = Query(default=100, ge=1, le=500),
+) -> dict:
+    """Últimos eventos de auditoría del runtime."""
+    container = get_container(request)
+    rows = container.conn.execute(
+        "SELECT * FROM engine_events ORDER BY id DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    return {"events": [dict(r) for r in rows], "count": len(rows)}
+
+
+@router.post("/runtime/backup")
+def runtime_backup(request: Request) -> dict:
+    """Forzar backup de la base de datos."""
+    container = get_container(request)
+    job = container.repos.jobs.create_job(
+        job_type="maintenance_backup", priority=1, purpose="maintenance",
+    )
+    return {"job": job, "message": "Backup job enqueued"}
+
+
+@router.get("/runtime/daily-summary")
+def runtime_daily_summary(request: Request) -> dict:
+    """Resumen diario de operación autónoma."""
+    container = get_container(request)
+    job_counts = container.repos.jobs.count_by_status()
+    usage = container.llm_router.health()
+    safe_pause = container.safe_pause.status()
+    return {
+        "job_counts": job_counts,
+        "usage": usage,
+        "safe_pause": safe_pause,
+    }
+
+
+def _now_str() -> str:
+    import datetime
+    return datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")

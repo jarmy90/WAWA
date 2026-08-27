@@ -26,6 +26,7 @@ from app.repositories.opportunities import OpportunityRepository
 from app.repositories.arena import ArenaRepository, ARENA_SCHEMA
 from app.repositories.orchestrator import OrchestratorRepository
 from app.repositories.reviews import ReviewRepository
+from app.repositories.jobs import JobRepository, ApprovalRepository, JOB_SCHEMA
 
 
 @dataclass
@@ -47,6 +48,8 @@ class Repos:
     llm_calls: LLMCallRepository
     orchestrator: OrchestratorRepository
     arena: ArenaRepository
+    jobs: JobRepository
+    approvals: ApprovalRepository
 
 
 def build_repos(conn) -> Repos:
@@ -66,6 +69,8 @@ def build_repos(conn) -> Repos:
         llm_calls=LLMCallRepository(conn),
         orchestrator=OrchestratorRepository(conn),
         arena=ArenaRepository(conn),
+        jobs=JobRepository(conn),
+        approvals=ApprovalRepository(conn),
     )
 
 

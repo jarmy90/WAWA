@@ -666,6 +666,20 @@ def _ensure_concept_columns(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def _ensure_runtime_state(conn: sqlite3.Connection) -> None:
+    """Ensure runtime_state singleton row exists (iteración 025)."""
+    row = conn.execute("SELECT id FROM runtime_state WHERE id = 1").fetchone()
+    if not row:
+        import datetime
+        now = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        conn.execute(
+            """INSERT INTO runtime_state (id, operating_mode, updated_at)
+               VALUES (1, 'OFFLINE', ?)""",
+            (now,),
+        )
+        conn.commit()
+
+
 def _migrate_cycle_state_nullable(conn: sqlite3.Connection) -> None:
     """Migración idempotente (iteración 010): cycle_state.started_at pasa a
     aceptar NULL para que el estado PRE_CYCLE no cree el reloj al consultar.
@@ -726,5 +740,10 @@ def init_db(settings: Settings) -> None:
         from app.repositories.arena import ARENA_SCHEMA as _ARENA
         conn.executescript(_ARENA)
         conn.commit()
+        # Autonomous 24/7 runtime (iteración 025)
+        from app.repositories.jobs import JOB_SCHEMA as _JOB
+        conn.executescript(_JOB)
+        conn.commit()
+        _ensure_runtime_state(conn)
     finally:
         conn.close()
