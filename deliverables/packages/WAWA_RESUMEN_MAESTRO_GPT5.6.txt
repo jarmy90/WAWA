@@ -1,0 +1,379 @@
+================================================================================
+AUTONOMOUS BUSINESS LAB / WAWA
+DOCUMENTO MAESTRO PARA NUEVA CONVERSACIÓN
+Versión: 0.23.0 · Iteración: 024 · Fecha: 2026-08-27
+Último commit: 23f3e2c (Multi-Agent Ideation Arena)
+================================================================================
+
+ Este documento resume TODO lo que necesitas saber para continuar el
+ proyecto WAWA desde cero en una nueva conversación de IA. Cópialo
+ íntegramente como contexto inicial.
+
+================================================================================
+1. QUÉ ES WAWA
+================================================================================
+
+WAWA (Autonomous Business Lab) es un sistema autónomo que:
+
+  1. Descubre problemas reales de mercado
+  2. Genera ideas de microproductos/servicios digitales
+  3. Investiga su demanda con evidencia verificada
+  4. Analiza competidores, costes y márgenes
+  5. Critica sus propias hipótesis con un comité de contraste
+  6. Selecciona las mejores oportunidades
+  7. Prepara un experimento pequeño, barato y medible
+  8. Si no cualifica → vuelve a buscar automáticamente
+
+El sistema NO mueve dinero real. NO activa producción sin autorización
+explícita del propietario. NO inventa evidencia de demanda.
+
+================================================================================
+2. STACK TÉCNICO
+================================================================================
+
+Backend:
+  - Python ≥ 3.10, FastAPI, Pydantic v2
+  - SQLite (stdlib, sin SQLAlchemy)
+  - 91 archivos .py, 19 servicios, 120+ rutas API
+  - 40 tablas SQLite (36 core + 4 arena)
+  - Ledger contable append-only simulado (Decimal, nunca float)
+  - Proveedores LLM desacoplados (Mock/Gemini/OpenRouter/OmniRoute)
+  - Todos los proveedores son OPCIONALES; el sistema funciona 100% offline
+
+Frontend:
+  - HTML/CSS/JavaScript vanilla servido por FastAPI
+  - Canvas 2D para visualización de agentes (Sistema Solar)
+  - Sin frameworks de build, sin CDN obligatoria
+  - 8 archivos .js, 5 páginas HTML
+
+Tests:
+  - 475 tests pytest (100% offline, reproducibles)
+  - 8 archivos JS verificados con node --check
+
+Repositorio: github.com/jarmy90/WAWA (rama main)
+Versión actual: v0.23.0 (iteración 024)
+
+================================================================================
+3. ARQUITECTURA MODULAR
+================================================================================
+
+app/
+  agents/       Scout, Researcher, Skeptic, Economist, Builder, Compliance, Judge
+  api/          Rutas FastAPI (120+ endpoints)
+  core/         Config, logging, seguridad, DI container, libraries, routing
+  models/       Contratos Pydantic (Opportunity, Arena, Campaign, Review...)
+  providers/    Mock, Gemini, OpenRouter, OmniRoute, Manual
+  repositories/ SQLite + repositorios tipados (40 tablas)
+  scoring/      Opportunity Score, Venture Score, AI Substitution Test, Super Tournament
+  services/     19 servicios: Arena, Reviews, Discovery, Economy, Campaign, Orchestrator...
+  workflows/    Pipeline de 13 pasos + datos de demo
+
+frontend/
+  index.html            Dashboard principal (Mission Control)
+  mission-control.html  Centro de mando visual premium
+  agents-viz.html       Visualización de agentes (Sistema Solar legacy)
+  candidates.html       Candidatas investigadas + comité
+  arena.html            Multi-Agent Ideation Arena (NUEVO en iteración 024)
+
+docs/                   37 documentos de arquitectura, scoring, seguridad, etc.
+
+================================================================================
+4. ESTADO ACTUAL DEL PROYECTO
+================================================================================
+
+Fase: DEVELOPMENT_AND_REVIEW (no producción)
+Versión: v0.23.0
+Última iteración: 024 (Multi-Agent Ideation Arena)
+Tests: 475 passing
+
+Candidata ganadora actual: Benchmark anónimo de tarifas de ortodoncia
+  - Comprador: gerentes de clínicas dentales de 2-5 dentistas
+  - Precio hipótesis: 30-90 EUR por informe + revisión
+  - Evidencia: 11 verificadas, 7 grupos independientes
+  - Estado: READY_TO_CONNECT_SERVICES
+  - Producción: BLOQUEADA (sin Stripe, sin hosting, sin dominio)
+
+3 candidatas investigadas:
+  1. Benchmark de tarifas de ortodoncia (GANADORA)
+  2. Benchmark de honorarios de gestorías
+  3. Benchmark de costes de placas solares
+
+================================================================================
+5. ITERACIONES CLAVE (001 → 024)
+================================================================================
+
+001  Scoring ponderado y pipeline de 13 pasos
+002  BudgetGuard y sistema de costes
+003  Ledger contable append-only simulado
+004  Business Discovery Engine (territorios/lentes/arquetipos, torneo)
+005  Comité de contraste (revisiones externas)
+006  Sesiones Freebuff-first reanudables
+007  Opción A: revisión automática vía OpenRouter
+008  OmniRoute (proveedor aislado, allowlist, benchmark A/B)
+009  Comité visual con intervención mínima (copiar/pegar)
+010  Orquestador end-to-end + PRE_CYCLE (ciclo 30 días/50 USD)
+011  Seguridad local (CORS, XSS, sin auth aún)
+012  Varios fixes y mejoras
+013  Calidad semántica y estados honestos
+014  Badge de ideas actualizado
+015  Ventana prioritaria OX Alpha
+016  Cierre end-to-end y trazabilidad
+017  Importación automática de planes de reformulación
+018  Super-torneo, benchmark, centro de mando
+019  Corrección semántica del centro de mando
+020  Agent Mission Control Premium (Canvas 2D, telemetría)
+021  Activación comercial (3 candidatas, 18 misiones, 31 evidencias)
+022  One-Click Owner Activation (START_WAWA.bat, demo corregido)
+023  Recuperación del comité (synthesize-and-decide, single-flight)
+024  Multi-Agent Ideation Arena + Solar System ← ACTUAL
+
+================================================================================
+6. SISTEMA DE ARENA (ITERACIÓN 024)
+================================================================================
+
+La Arena permite que WAWA genere ideas y que el propietario importe ideas
+de agentes externos (GPT, Grok, Gemini) mediante un único prompt.
+
+Flujo de 7 pasos:
+  PASO 1 · GENERAR 5 IDEAS WAWA (Discovery Engine interno)
+  PASO 2 · COPIAR PROMPT PARA AGENTES EXTERNOS (prompt normalizado)
+  PASO 3 · AÑADIR RESPUESTAS TXT/JSON (drag & drop, multi-archivo)
+  PASO 4 · FILTRAR (dedup, commodity test, quality gate)
+  PASO 5 · TORNEO (comparaciones por pares, top 5)
+  PASO 6 · REVISAR (propietario ve supervivientes)
+  PASO 7 · APROBAR (máx 3 candidatas para investigación)
+
+Endpoints API:
+  GET  /api/arena/state          Estado completo
+  POST /api/arena/generate       Generar ideas WAWA
+  GET  /api/arena/prompt         Prompt normalizado
+  POST /api/arena/import         Importar lote de agente externo
+  POST /api/arena/filter         Filtrar y deduplicar
+  POST /api/arena/tournament     Ejecutar torneo
+  GET  /api/arena/review         Cola de revisión
+  POST /api/arena/approve        Aprobar para investigación
+  GET  /api/arena/providers      Estado de proveedores
+  GET  /api/arena/events         Log de eventos
+  POST /api/arena/reset          Reiniciar arena
+
+Garantías:
+  - Todas las ideas son HIPÓTESIS (proven_demand = 0)
+  - MULTI_MODEL_CONVERGENCE no incrementa evidence_score
+  - Máx 5 supervivientes, máx 3 aprobadas
+  - Sin llamadas LLM, sin gasto real
+
+================================================================================
+7. COMITÉ DE CONTRASTE
+================================================================================
+
+El comité toma opiniones de modelos externos (GPT, Grok, Gemini) y las
+usa como CRÍTICA, nunca como evidencia de demanda.
+
+Flujo:
+  1. Generar expediente (review_packet.md) idéntico para todos
+  2. Copiar a GPT, Grok, Gemini
+  3. Pegar respuestas en panel (o archivo combinado)
+  4. Síntesis automática determinista
+  5. Decisión autónoma (ajusta ±5 confianza, NUNCA autoriza producción)
+
+Endpoint compuesto (iteración 023):
+  POST /api/reviews/opportunities/{id}/synthesize-and-decide
+
+Garantías:
+  - Single-flight (RLock) contra doble clic
+  - Timeout 20s en frontend
+  - Idempotente: reintento = mismo resultado
+  - Sin llamadas LLM en síntesis/decisión
+  - Producción siempre bloqueada
+
+================================================================================
+8. ECONOMÍA SIMULADA
+================================================================================
+
+Ciclo económico: 30 días / 50 USD (configurable)
+Estado inicial: PRE_CYCLE (el reloj NO arranca solo)
+Arranque: POST /api/economy/cycle/start (12 precondiciones)
+Vía A: 50 USD de ingresos reales confirmados
+Vía B: 1 pago real + prórroga 14 días
+Sin pago real → NOT_PASSED honesto
+
+Ledger append-only:
+  - Importes en Decimal (nunca float)
+  - Idempotencia por clave
+  - Reversiones auditadas
+  - Saldo derivado SIEMPRE de asientos
+  - Nunca persistir saldo editable
+
+================================================================================
+9. REGLAS INMUTABLES
+================================================================================
+
+1. NUNCA inventar evidencia de demanda
+2. El Judge es determinista (sin LLM)
+3. APIs de pago son OPCIONALES (fallback a mock)
+4. Nunca ejecutar código generado sin sandbox
+5. Sin acciones irreversibles ni financieras
+6. No almacenar secretos en Git
+7. Auditoría completa (decision_log append-only)
+8. Ledger append-only y simulado
+9. PRODUCCIÓN bloqueada por capacidad
+10. El motor de ideas nunca inventa demanda
+
+================================================================================
+10. ROADMAP — PRÓXIMOS PASOS
+================================================================================
+
+PRÓXIMOS (prioridad):
+  1. Ejecutar campaña Freebuff-first real con investigación verificada
+  2. Arrancar OmniRoute en entorno con disco suficiente
+  3. Completar PRIMERA CAMPAÑA REAL 001 hasta comité
+  4. Conectar Stripe (única acción manual de Javier)
+  5. Conectar email transaccional (Resend u otro)
+  6. Conectar hosting + dominio
+  7. Autorizar ciclo de 30 días
+
+MEDIOS:
+  8. Arrancar Discovery Engine con campañas reales
+  9. Validar torneo con investigación real
+  10. Conectores éticos (RSS, foros públicos)
+  11. Mejorar Scout con Gemini (opcional)
+
+LARGOS:
+  12. Auth (OIDC/Convex Auth)
+  13. Hosting Python 24/7
+  14. Backup de SQLite
+  15. Migración a SQLAlchemy si crece
+  16. Autonomía económica (post-validación)
+
+CRITERIOS DE ÉXITO:
+  - Con investigación real, las oportunidades buenas suben a "aprobada"
+  - Confianza media con evidencia verificada > 60%
+  - Al menos 1 experimento ejecutado con < 50 USD en < 30 días
+  - Los COMMODITY_WRAPPER se confirman como tales
+
+================================================================================
+11. CÓMO ARRANCAR WAWA
+================================================================================
+
+Opción A (Windows, recomendada para Javier):
+  1. Descargar paquete .zip.txt de deliverables/packages/
+  2. Renombrar a wawa.zip y extraer
+  3. Hacer doble clic en START_WAWA.bat
+  4. Abrir http://127.0.0.1:8000
+
+Opción B (desarrollador):
+  git clone https://github.com/jarmy90/WAWA.git
+  cd WAWA
+  python -m venv .venv
+  source .venv/bin/activate  # o .venv\Scripts\activate en Windows
+  pip install -r requirements.txt
+  uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+Opción C (Freebuff):
+  El sistema se ejecuta automáticamente en el workspace de Freebuff.
+
+Pruebas:
+  pytest          # 475 tests, 100% offline
+
+================================================================================
+12. DOCUMENTACIÓN COMPLETA
+================================================================================
+
+ docs/ARCHITECTURE.md          Arquitectura completa del sistema
+ docs/SCORING.md               Pesos, fórmulas, bandas de decisión
+ docs/DISCOVERY.md             Business Discovery Engine
+ docs/VENTURE_SCORING.md       Venture Quality Score + AI Substitution Test
+ docs/ECONOMY.md               Economía simulada
+ docs/LEDGER.md                Ledger append-only
+ docs/OPERATING_MODES.md       Modos de operación
+ docs/EXTERNAL_MODEL_REVIEW.md Comité de contraste
+ docs/REVIEW_SYNTHESIS.md      Parsing y síntesis de revisiones
+ docs/REVIEW_SECURITY.md       Seguridad del comité
+ docs/FREEBUFF_SESSION_PROTOCOL.md  Sesiones reanudables
+ docs/CAMPAIGN_RUNNER.md       Máquina de estados de campañas
+ docs/ITERATION_HISTORY.md     Historial completo de iteraciones
+ docs/ROADMAP.md               Roadmap y próximos pasos
+ docs/SECURITY.md              Modelo de amenazas
+ AGENTS.md                     Reglas para agentes de desarrollo
+ README.md                     Documentación general
+
+Todos los archivos están en el repositorio GitHub.
+
+================================================================================
+13. ARCHIVOS CLAVE PARA CONTINUAR
+================================================================================
+
+Backend (donde está la lógica):
+  app/models/arena.py          Modelos de la Arena (NUEVO)
+  app/services/arena.py        Servicio Arena (NUEVO)
+  app/repositories/arena.py    Repository Arena (NUEVO)
+  app/services/reviews.py      Comité de contraste
+  app/services/discovery.py    Discovery Engine
+  app/services/orchestrator.py Orquestador end-to-end
+  app/services/economy.py      Economía simulada
+  app/services/commercial_bootstrap.py  Activación comercial
+  app/core/container.py        DI container
+  app/api/routes.py            Todas las rutas API (120+)
+  app/repositories/db.py       Esquema SQLite
+
+Frontend (donde está la interfaz):
+  frontend/arena.html          Arena multi-agente (NUEVO)
+  frontend/arena.js            Lógica Arena + Solar System (NUEVO)
+  frontend/index.html          Dashboard principal
+  frontend/mission-control.html Centro de mando
+  frontend/candidates.html     Candidatas + comité
+  frontend/viz-core.js         Utilidades de visualización
+
+Tests:
+  tests/test_arena.py          Tests de la Arena (38 tests, NUEVO)
+  tests/test_committee_recovery.py  Tests del comité
+  tests/conftest.py            Fixtures comunes
+
+================================================================================
+14. COMANDOS ÚTILES
+================================================================================
+
+# Arrancar servidor
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Ejecutar tests
+pytest
+
+# Verificar JS
+node --check frontend/*.js
+
+# Verificar syntax Python
+python3 -m py_compile app/api/routes.py
+
+# Generar paquete de revisión
+python3 scripts/package_for_review.py --iteration NNN
+
+# Verificar paquete
+python3 scripts/verify_review_package.py --iteration NNN
+
+# Inspeccionar base de datos
+python3 -c "import sqlite3; c=sqlite3.connect('data/abl.db'); print([r[0] for r in c.execute(\"SELECT name FROM sqlite_master WHERE type='table'\").fetchall()])"
+
+================================================================================
+15. CONTACTO Y PRÓXIMA ACCIÓN DE JAVIER
+================================================================================
+
+Javier (propietario) solo debe intervenir para:
+  1. Copiar expedientes a GPT/Grok/Gemini (botón de copiar)
+  2. Pegar respuestas en la Arena o el Comité
+  3. Aprobar máx 3 candidatas para investigación
+  4. Conectar Stripe (cuando esté listo)
+  5. Autorizar el ciclo de 30 días
+
+Todo lo demás lo hace WAWA automáticamente.
+
+PRÓXIMA ACCIÓN INMEDIATA:
+  Abrir /arena → GENERAR 5 IDEAS WAWA → COPIAR PROMPT → pegar en
+  GPT/Grok/Gemini → importar respuestas → FILTRAR → TORNEO → REVISAR →
+  APROBAR hasta 3 para investigación.
+
+================================================================================
+FIN DEL DOCUMENTO MAESTRO
+Generado automáticamente por WAWA · Autonomous Business Lab
+Versión 0.23.0 · Iteración 024 · 2026-08-27
+================================================================================
