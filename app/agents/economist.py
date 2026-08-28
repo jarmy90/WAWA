@@ -36,6 +36,21 @@ class EconomistAgent(BaseAgent):
         structured = call.response.structured or {}
         estimates = structured.get("estimates") or {}
         assumptions = structured.get("assumptions") or []
+        # El resultado del proveedor debe pertenecer al contexto actual. Las
+        # heurísticas específicas de MQL5 no pueden aparecer en ortodoncia.
+        context = " ".join(
+            str(value or "")
+            for value in (opportunity.title, opportunity.problem, opportunity.proposed_solution, opportunity.sector)
+        ).lower()
+        if "mql5" not in context and "metatrader" not in context and "trading" not in context:
+            estimates = {
+                k: v for k, v in estimates.items()
+                if "mql5" not in str(v).lower() and "metatrader" not in str(v).lower() and "trading" not in str(v).lower()
+            }
+            assumptions = [
+                a for a in assumptions
+                if not any(marker in str(a).lower() for marker in ("mql5", "metatrader", "trading"))
+            ]
         return self._result(
             output={"estimates": estimates},
             call=call,

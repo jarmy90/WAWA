@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "timestamp": null,
+  "omniroute_reachable": false,
+  "catalog_valid": false,
+  "real_model": null,
+  "completion_validated": false,
+  "request_id": null,
+  "latency_ms": null,
+  "tokens": null,
+  "cost": null,
+  "api": false,
+  "scheduler": false,
+  "worker": false,
+  "operator": false,
+  "heartbeat": false,
+  "smoke_job_id": null,
+  "transitions": [],
+  "next_job_id": null,
+  "preflight": null,
+  "safe_pause": true,
+  "errors": ["Pendiente de ejecución en el portátil de Javier."]
+}

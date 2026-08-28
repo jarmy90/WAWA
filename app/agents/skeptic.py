@@ -44,6 +44,23 @@ class SkepticAgent(BaseAgent):
         )
         structured = call.response.structured or {}
         critique = structured.get("critique") or call.response.text
+        context = " ".join(
+            str(value or "")
+            for value in (opportunity.title, opportunity.problem, opportunity.proposed_solution, opportunity.sector)
+        ).lower()
+        if "mql5" not in context and "metatrader" not in context and "trading" not in context:
+            structured = {
+                **structured,
+                "objections": [o for o in (structured.get("objections") or []) if not any(
+                    marker in str(o).lower() for marker in ("mql5", "metatrader", "trading")
+                )],
+                "weakest_assumptions": [a for a in (structured.get("weakest_assumptions") or []) if not any(
+                    marker in str(a).lower() for marker in ("mql5", "metatrader", "trading")
+                )],
+            }
+            critique = critique if not any(marker in critique.lower() for marker in ("mql5", "metatrader", "trading")) else (
+                "La crítica del proveedor contenía referencias ajenas al contexto; se descartó y requiere revisión neutral."
+            )
         return self._result(
             output={
                 "critique": critique,

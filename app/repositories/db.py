@@ -56,7 +56,15 @@ CREATE TABLE IF NOT EXISTS competitors (
 CREATE INDEX IF NOT EXISTS idx_competitors_opp ON competitors(opportunity_id);
 
 CREATE TABLE IF NOT EXISTS evaluations (
-    opportunity_id TEXT PRIMARY KEY REFERENCES opportunities(id) ON DELETE CASCADE,
+    evaluation_id TEXT PRIMARY KEY,
+    opportunity_id TEXT NOT NULL REFERENCES opportunities(id) ON DELETE CASCADE,
+    version INTEGER NOT NULL DEFAULT 1,
+    supersedes_id TEXT,
+    campaign_id TEXT,
+    mission_id TEXT,
+    prompt_version TEXT,
+    execution_mode TEXT NOT NULL DEFAULT 'MOCK',
+    provenance TEXT NOT NULL DEFAULT '{}',
     pain_score REAL NOT NULL DEFAULT 0,
     demand_score REAL NOT NULL DEFAULT 0,
     customer_reach_score REAL NOT NULL DEFAULT 0,
@@ -623,6 +631,34 @@ CREATE INDEX IF NOT EXISTS idx_bootstrap_checkpoints_component ON bootstrap_chec
 """
 
 
+def _ensure_evaluation_columns(conn: sqlite3.Connection) -> None:
+    """Migración idempotente del historial de evaluaciones (iteración 028)."""
+    columns = {row["name"] for row in conn.execute("PRAGMA table_info(evaluations)").fetchall()}
+    additions = {
+        "evaluation_id": "TEXT",
+        "version": "INTEGER NOT NULL DEFAULT 1",
+        "supersedes_id": "TEXT",
+        "campaign_id": "TEXT",
+        "mission_id": "TEXT",
+        "prompt_version": "TEXT",
+        "execution_mode": "TEXT NOT NULL DEFAULT 'MOCK'",
+        "provenance": "TEXT NOT NULL DEFAULT '{}'",
+        "prompt_version": "TEXT",
+        "integrity_status": "TEXT NOT NULL DEFAULT 'VALID'",
+        "provider": "TEXT",
+        "invalidated_at": "TEXT",
+    }
+    for name, ddl in additions.items():
+        if name not in columns:
+            conn.execute(f"ALTER TABLE evaluations ADD COLUMN {name} {ddl}")
+    rows = conn.execute("SELECT rowid, evaluation_id FROM evaluations").fetchall()
+    import uuid
+    for row in rows:
+        if not row["evaluation_id"]:
+            conn.execute("UPDATE evaluations SET evaluation_id = ? WHERE rowid = ?", (uuid.uuid4().hex, row["rowid"]))
+    conn.commit()
+
+
 def _ensure_llm_call_columns(conn: sqlite3.Connection) -> None:
     """Migración idempotente para bases creadas antes de la iteración 008."""
     existing = {row["name"] for row in conn.execute("PRAGMA table_info(llm_call_log)").fetchall()}
@@ -732,6 +768,7 @@ def init_db(settings: Settings) -> None:
     try:
         conn.executescript(SCHEMA)
         conn.commit()
+        _ensure_evaluation_columns(conn)
         _ensure_llm_call_columns(conn)
         _ensure_venture_columns(conn)
         _ensure_concept_columns(conn)

@@ -109,6 +109,11 @@ class PipelineService:
         if opportunity is None:
             raise NotFoundError("Oportunidad no encontrada.")
 
+        # La evaluación debe partir únicamente del contexto de esta
+        # oportunidad. Los agentes usan proveedores opcionales, pero sus
+        # salidas se validan contra el texto persistido antes de llegar al
+        # Judge; una contaminación conocida debe bloquear, no sobrescribirse.
+        self._assert_opportunity_context(opportunity)
         self.budget.guard_deep_evaluation(opportunity_id)
         self.repos.opportunities.set_status(opportunity_id, OpportunityStatus.researching)
 
@@ -116,7 +121,8 @@ class PipelineService:
         if clear_existing:
             self.repos.evidence.delete_for_opportunity(opportunity_id)
             self.repos.competitors.delete_for_opportunity(opportunity_id)
-            self.repos.evaluations.delete(opportunity_id)
+            # Las evaluaciones históricas son append-only; la nueva versión
+            # se enlaza automáticamente mediante supersedes_id.
             self.repos.experiments.delete_for(opportunity_id)
 
         previous: dict = {}
@@ -208,6 +214,18 @@ class PipelineService:
             },
         )
         return evaluation
+
+    @staticmethod
+    def _assert_opportunity_context(opportunity: Opportunity) -> None:
+        """Rechaza contexto histórico incompatible antes de puntuar."""
+        context = " ".join(
+            str(value or "")
+            for value in (opportunity.title, opportunity.problem, opportunity.proposed_solution, opportunity.sector)
+        ).lower()
+        trading_markers = ("mql5", "metatrader", "trading", "expert advisor")
+        if "ortodoncia" in context or "clínica dental" in context or "clinica dental" in context:
+            if any(marker in context for marker in trading_markers):
+                raise ValueError("Integridad bloqueada: contexto dental mezclado con contexto trading/MQL5.")
 
     # ------------------------------------------------------------------
     def _log_step(

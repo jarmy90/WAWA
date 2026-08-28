@@ -89,7 +89,17 @@ class Evaluation(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    evaluation_id: str | None = None
     opportunity_id: str
+    version: int = Field(default=1, ge=1)
+    integrity_status: str = "VALID"
+    supersedes_id: str | None = None
+    campaign_id: str | None = None
+    mission_id: str | None = None
+    execution_mode: str = "MOCK"
+    provider: str | None = None
+    provenance: dict[str, object] = Field(default_factory=dict)
+    invalidated_at: str | None = None
     pain_score: float = Field(ge=0, le=100)
     demand_score: float = Field(ge=0, le=100)
     customer_reach_score: float = Field(ge=0, le=100)

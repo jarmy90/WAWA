@@ -1,0 +1,20 @@
+WAWA LOCAL AUTOMATION
+
+El instalador y los scripts trabajan solo sobre esta copia local del repositorio.
+No cambian OmniRoute ni exponen claves.
+
+Instalar inicio automático:
+powershell -ExecutionPolicy Bypass -File scripts/INSTALL_WAWA_AUTOMATION.ps1
+
+Actualizar, probar y arrancar:
+powershell -ExecutionPolicy Bypass -File scripts/UPDATE_WAWA.ps1
+
+Estado:
+powershell -ExecutionPolicy Bypass -File scripts/STATUS_WAWA.ps1
+
+Parar/reiniciar:
+powershell -ExecutionPolicy Bypass -File scripts/STOP_WAWA.ps1
+powershell -ExecutionPolicy Bypass -File scripts/RESTART_WAWA.ps1
+
+Restaurar el backup más reciente:
+powershell -ExecutionPolicy Bypass -File scripts/RESTORE_WAWA.ps1

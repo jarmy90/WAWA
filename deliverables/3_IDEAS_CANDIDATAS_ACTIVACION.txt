@@ -1,0 +1,104 @@
+=====================================================================
+WAWA — ACTIVACIÓN COMERCIAL (iteración 021-026)
+LAS 3 IDEAS CANDIDATAS INVESTIGADAS
+=====================================================================
+Fecha de la investigación: 2026-08-26
+Método: búsqueda web autorizada (Serper/Google) + importación contra
+misiones locales (URL + fecha + fragmento textual = verified=true).
+
+NOTA DE HONESTIDAD: ninguna idea tiene demanda validada. No existe
+ningún pago real. Precios y compradores son HIPÓTESIS. La ganadora es
+"ganadora determinista PARA EXPERIMENTO", no demanda confirmada.
+
+
+---------------------------------------------------------------------
+IDEA 1 (GANADORA DETERMINISTA PARA EXPERIMENTO)
+Benchmark anónimo de tarifas para clínicas dentales que deciden su
+precio de ortodoncia
+---------------------------------------------------------------------
+- Puntuación torneo: 77.5
+- Evidencia verificada: 11 evidencias / 7 grupos independientes
+- Comprador (HIPÓTESIS): gerentes de clínicas dentales de 2-5 dentistas
+- Problema: las clínicas dentales pequeñas fijan el precio de ortodoncia
+  sin un comparativo de tarifas de su zona y pierden margen o pacientes.
+- Oferta: informe de benchmark anónimo de tarifas de ortodoncia por
+  provincia (rangos y percentiles) + revisión por videollamada (concierge).
+- Precio (HIPÓTESIS): 30-90 EUR (midpoint 60 EUR) — sin comprador real
+- Canal: contacto directo autorizado a 20 clínicas vía colegios y
+  directorios oficiales; LinkedIn y colegios provinciales.
+- Por qué ganó: única con coste de lanzamiento bajo y entrega concierge
+  plenas (torneo 018). No es demanda validada: no hay pago real.
+- Fuentes principales: Sanitas Dental, Clínica Friedlander, Prodentis
+  (guía Málaga 2026), Clínica Dental Nobel, Doctocliq, Dental Data
+  School, Infomed, GuiaDentistas/Consejo de Dentistas, Dental Tribune,
+  Clínica Ferrús Bràtos.
+- Kill condition: sin señal de pago tras 14 días de contacto activo;
+  cierre en 30 días sin pivote viable.
+
+
+---------------------------------------------------------------------
+IDEA 2 (CANDIDATA INVESTIGADA — NO GANADORA)
+Benchmark de honorarios para gestorías que deciden su tarifa mensual
+---------------------------------------------------------------------
+- Puntuación torneo: 72.5
+- Evidencia verificada: 10 evidencias / 7 grupos independientes
+- Comprador (HIPÓTESIS): gestorías y asesorías contables que fijan su
+  tarifa mensual (titulares de gestorías de 1-5 empleados)
+- Problema: las gestorías fijan honorarios mensuales sin comparativa de
+  mercado; precios opacos y clientes sin forma de comparar.
+- Oferta: benchmark anónimo de honorarios de gestorías por tamaño de
+  cartera / región.
+- Precio (HIPÓTESIS): sin precio fijado — pendiente de experimento
+- Canal: colegios/registros de gestores administrativos; asociaciones
+  profesionales; LinkedIn.
+- Por qué no ganó: 72.5 (por debajo de 77.5) y sin ventaja concierge /
+  coste de lanzamiento plena. Se conserva como candidata investigada.
+- Fuentes principales: Cronoshare, Dri Asesoría, Billeo, Sage, Despacho
+  Abierto, IONOS, OkAsesores, Consejo General de Gestores, Registro de
+  Gestores Administrativos, Mi Gestoría Online.
+- Kill condition: sin señal de pago tras experimento de 30 días.
+
+
+---------------------------------------------------------------------
+IDEA 3 (CANDIDATA INVESTIGADA — NO GANADORA)
+Benchmark de costes de instalación para empresas de placas solares que
+deciden presupuesto
+---------------------------------------------------------------------
+- Puntuación torneo: 72.5
+- Evidencia verificada: 10 evidencias / 7 grupos independientes
+- Comprador (HIPÓTESIS): empresas instaladoras de placas solares que
+  deciden presupuesto (instaladores de 3-10 empleados)
+- Problema: las instaladoras fijan presupuestos sin referencia de coste
+  por kW y pierden margen o clientes.
+- Oferta: benchmark de costes de instalación fotovoltaica por kW y zona.
+- Precio (HIPÓTESIS): sin precio fijado — pendiente de experimento
+- Canal: asociaciones (UNEF y afines); directorios de instaladores;
+  LinkedIn sectorial.
+- Por qué no ganó: 72.5 y coste de lanzamiento / entrega concierge
+  inferiores a la ganadora. Se conserva como candidata investigada.
+- Fuentes principales: Cambio Energético, SotySolar, Solfy, AutoSolar,
+  Suntropy, Motor de Presupuestos, ACCA Solarius PV, UNEF, Global Solar
+  Council, SolarVis.
+- Kill condition: sin señal de pago tras experimento de 30 días.
+
+
+=====================================================================
+ESTADO ACTUAL DEL SISTEMA
+=====================================================================
+- Modo: DEVELOPMENT_AND_REVIEW
+- Readiness: READY_TO_CONNECT_SERVICES
+- Ciclo económico: PRE_CYCLE (reloj detenido) · 30 días / 50 USD
+- Producción: BLOQUEADA por diseño (production_capability_available=false)
+- Economía: SIMULADA — no representa dinero real
+- 3 candidatas, 18 misiones, 31 evidencias verificadas (URL+fecha+fragmento)
+
+Siguiente paso (comité): en CANDIDATAS, copiar el expediente de la
+ganadora con COPIAR PARA GPT / GROK / GEMINI y pegar las respuestas.
+La decisión del comité NUNCA autoriza producción ni gasto: ajusta
+prioridad/confianza (±5 máx.) y la ausencia de revisión es neutral.
+
+Fuente: deliverables/operacion_activacion_comercial_2026-08-26/
+        investigacion_fase1_021.json
+        resources/bootstrap/commercial_021/candidatas.json
+        deliverables/operacion_super_torneo_2026-08-26/
+        investigacion_inicial_018.md
