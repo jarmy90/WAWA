@@ -271,3 +271,5 @@ borrar el historial previo.
 - **Iteración 26** · 2026-08-27T18:37:42.202877+00:00 · paquete: `autonomous-business-lab_iteracion-026_2026-08-27.zip.txt` · tamaño: 9394099 bytes · SHA-256 (canónico): `1deda629eae19bcd6bebf500f77f662f93f7c8153b9f353ed1e8f7f4aab680fb`
 - **Iteración 27** · 2026-08-28T18:38:21.712322+00:00 · paquete: `autonomous-business-lab_iteracion-027_2026-08-28.zip.txt` · tamaño: 9418628 bytes · SHA-256 (canónico): `33a4f7fd115085b1a07cb79851aa5e67aafec6f39729a9c1fb23946d794ba982`
 - **Iteración 27** · 2026-08-28T18:58:37.660589+00:00 · paquete: `autonomous-business-lab_iteracion-027_2026-08-28.zip.txt` · tamaño: 9423488 bytes · SHA-256 (canónico): `7812cc009ffcc3f8ba4e3bc097d8cfed5c4544533202b28f7a2fb07fa52878b2`
+- **Iteración 027 — instalador Windows** · 2026-08-28 · paquete: `WAWA_WINDOWS_INSTALLER.zip` · pendiente de hash final
+- **Iteración 27** · 2026-08-28T19:14:41.118225+00:00 · paquete: `autonomous-business-lab_iteracion-027_2026-08-28.zip.txt` · tamaño: 9424850 bytes · SHA-256 (canónico): `11210971be8881fefebb4eb8de367f8c45bb2f36c579bee28801e78790f80dcf`

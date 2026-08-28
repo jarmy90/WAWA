@@ -1,20 +1,16 @@
-WAWA LOCAL AUTOMATION
+WAWA — INSTALACIÓN WINDOWS
 
-El instalador y los scripts trabajan solo sobre esta copia local del repositorio.
-No cambian OmniRoute ni exponen claves.
+1. Descarga WAWA_WINDOWS_INSTALLER.zip.
+2. Descomprímelo en cualquier carpeta.
+3. Haz clic derecho en INSTALL_WAWA.ps1 y selecciona “Ejecutar con PowerShell”.
 
-Instalar inicio automático:
-powershell -ExecutionPolicy Bypass -File scripts/INSTALL_WAWA_AUTOMATION.ps1
+El instalador detecta su propia ubicación, copia la aplicación a C:\WAWA,
+crea el entorno virtual, instala dependencias y prepara el arranque automático.
 
-Actualizar, probar y arrancar:
-powershell -ExecutionPolicy Bypass -File scripts/UPDATE_WAWA.ps1
+Después se abre el Owner Command Center en:
+http://127.0.0.1:8000
 
-Estado:
-powershell -ExecutionPolicy Bypass -File scripts/STATUS_WAWA.ps1
+OmniRoute se comprueba únicamente en el portátil local. Si no responde,
+WAWA conserva la cola y permanece en SAFE_PAUSE para tareas LLM.
 
-Parar/reiniciar:
-powershell -ExecutionPolicy Bypass -File scripts/STOP_WAWA.ps1
-powershell -ExecutionPolicy Bypass -File scripts/RESTART_WAWA.ps1
-
-Restaurar el backup más reciente:
-powershell -ExecutionPolicy Bypass -File scripts/RESTORE_WAWA.ps1
+No se ejecuta ninguna acción externa, gasto, publicación ni contacto de clientes.

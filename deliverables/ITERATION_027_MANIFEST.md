@@ -27,6 +27,12 @@
 
 `evaluation_contaminated=QUARANTINED`; `score_contaminated=INVALID`; `valid_score=NONE`; `opportunity=EVALUATION_BLOCKED`; `reason=INTEGRITY_INCIDENT_OPEN`.
 
+## Instalador Windows
+
+- `WAWA_WINDOWS_INSTALLER.zip` generado y probado estructuralmente con `unzip -t`.
+- SHA-256: `309feb3bba8a1db3ab9bb688270f79ad2b093e4e997e35fa31779cfdb1edb981`.
+- Validación Windows real: pendiente; este workspace no ejecuta PowerShell/Task Scheduler.
+
 ## Artefacto
 
 - **Nombre del paquete**: autonomous-business-lab_iteracion-027_2026-08-28.zip.txt
@@ -36,6 +42,6 @@
 
 Ejecutar localmente el activador ya preparado cuando Javier decida validar OmniRoute.
 
-- **Tamaño del paquete**: 9423488 bytes
+- **Tamaño del paquete**: 9424850 bytes
 
-- **SHA-256 del paquete**: 7812cc009ffcc3f8ba4e3bc097d8cfed5c4544533202b28f7a2fb07fa52878b2
+- **SHA-256 del paquete**: 11210971be8881fefebb4eb8de367f8c45bb2f36c579bee28801e78790f80dcf
